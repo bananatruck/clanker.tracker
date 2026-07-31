@@ -1,0 +1,23 @@
+node_modules/
+.output/
+.wxt/
+dist/
+stats.html
+
+# Secrets — must never reach the public remote
+.env
+.env.*
+!.env.example
+*.key
+
+# Personal data exports
+*.clankdb
+storyboard/panels/private-*
+tests/fixtures/**/private-*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
