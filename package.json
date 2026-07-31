@@ -1,0 +1,40 @@
+{
+  "name": "clanker-tracker",
+  "version": "0.0.1",
+  "description": "Chrome extension: resume parsing, ATS scanning, one-click application autofill, grounded cover letters, and an application tracker wrapped in an idle RPG.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:fill": "vitest run tests/unit/fill"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@wxt-dev/module-react": "^1.2.2",
+    "happy-dom": "^20.11.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10",
+    "wxt": "^0.21.2"
+  },
+  "dependencies": {
+    "dexie": "^4.4.4",
+    "dexie-react-hooks": "^4.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.14"
+  },
+  "private": true,
+  "type": "module"
+}
