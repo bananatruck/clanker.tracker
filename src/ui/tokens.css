@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+
+/**
+ * Obsidian-inspired design tokens.
+ * Dense, dark, 1px borders, no drop shadows, purple accent.
+ */
+@theme {
+  --color-base: #1e1e1e;
+  --color-surface: #252525;
+  --color-surface-hi: #2d2d2d;
+  --color-border: #333333;
+  --color-text: #dcddde;
+  --color-muted: #999999;
+  --color-faint: #6c6c6c;
+
+  --color-accent: #a882ff;
+  --color-accent-dim: #7c5fd6;
+
+  /* Fill-confidence colours, used by the review overlay and the skirmish. */
+  --color-certain: #4ec9b0; /* deterministic resolve — tiers 1-4, free */
+  --color-guessed: #d7a75c; /* LLM resolve — tier 5, costs a call */
+  --color-missing: #d16969; /* unfilled or required-and-empty */
+
+  --font-ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-base);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Pixel art must never be smoothed. */
+canvas.pixel {
+  image-rendering: pixelated;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 5px;
+  border: 2px solid var(--color-base);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

@@ -74,10 +74,12 @@ Every point comes from a **real action**. There is no clicker currency, no daily
 | **Accepted an offer** | **The Adoption** | *ending* |
 
 ```
-levelCost(n) = n <= 10 ? 10 : ceil(10 * 1.12 ** (n - 10))
+levelCost(n) = n <= 10 ? 10 : ceil(10 * 1.07 ** (n - 10))
 ```
 
-5 applications = level 1. Levels 1→10 cost exactly 100 DP — **one interview is ten levels at base.** After that it scales hard (L30 = 96 DP, L50 = 930), so late progress genuinely requires interviews. Applications are cheap; interviews are the real signal, and the curve says so.
+5 applications = level 1. Levels 1→10 cost exactly 100 DP — **one interview is ten levels at base.** After that it scales (L20 = 20 DP, L30 = 39, L50 = 150), so late progress genuinely requires interviews. Applications are cheap; interviews are the real signal, and the curve says so.
+
+The curve is tuned against real volumes so the story is actually reachable: a light hunt lands around **Warlord**, a serious one (200 applications, 20 OAs, 10 interviews) reaches **Devastator**, and only a brutal one gets to the Citadel.
 
 You reach the Citadel at level 60. **You cannot take it without an offer.** You can flatten the entire world and still not have a job.
 
