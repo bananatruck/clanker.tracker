@@ -2,6 +2,11 @@
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "strict": true,
+    "jsx": "react-jsx",
+    // Chrome-only extension: the `chrome.*` globals are ambient, so they have
+    // to be named explicitly — extending .wxt/tsconfig.json loses the default
+    // @types auto-discovery.
+    "types": ["chrome"],
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "verbatimModuleSyntax": true,
@@ -9,5 +14,14 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "wxt.config.ts", "vitest.config.ts"]
+  // .wxt/wxt.d.ts carries the generated globals (defineBackground, browser) and
+  // pulls in the React JSX types. Narrowing `include` without it silently drops
+  // both, which is why `pnpm compile` never passed before now.
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "wxt.config.ts",
+    "vitest.config.ts",
+    ".wxt/wxt.d.ts"
+  ]
 }

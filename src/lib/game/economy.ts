@@ -27,7 +27,12 @@ export const DEEDS = {
   oa: { dp: 30, villages: 1, label: '1 village taken' },
   interview: { dp: 100, rivers: 1, label: '1 river dried' },
   offer: { dp: 0, label: 'The Adoption' },
-} as const satisfies Record<Deed, { dp: number; label: string }>;
+} as const satisfies Record<
+  Deed,
+  // The homes/villages/rivers counts are the narrative half of each deed —
+  // what the label says in numbers, so the renderer doesn't parse prose.
+  { dp: number; label: string; homes?: number; villages?: number; rivers?: number }
+>;
 
 /** Levels 1-10 each cost this much. 5 applications = 10 DP = level 1. */
 export const BASE_LEVEL_COST = 10;
