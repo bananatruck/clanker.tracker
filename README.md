@@ -8,7 +8,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a882ff.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-pre--alpha%20·%20M0-orange.svg)](#roadmap)
+[![Status](https://img.shields.io/badge/status-pre--alpha%20·%20M1-orange.svg)](#roadmap)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-1e1e1e.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -156,9 +156,9 @@ src/
 
 ## Roadmap
 
-- [ ] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, Obsidian tokens, provider adapter, CI ← *here*
-- [ ] **M1** — Resume parse → profile review grid → ATS scan + evidence table
-- [ ] **M2** — Autofill core: harvest, 5-tier resolver, fillers, review overlay, Greenhouse/Lever/Ashby/Workable + generic
+- [x] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, Obsidian tokens, provider adapter, CI
+- [x] **M1** — Resume parse → profile review grid → ATS scan + evidence table
+- [ ] **M2** — Autofill core: harvest, 5-tier resolver, fillers, review overlay, Greenhouse/Lever/Ashby/Workable + generic ← *here*
 - [ ] **M3** — Tracker, board view, CSV export, DP counter → **usable daily from here**
 - [ ] **M4** — Cover letters: story bank, retrieval, voice profile, humanizer
 - [ ] **M5** — Clankerdom Deliverance: economy, march, skirmish, warband, lore, default theme; skill tree
@@ -180,6 +180,7 @@ Then open the side panel, go to **Settings**, and paste an API key. [Gemini keys
 ```bash
 pnpm test             # unit tests
 pnpm test:fill        # fill-coverage regression against saved ATS fixtures
+pnpm compile          # typecheck
 pnpm build            # production bundle
 ```
 

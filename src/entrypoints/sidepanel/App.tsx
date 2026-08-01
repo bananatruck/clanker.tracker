@@ -1,11 +1,16 @@
 import { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
+import { totalDp } from '@/lib/db/repo';
+import Profile from './views/Profile';
+import Scan from './views/Scan';
 
-type Route = 'dashboard' | 'profile' | 'tracker' | 'tree' | 'crusade' | 'settings';
+type Route = 'dashboard' | 'profile' | 'scan' | 'tracker' | 'tree' | 'crusade' | 'settings';
 
 const ROUTES: ReadonlyArray<{ id: Route; label: string; milestone: string }> = [
   { id: 'dashboard', label: 'Dashboard', milestone: 'M0' },
   { id: 'profile', label: 'Profile', milestone: 'M1' },
+  { id: 'scan', label: 'Scan', milestone: 'M1' },
   { id: 'tracker', label: 'Tracker', milestone: 'M3' },
   { id: 'tree', label: 'Skill Tree', milestone: 'M5' },
   { id: 'crusade', label: 'Crusade', milestone: 'M5' },
@@ -15,8 +20,9 @@ const ROUTES: ReadonlyArray<{ id: Route; label: string; milestone: string }> = [
 export default function App() {
   const [route, setRoute] = useState<Route>('dashboard');
 
-  // No persisted state yet — the Dexie layer lands in M1. Zero is honest.
-  const dp = 0;
+  // DP is never stored as a running total — it is always the sum of the deeds
+  // ledger, which is what makes "idle can never outpace real work" checkable.
+  const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
   const { level, dpIntoLevel, dpForNext, progress } = levelFromDp(dp);
   const tier = tierForLevel(level);
   const tierTitle = TIERS.find((t) => t.tier === tier)?.title ?? 'Squire';
@@ -28,7 +34,7 @@ export default function App() {
           <h1 className="font-mono text-[13px] tracking-tight">
             clanker<span className="text-accent">.</span>tracker
           </h1>
-          <span className="font-mono text-[10px] text-faint">v0.0.1 · M0</span>
+          <span className="font-mono text-[10px] text-faint">v0.0.1 · M1</span>
         </div>
       </header>
 
@@ -70,7 +76,15 @@ export default function App() {
       </section>
 
       <main className="flex-1 overflow-y-auto p-3">
-        {route === 'dashboard' ? <Dashboard /> : <Placeholder route={route} />}
+        {route === 'dashboard' ? (
+          <Dashboard />
+        ) : route === 'profile' ? (
+          <Profile />
+        ) : route === 'scan' ? (
+          <Scan />
+        ) : (
+          <Placeholder route={route} />
+        )}
       </main>
     </div>
   );
@@ -99,7 +113,7 @@ function Dashboard() {
 
       <ul className="space-y-1 font-mono text-[10px] text-faint">
         <li>M0 · scaffold, manifest, economy ✓</li>
-        <li>M1 · resume parse → profile → ATS scan</li>
+        <li>M1 · resume parse → profile → ATS scan ✓</li>
         <li>M2 · autofill core</li>
         <li>M3 · tracker — usable daily from here</li>
       </ul>
