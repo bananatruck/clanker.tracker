@@ -5,6 +5,7 @@ import { totalDp } from '@/lib/db/repo';
 import Profile from './views/Profile';
 import Scan from './views/Scan';
 import Fill from './views/Fill';
+import Tracker from './views/Tracker';
 
 type Route =
   | 'dashboard'
@@ -27,8 +28,8 @@ const ROUTES: ReadonlyArray<{ id: Route; label: string; milestone: string }> = [
   { id: 'settings', label: 'Settings', milestone: 'M0' },
 ];
 
-export default function App() {
-  const [route, setRoute] = useState<Route>('dashboard');
+export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
+  const [route, setRoute] = useState<Route>(initialRoute ?? 'dashboard');
 
   // DP is never stored as a running total — it is always the sum of the deeds
   // ledger, which is what makes "idle can never outpace real work" checkable.
@@ -44,7 +45,7 @@ export default function App() {
           <h1 className="font-mono text-[13px] tracking-tight">
             clanker<span className="text-accent">.</span>tracker
           </h1>
-          <span className="font-mono text-[10px] text-faint">v0.0.1 · M2</span>
+          <span className="font-mono text-[10px] text-faint">v0.0.1 · M3</span>
         </div>
       </header>
 
@@ -94,6 +95,8 @@ export default function App() {
           <Scan />
         ) : route === 'fill' ? (
           <Fill />
+        ) : route === 'tracker' ? (
+          <Tracker />
         ) : (
           <Placeholder route={route} />
         )}
@@ -127,7 +130,8 @@ function Dashboard() {
         <li>M0 · scaffold, manifest, economy ✓</li>
         <li>M1 · resume parse → profile → ATS scan ✓</li>
         <li>M2 · autofill core ✓</li>
-        <li>M3 · tracker — usable daily from here</li>
+        <li>M3 · tracker, board, CSV, DP counter ✓</li>
+        <li>M4 · cover letters — grounded in the evidence table</li>
       </ul>
     </div>
   );

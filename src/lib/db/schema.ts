@@ -96,6 +96,14 @@ export class ClankerDB extends Dexie {
       deeds: '++id, deed, at',
       settings: 'key',
     });
+
+    // v2 (M3): the tracker needs to ask "what has this application already
+    // banked?" on every status change, because a deed is awarded once per
+    // application, ever — dragging a card back and forward must not pay twice.
+    // That question is a lookup by applicationId, so it needs an index.
+    this.version(2).stores({
+      deeds: '++id, deed, at, applicationId',
+    });
   }
 }
 

@@ -3,10 +3,17 @@
  * pure module that can be unit-tested without an IndexedDB, and these
  * functions exist only to move it in and out of storage.
  */
-import { db, type Application, type DeedRecord, type QuestionAnswer } from './schema';
+import {
+  db,
+  type Application,
+  type ApplicationStatus,
+  type DeedRecord,
+  type QuestionAnswer,
+} from './schema';
 import { PRIMARY_PROFILE_ID, type ContactKey, type ResumeProfile } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
 import { questionHash, normalizeQuestion } from '@/lib/fill/normalize';
+import { deedsToAward } from '@/lib/tracker/funnel';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
 
@@ -92,6 +99,99 @@ export async function saveApplication(app: Application): Promise<void> {
 
 export function recentApplications(limit = 50): Promise<Application[]> {
   return db.applications.orderBy('appliedAt').reverse().limit(limit).toArray();
+}
+
+export function allApplications(): Promise<Application[]> {
+  return db.applications.orderBy('appliedAt').reverse().toArray();
+}
+
+export function getApplication(id: string): Promise<Application | undefined> {
+  return db.applications.get(id);
+}
+
+/** Deeds this application has already banked. The anti-farming key. */
+export async function bankedDeeds(applicationId: string): Promise<Deed[]> {
+  const rows = await db.deeds.where('applicationId').equals(applicationId).toArray();
+  return rows.map((r) => r.deed);
+}
+
+/**
+ * Log a new application and bank the deed for it.
+ *
+ * Called automatically after a submitted fill, and manually from the board for
+ * everything filled in by hand — plenty of applications are an email, and a
+ * tracker that only counts the ones this tool touched would be lying about
+ * the size of the crusade.
+ */
+export async function logApplication(
+  init: Omit<Application, 'id' | 'status' | 'appliedAt' | 'updatedAt'> &
+    Partial<Pick<Application, 'id' | 'status' | 'appliedAt'>>,
+  opts: { rally?: RallyGrade } = {},
+): Promise<Application> {
+  const now = Date.now();
+  const app: Application = {
+    id: init.id ?? crypto.randomUUID(),
+    company: init.company,
+    role: init.role,
+    url: init.url,
+    ats: init.ats,
+    status: init.status ?? 'applied',
+    appliedAt: init.appliedAt ?? now,
+    updatedAt: now,
+    scanId: init.scanId,
+    notes: init.notes,
+    llmCalls: init.llmCalls,
+  };
+
+  await db.applications.put(app);
+
+  for (const deed of deedsToAward(app.status, [])) {
+    await recordDeed(deed, { rally: opts.rally, applicationId: app.id });
+  }
+
+  return app;
+}
+
+/**
+ * Move an application through the funnel, banking any deed it has not earned
+ * yet.
+ *
+ * The deed is awarded once per application per kind, ever. Dragging a card
+ * back to Applied and forward to Interview again pays nothing the second time
+ * — and going backwards never claws DP back, because nothing in this economy
+ * decays. See lib/tracker/funnel.ts.
+ */
+export async function setApplicationStatus(
+  id: string,
+  status: ApplicationStatus,
+  opts: { rally?: RallyGrade } = {},
+): Promise<number> {
+  const app = await db.applications.get(id);
+  if (!app || app.status === status) return 0;
+
+  await db.applications.update(id, { status, updatedAt: Date.now() });
+
+  let earned = 0;
+  for (const deed of deedsToAward(status, await bankedDeeds(id))) {
+    earned += await recordDeed(deed, { rally: opts.rally, applicationId: id });
+  }
+  return earned;
+}
+
+export async function updateApplication(
+  id: string,
+  patch: Partial<Pick<Application, 'company' | 'role' | 'url' | 'notes'>>,
+): Promise<void> {
+  await db.applications.update(id, { ...patch, updatedAt: Date.now() });
+}
+
+/**
+ * Forget an application. Its deeds stay in the ledger deliberately: you did
+ * the work, and deleting a row from your own tracker is not a reason to take
+ * a level back.
+ */
+export async function deleteApplication(id: string): Promise<void> {
+  await db.applications.delete(id);
 }
 
 /* ------------------------------------------------------------------- runs */
