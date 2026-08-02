@@ -6,6 +6,7 @@ import Profile from './views/Profile';
 import Scan from './views/Scan';
 import Fill from './views/Fill';
 import Tracker from './views/Tracker';
+import Settings from './views/Settings';
 
 type Route =
   | 'dashboard'
@@ -97,6 +98,8 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
           <Fill />
         ) : route === 'tracker' ? (
           <Tracker />
+        ) : route === 'settings' ? (
+          <Settings />
         ) : (
           <Placeholder route={route} />
         )}

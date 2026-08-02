@@ -27,6 +27,12 @@ export default defineConfig({
 
     // Only ATS hosts we have adapters for. The generic fallback runs via
     // activeTab + scripting, so it needs no standing host permission.
+    //
+    // The LLM endpoints are here because tier 5 is a cross-origin fetch from an
+    // extension page, which MV3 blocks without a matching host permission. All
+    // five are listed rather than just the default, since the whole point is
+    // that the user brings whichever key they already have — and a permission
+    // that appears the first time you switch provider reads like a compromise.
     host_permissions: [
       'https://*.greenhouse.io/*',
       'https://*.lever.co/*',
@@ -34,6 +40,11 @@ export default defineConfig({
       'https://*.workable.com/*',
       'https://*.myworkdayjobs.com/*',
       'https://www.linkedin.com/*',
+      'https://generativelanguage.googleapis.com/*',
+      'https://api.anthropic.com/*',
+      'https://api.openai.com/*',
+      'https://openrouter.ai/*',
+      'http://localhost/*',
     ],
 
     side_panel: { default_path: 'sidepanel.html' },

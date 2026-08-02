@@ -170,7 +170,7 @@ Tier 2 is the whole trick. Every field you correct in the review overlay writes 
 
 The claim is checked against your own history, not asserted: the tracker records what every application actually cost and shows you the **median** on the board. Median, not mean — one Workday monster must not be able to make a hundred free Greenhouse fills read as expensive.
 
-Bring your own key — Gemini 2.5 Flash by default (free tier), or Anthropic, OpenAI, OpenRouter, or a local Ollama model. A built-in budget tracker warns at 80% of your daily quota and degrades to deterministic-only filling rather than failing.
+Bring your own key — Gemini 3.6 Flash by default (free tier), or Anthropic, OpenAI, OpenRouter, or a local Ollama model. The model is a text field in **Settings**, because pinned model names retire and a 404 is a confusing way to find out your key was fine all along. A built-in budget tracker warns at 80% of your daily quota and degrades to deterministic-only filling rather than failing.
 
 ---
 

@@ -26,12 +26,19 @@ export interface ProviderInfo {
  * The default is Gemini Flash: its free tier tightened in April 2026 to
  * Flash-only at roughly 250 requests/day, which is still far more than the
  * median day's applications cost — because the median application costs zero.
+ *
+ * Pinned to a concrete version rather than a `-latest` alias. An alias that
+ * silently moves under a resolver whose whole job is deterministic output is a
+ * bad trade — but it does mean this line goes stale: `gemini-2.5-flash` now
+ * returns 404 for keys issued after its retirement, which is a confusing way
+ * to learn your key is fine. The model is editable in Settings for exactly
+ * that reason.
  */
 export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
   gemini: {
     id: 'gemini',
     label: 'Google Gemini',
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-3.6-flash',
     dailyLimit: 250,
     local: false,
     keyUrl: 'https://aistudio.google.com/apikey',
