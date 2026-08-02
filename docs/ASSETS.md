@@ -19,6 +19,7 @@ Crediting is not required by CC0. It is recorded here anyway because these packs
 
 Authored for this project, MIT alongside the code:
 
+- `docs/demo/*.png` — README screenshots, captured from the running extension via `sidepanel.html#/demo`. Not drawn, not composited; regenerate rather than edit.
 - The Tower (King Net And Yahoo's seat)
 - The Glorious Beautiful Orange Capitalist Pig King
 - New Data Centre tileset — racks, cooling fins, status LEDs
