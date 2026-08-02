@@ -4,13 +4,23 @@ import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/
 import { totalDp } from '@/lib/db/repo';
 import Profile from './views/Profile';
 import Scan from './views/Scan';
+import Fill from './views/Fill';
 
-type Route = 'dashboard' | 'profile' | 'scan' | 'tracker' | 'tree' | 'crusade' | 'settings';
+type Route =
+  | 'dashboard'
+  | 'profile'
+  | 'scan'
+  | 'fill'
+  | 'tracker'
+  | 'tree'
+  | 'crusade'
+  | 'settings';
 
 const ROUTES: ReadonlyArray<{ id: Route; label: string; milestone: string }> = [
   { id: 'dashboard', label: 'Dashboard', milestone: 'M0' },
   { id: 'profile', label: 'Profile', milestone: 'M1' },
   { id: 'scan', label: 'Scan', milestone: 'M1' },
+  { id: 'fill', label: 'Fill', milestone: 'M2' },
   { id: 'tracker', label: 'Tracker', milestone: 'M3' },
   { id: 'tree', label: 'Skill Tree', milestone: 'M5' },
   { id: 'crusade', label: 'Crusade', milestone: 'M5' },
@@ -34,7 +44,7 @@ export default function App() {
           <h1 className="font-mono text-[13px] tracking-tight">
             clanker<span className="text-accent">.</span>tracker
           </h1>
-          <span className="font-mono text-[10px] text-faint">v0.0.1 · M1</span>
+          <span className="font-mono text-[10px] text-faint">v0.0.1 · M2</span>
         </div>
       </header>
 
@@ -82,6 +92,8 @@ export default function App() {
           <Profile />
         ) : route === 'scan' ? (
           <Scan />
+        ) : route === 'fill' ? (
+          <Fill />
         ) : (
           <Placeholder route={route} />
         )}
@@ -114,7 +126,7 @@ function Dashboard() {
       <ul className="space-y-1 font-mono text-[10px] text-faint">
         <li>M0 · scaffold, manifest, economy ✓</li>
         <li>M1 · resume parse → profile → ATS scan ✓</li>
-        <li>M2 · autofill core</li>
+        <li>M2 · autofill core ✓</li>
         <li>M3 · tracker — usable daily from here</li>
       </ul>
     </div>
