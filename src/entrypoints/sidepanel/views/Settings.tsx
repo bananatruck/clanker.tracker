@@ -70,7 +70,10 @@ export default function Settings() {
           properties: { ok: { type: 'string' } },
           required: ['ok'],
         },
-        maxTokens: 64,
+        // Not 64. Thinking models spend output tokens on reasoning before they
+        // write anything, and a budget that small is consumed entirely by it —
+        // which surfaced as "empty response" and looked like a bad key.
+        maxTokens: 2048,
       });
       setTest({ kind: 'ok', echo: String(result.data.ok).slice(0, 40) });
     } catch (err) {

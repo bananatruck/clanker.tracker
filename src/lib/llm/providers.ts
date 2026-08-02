@@ -90,7 +90,27 @@ async function callAnthropic<T>(cfg: LlmConfig, req: LlmRequest): Promise<T> {
 /* ------------------------------------------------------------------ gemini */
 
 interface GeminiReply {
-  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  candidates?: Array<{
+    content?: { parts?: Array<{ text?: string; thought?: boolean }> };
+    /** `MAX_TOKENS` here is the difference between "broken" and "too small". */
+    finishReason?: string;
+  }>;
+  usageMetadata?: { thoughtsTokenCount?: number };
+}
+
+/**
+ * The answer, out of a reply that may also contain reasoning.
+ *
+ * Gemini 3 models think by default and return those thoughts as parts in the
+ * same array, so taking `parts[0].text` can hand back a fragment of reasoning
+ * instead of the answer. Parts flagged `thought` are dropped and the rest
+ * joined, since a long structured reply can be split across several.
+ */
+export function geminiText(parts: Array<{ text?: string; thought?: boolean }>): string {
+  return parts
+    .filter((p) => p.thought !== true && typeof p.text === 'string')
+    .map((p) => p.text)
+    .join('');
 }
 
 async function callGemini<T>(cfg: LlmConfig, req: LlmRequest): Promise<T> {
@@ -107,14 +127,42 @@ async function callGemini<T>(cfg: LlmConfig, req: LlmRequest): Promise<T> {
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: stripUnsupported(req.schema),
-        maxOutputTokens: req.maxTokens ?? 4096,
+        // Headroom for reasoning as well as the answer — see the MAX_TOKENS
+        // branch below for why a tight budget fails in a confusing way.
+        maxOutputTokens: req.maxTokens ?? 8192,
       },
     },
     'gemini',
   )) as GeminiReply;
 
-  const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = json.candidates?.[0];
+  const text = geminiText(candidate?.content?.parts ?? []);
+
+  // Thinking tokens are billed against maxOutputTokens, so a budget that looks
+  // generous for the answer can be spent entirely on reasoning — leaving an
+  // empty or truncated reply. Saying so beats "empty response", which sends
+  // you looking at the key.
+  if (candidate?.finishReason === 'MAX_TOKENS' && !isCompleteJson(text)) {
+    const thoughts = json.usageMetadata?.thoughtsTokenCount ?? 0;
+    throw new LlmError(
+      `ran out of output tokens${thoughts ? ` — ${thoughts} of them went on reasoning` : ''}. ` +
+        `Raise maxTokens, or pick a model that thinks less.`,
+      'gemini',
+    );
+  }
+
   return parseReply<T>(text, 'gemini');
+}
+
+/** Cheap completeness check, so a truncated object is not reported as bad JSON. */
+function isCompleteJson(text: string): boolean {
+  if (!text.trim()) return false;
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /* --------------------------------------------------- openai / openrouter */
