@@ -11,7 +11,8 @@
     "postinstall": "wxt prepare",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:fill": "vitest run tests/unit/fill"
+    "test:fill": "vitest run tests/unit/fill",
+    "check:bundle": "node scripts/check-bundle.mjs"
   },
   "keywords": [],
   "author": "",

@@ -20,3 +20,6 @@ jobs:
       - run: pnpm compile
       - run: pnpm test
       - run: pnpm build
+      # A green build is not the same as a loadable extension: both ways we
+      # have shipped an unloadable one failed at "Load unpacked", not here.
+      - run: pnpm check:bundle

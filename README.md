@@ -266,10 +266,18 @@ src/
 git clone https://github.com/bananatruck/clanker.tracker
 cd clanker.tracker
 pnpm install
-pnpm dev              # loads an unpacked extension with HMR
+pnpm build
 ```
 
-Then open the side panel, go to **Settings**, and paste an API key. [Gemini keys are free.](https://aistudio.google.com/apikey)
+Then load it, which Chrome now insists you do by hand:
+
+1. `chrome://extensions`
+2. **Developer mode** on
+3. **Load unpacked** → select `.output/chrome-mv3`
+
+`pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change, since that flag was being used to sideload extensions silently. There is no flag to bring it back; `--disable-features=DisableLoadExtensionCommandLineSwitch` no longer helps on current Chrome. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
+
+Then open the side panel, go to **Settings**, paste an API key, and hit **Test key** — it spends one real call, because a check that only looks at the string cannot catch the failure people actually hit. [Gemini keys are free.](https://aistudio.google.com/apikey)
 
 ```bash
 pnpm test             # unit tests — 200 of them, all green
