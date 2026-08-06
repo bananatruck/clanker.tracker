@@ -28,14 +28,26 @@ export function csvRow(cells: readonly unknown[]): string {
   return cells.map(csvField).join(',');
 }
 
+/**
+ * The header row, named the way the tracker everyone already uses names them.
+ *
+ * "Position" rather than "Role" and "Reference Link" rather than "URL" are not
+ * fussiness: import a CSV into a Notion database whose columns are already
+ * called those and the fields land in the right places instead of arriving as
+ * nine new ones you have to remap by hand.
+ */
 export const APPLICATION_COLUMNS = [
   'Company',
-  'Role',
+  'Position',
   'Status',
-  'Applied',
+  'Application Date',
+  'Salary',
+  'Next Action',
+  'Website',
+  'Contact',
+  'Reference Link',
   'Updated',
   'ATS',
-  'URL',
   'LLM calls',
   'Notes',
 ] as const;
@@ -52,9 +64,13 @@ export function applicationsToCsv(apps: readonly Application[]): string {
         a.role,
         STATUS_LABEL[a.status],
         day(a.appliedAt),
+        a.salary ?? '',
+        a.nextAction ?? '',
+        a.website ?? '',
+        a.contact ?? '',
+        a.url,
         day(a.updatedAt),
         a.ats,
-        a.url,
         a.llmCalls,
         a.notes,
       ]),

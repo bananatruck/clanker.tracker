@@ -48,6 +48,7 @@ export interface Application {
   id: string;
   company: string;
   role: string;
+  /** The posting itself. Notion's "Reference Link" column. */
   url: string;
   ats: AtsId;
   status: ApplicationStatus;
@@ -58,6 +59,27 @@ export interface Application {
   notes: string;
   /** LLM calls this application actually cost. The claim is that it is 0. */
   llmCalls: number;
+
+  /* ------------------------------------------------------------- the intel
+   *
+   * The four columns a job-hunt spreadsheet actually gets used for, which no
+   * autofill run can know: what it pays, what you owe it next, where the
+   * company lives, and who the human on the other end is.
+   *
+   * Optional because every one of them is something you learn *after* sending
+   * — a row that logged itself is complete without them, and a schema that
+   * demanded them at insert time would make logging a chore, which is the one
+   * way a tracker dies.
+   */
+
+  /** As written: "£85k–100k", "$150,000", "competitive". Parsed for rollups. */
+  salary?: string;
+  /** The next thing you owe this application. "Chase recruiter", "OA due Fri". */
+  nextAction?: string;
+  /** The company, not the posting — the posting is `url`. */
+  website?: string;
+  /** Whoever you are actually talking to. Name, email, or both. */
+  contact?: string;
 }
 
 /** The game ledger. DP is only ever derived from rows in here. */
@@ -152,6 +174,16 @@ export class ClankerDB extends Dexie {
     // this table is always "what did we write for this posting?".
     this.version(4).stores({
       letters: 'id, scanId, createdAt',
+    });
+
+    // v5: the tracker's four intel columns. No `stores` change is needed —
+    // Dexie only indexes what you name, and none of these are ever queried by
+    // value; they are read whole with the row. The bump is declared anyway so
+    // the version history stays a readable account of what the shape did, and
+    // `updatedAt` gets an index because the quiet-application sweep now sorts
+    // on it rather than filtering the whole table in memory.
+    this.version(5).stores({
+      applications: 'id, company, status, appliedAt, updatedAt, scanId',
     });
   }
 }

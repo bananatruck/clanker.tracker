@@ -22,6 +22,7 @@ import {
 import type { ScanResult } from '@/types/ats';
 import { questionHash, normalizeQuestion } from '@/lib/fill/normalize';
 import { deedsToAward } from '@/lib/tracker/funnel';
+import { intelToAward } from '@/lib/tracker/table';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
 
@@ -225,6 +226,10 @@ export async function logApplication(
     scanId: init.scanId,
     notes: init.notes,
     llmCalls: init.llmCalls,
+    ...(init.salary === undefined ? {} : { salary: init.salary }),
+    ...(init.nextAction === undefined ? {} : { nextAction: init.nextAction }),
+    ...(init.website === undefined ? {} : { website: init.website }),
+    ...(init.contact === undefined ? {} : { contact: init.contact }),
   };
 
   await db.applications.put(app);
@@ -262,11 +267,38 @@ export async function setApplicationStatus(
   return earned;
 }
 
+/**
+ * Edit a row in the tracker table, and bank the intel deed if that completed it.
+ *
+ * The return value is the DP the edit earned, so the table can show it the way
+ * the board shows a status move. Zero is the overwhelmingly common case and is
+ * not a failure — most edits fill in one of four columns.
+ *
+ * The award rule is the same one the funnel uses and for the same reason: the
+ * deed is keyed on what this application has already banked, so filling the
+ * last column, clearing it, and filling it again pays once. Clearing a column
+ * never claws the DP back — you did the research, and deleting a note about it
+ * later is not a reason to take a level away.
+ */
 export async function updateApplication(
   id: string,
-  patch: Partial<Pick<Application, 'company' | 'role' | 'url' | 'notes'>>,
-): Promise<void> {
+  patch: Partial<
+    Pick<
+      Application,
+      'company' | 'role' | 'url' | 'notes' | 'salary' | 'nextAction' | 'website' | 'contact'
+    >
+  >,
+): Promise<number> {
+  const before = await db.applications.get(id);
+  if (!before) return 0;
+
   await db.applications.update(id, { ...patch, updatedAt: Date.now() });
+
+  let earned = 0;
+  for (const deed of intelToAward({ ...before, ...patch }, await bankedDeeds(id))) {
+    earned += await recordDeed(deed, { applicationId: id });
+  }
+  return earned;
 }
 
 /**

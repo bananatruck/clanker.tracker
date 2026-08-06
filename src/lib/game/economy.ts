@@ -19,14 +19,23 @@
  */
 
 /** What the player actually did. The only sources of DP. */
-export type Deed = 'application' | 'oa' | 'interview' | 'offer';
+export type Deed = 'application' | 'oa' | 'interview' | 'offer' | 'intel';
 
-/** DP awarded per deed, and what it means in Clankerdom. */
+/**
+ * DP awarded per deed, and what it means in Clankerdom.
+ *
+ * `intel` is the one deed not on the funnel: filling a tracker row out by hand
+ * — the salary, the next action, the company, the human — which is real work
+ * nobody does for you and which no autofill run can know. It is worth half an
+ * application because that is roughly what it costs, and it is denominated in
+ * the same unit as everything else rather than in a new one.
+ */
 export const DEEDS = {
   application: { dp: 2, homes: 2, label: '2 family homes razed' },
   oa: { dp: 30, villages: 1, label: '1 village taken' },
   interview: { dp: 100, rivers: 1, label: '1 river dried' },
   offer: { dp: 0, label: 'The Adoption' },
+  intel: { dp: 1, homes: 1, label: '1 family home razed' },
 } as const satisfies Record<
   Deed,
   // The homes/villages/rivers counts are the narrative half of each deed —

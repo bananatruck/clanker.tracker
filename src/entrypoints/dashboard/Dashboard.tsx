@@ -84,9 +84,21 @@ export default function Dashboard({ initial }: { initial?: Section }) {
         ))}
       </nav>
 
-      <div className="mx-auto grid max-w-[1180px] gap-4 p-4 lg:grid-cols-[280px_1fr]">
+      {/*
+        Applications is the one section that drops the rail.
+
+        The rail answers "who am I", which every other screen is a variation
+        on. The table answers "what have I sent", and it has nine columns that
+        all earn their place — squeezing it into 850 pixels to keep a profile
+        card visible beside it would be preferring the furniture to the work.
+      */}
+      <div
+        className={`mx-auto grid gap-4 p-4 ${
+          section === 'tracker' ? 'max-w-[1400px]' : 'max-w-[1180px] lg:grid-cols-[280px_1fr]'
+        }`}
+      >
         {/* The rail. Who you are, and how far the crusade has gone. */}
-        <aside className="flex flex-col gap-3">
+        <aside className={`flex flex-col gap-3 ${section === 'tracker' ? 'hidden' : ''}`}>
           <Window title="You">
             <p className="text-[17px] leading-tight">{name}</p>
             {profile && (
@@ -142,7 +154,7 @@ export default function Dashboard({ initial }: { initial?: Section }) {
           ) : section === 'profile' ? (
             <Profile />
           ) : section === 'tracker' ? (
-            <Tracker />
+            <Tracker wide />
           ) : section === 'crusade' ? (
             <Crusade />
           ) : (

@@ -57,6 +57,49 @@ describe('the export', () => {
     expect(applicationsToCsv([app()])).toContain('2026-07-14');
   });
 
+  /**
+   * The header is named after the tracker people already keep, so importing
+   * this file into an existing Notion database maps the columns instead of
+   * arriving as thirteen new ones to remap by hand.
+   */
+  it('uses the source tracker column names', () => {
+    const header = applicationsToCsv([]).trimEnd().split(',');
+    expect(header.slice(0, 9)).toEqual([
+      'Company',
+      'Position',
+      'Status',
+      'Application Date',
+      'Salary',
+      'Next Action',
+      'Website',
+      'Contact',
+      'Reference Link',
+    ]);
+  });
+
+  it('exports the researched columns', () => {
+    const csv = applicationsToCsv([
+      app({
+        salary: '£95k–£115k',
+        nextAction: 'Chase recruiter',
+        website: 'acme.example',
+        contact: 'Ada Okafor',
+      }),
+    ]);
+
+    expect(csv).toContain('Chase recruiter');
+    expect(csv).toContain('acme.example');
+    expect(csv).toContain('Ada Okafor');
+    // A salary with a comma in it must still be one cell.
+    expect(applicationsToCsv([app({ salary: '£95,000' })])).toContain('"£95,000"');
+  });
+
+  it('writes an unresearched row as blanks, not as "undefined"', () => {
+    const row = applicationsToCsv([app()]).trimEnd().split('\r\n')[1]!;
+    expect(row).not.toContain('undefined');
+    expect(row).toContain(',,,,');
+  });
+
   it('exports an empty history as a header alone, not an error', () => {
     expect(applicationsToCsv([]).trimEnd()).toBe(APPLICATION_COLUMNS.join(','));
   });

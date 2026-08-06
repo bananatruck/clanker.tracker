@@ -16,7 +16,7 @@
  */
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,12 +38,32 @@ const PROBE_HEIGHT = 1000;
  * important one, because it is the step between a resolver guess and a
  * submitted application.
  */
-const SHOTS = ['dashboard', 'profile', 'scan', 'fill', 'running', 'tracker', 'crusade', 'settings', 'overlay'];
+const SHOTS = [
+  'dashboard', 'profile', 'scan', 'fill', 'running',
+  'tracker', 'tracker-table', 'crusade', 'settings', 'overlay',
+];
+
+/**
+ * Screens that are a route plus a click.
+ *
+ * The panel's tracker opens on the board, which is the right default for 420
+ * pixels and the wrong thing to photograph twice. Rather than add a URL for
+ * every internal toggle — routes that exist only to be screenshotted are
+ * routes that rot — the shot drives the actual control a user would press.
+ */
+const ROUTE_OF = { 'tracker-table': 'tracker' };
+const CLICK = {
+  'tracker-table':
+    `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'table')?.click()`,
+};
 
 /** The full-page dashboard is its own document at its own width. */
 const PAGES = [
   { name: 'page-home', url: 'dashboard.html#/demo', width: 1180, height: 1000 },
   { name: 'page-profile', url: 'dashboard.html#/demo/profile', width: 1180, height: 1400 },
+  // The table wants every column visible at once, which is the whole argument
+  // for it living in a tab rather than a 420-pixel panel.
+  { name: 'page-tracker', url: 'dashboard.html#/demo/tracker', width: 1440, height: 1010 },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -138,6 +158,20 @@ if (!existsSync(join(SERVE, 'sidepanel.html'))) {
   throw new Error('No build to photograph. Run `pnpm build` first.');
 }
 
+/**
+ * A fresh profile, every run.
+ *
+ * The demo seeder refuses to touch a database that already has applications in
+ * it — correct, since it must never overwrite a real user's board — which
+ * means a profile kept between runs photographs whatever was seeded the first
+ * time this ever ran. That silently defeats the entire point of taking these
+ * pictures from the real app: the screenshots stop tracking the code and start
+ * being an old database with a new UI drawn over it. Cheap to throw away,
+ * expensive to trust.
+ */
+const PROFILE = join(ROOT, 'node_modules/.cache/shoot-profile');
+rmSync(PROFILE, { recursive: true, force: true });
+
 const server = await serve();
 const chrome = spawn(
   findChrome(),
@@ -148,7 +182,7 @@ const chrome = spawn(
     '--hide-scrollbars',
     `--window-size=${WIDTH},${PROBE_HEIGHT}`,
     `--remote-debugging-port=${DEBUG_PORT}`,
-    `--user-data-dir=${join(ROOT, 'node_modules/.cache/shoot-profile')}`,
+    `--user-data-dir=${PROFILE}`,
     'about:blank',
   ],
   { stdio: 'ignore' },
@@ -197,6 +231,13 @@ for (const route of SHOTS) {
       if (await cdp.eval(painted)) break;
     }
     await sleep(700); // sprites are drawn to canvas in an effect, a frame later
+
+    // Re-applied after a reload, so growing the frame to fit does not quietly
+    // put the screen back on its default tab.
+    if (CLICK[route]) {
+      await cdp.eval(CLICK[route]);
+      await sleep(300);
+    }
   };
 
   // How tall the content actually is, so the image is cropped to the screen
@@ -222,7 +263,7 @@ for (const route of SHOTS) {
   // frame from the start or it photographs mid-scroll.
   await size(route === 'overlay' ? 1600 : (fixed ?? PROBE_HEIGHT));
   await cdp.send('Page.navigate', {
-    url: `http://localhost:${PORT}/sidepanel.html#/demo/${route}`,
+    url: `http://localhost:${PORT}/sidepanel.html#/demo/${ROUTE_OF[route] ?? route}`,
   });
   await settle();
 

@@ -12,7 +12,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-460%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-516%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -56,13 +56,13 @@ replaced was 4.4:1.
 <tr>
 <td width="25%"><img src="./docs/demo/running.png" alt="A fill in progress: the battle scene above, and below it a checklist ticking off each field as it is answered."></td>
 <td width="25%"><img src="./docs/demo/overlay.png" alt="The review overlay: fourteen fields, each labelled with the tier that answered it."></td>
-<td width="25%"><img src="./docs/demo/tracker.png" alt="The tracker board: fourteen applications grouped by funnel stage."></td>
+<td width="25%"><img src="./docs/demo/tracker-table.png" alt="The tracker table in the side panel: company, position, status and date, with rollups underneath."></td>
 <td width="25%"><img src="./docs/demo/crusade.png" alt="The Crusade tab: a Dragon Quest battle screen whose backdrop is the current act."></td>
 </tr>
 <tr>
 <td align="center"><b>Filling</b><br><sub>every field, ticked as it lands</sub></td>
 <td align="center"><b>Review</b><br><sub>the step before submission</sub></td>
-<td align="center"><b>Tracker</b><br><sub>honest about its own funnel</sub></td>
+<td align="center"><b>Tracker</b><br><sub>a spreadsheet you can edit</sub></td>
 <td align="center"><b>Crusade</b><br><sub>the act you are standing in</sub></td>
 </tr>
 </table>
@@ -89,8 +89,8 @@ It carries no upgrade card, no match score, no recruiter-visibility toggle and n
 one of its five sections is a place your own data lives.
 
 The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
-[Fill](./docs/demo/fill.png), [Settings](./docs/demo/settings.png) — are in
-[`docs/demo/`](./docs/demo/).
+[Fill](./docs/demo/fill.png), [Board](./docs/demo/tracker.png),
+[Settings](./docs/demo/settings.png) — are in [`docs/demo/`](./docs/demo/).
 
 ---
 
@@ -243,9 +243,12 @@ Every point comes from a **real action**. There is no clicker currency, no daily
 | What you did | What it did in Clankerdom | Devastation Points |
 |---|---|---|
 | Sent an application | 2 family homes razed | **2 DP** |
+| Researched a row in the tracker | 1 family home razed | **1 DP** |
 | Completed an OA | 1 village taken | **30 DP** |
 | Landed an interview | 1 river dried | **100 DP** |
 | **Accepted an offer** | **The Adoption** | *ending* |
+
+The second row is the only deed that is not a funnel event: filling in a tracker row's salary, next action, website and contact. It pays because it is real work nobody else does for you, and it pays *half* an application because that is roughly what it costs.
 
 ```
 levelCost(n) = n <= 10 ? 10 : ceil(10 * 1.07 ** (n - 10))
@@ -325,11 +328,39 @@ That trigger is deliberate and it is not the review overlay's Fill button. Accep
 
 Anything you sent by hand or over email you log yourself, in two fields. A tracker that only counted what this extension touched would understate the size of the crusade, which is the one thing it must never do.
 
+### The spreadsheet
+
+<img src="./docs/demo/page-tracker.png" alt="The applications table: nine columns across fourteen rows, with a footer showing count, date range and highest salary." width="900">
+
+Everyone running a serious hunt already keeps one of these. The reason is not that a board is bad — a board answers *what stage is this in*, and a table answers everything else: what does it pay, what do I owe it, who am I actually talking to. Those are the questions you have at 11pm on a Sunday deciding what to chase.
+
+So both exist, over one store. Editing a cell moves the card; moving the card changes the row. There is no sync step because there is nothing to sync.
+
+| Column | Where it comes from |
+|---|---|
+| Company · Position · Reference Link | Read off the posting when the application logged itself |
+| Status · Applied | The funnel, shared with the board |
+| **Salary** | You. Free text — `£95k–£115k`, `$150,000`, `£450/day`, `competitive` |
+| **Next action** | You. The one thing this application is waiting on |
+| **Website** · **Contact** | You. The company, and the human on the other end |
+
+The four in bold are the ones no autofill run can know, and filling all four on a row banks **1 DP**, once, by the same rule every other deed uses. Four pips beside the company name fill as you go, so the reward is legible before you earn it rather than announced after.
+
+The footer carries the three rollups that actually carry information — **COUNT** of rows, **RANGE** across the application dates, **MAX** salary with the company holding it. The maximum is annualised before it is compared, so a £450 day rate is correctly read as £117k and a £95k salary does not beat it. It takes the *top* of a range, because the best thing about an £85k–£110k posting is £110k. Salaries it cannot parse are skipped rather than guessed at: `competitive` and `DOE` are what postings genuinely say, and a tracker that refuses to accept the truth gets abandoned. ([`lib/tracker/table.ts`](./src/lib/tracker/table.ts))
+
+<img src="./docs/demo/tracker-table.png" alt="The same table in the 420-pixel side panel, showing six columns with the rest a scroll away." width="300" align="right">
+
+The panel gets the same table with the four widest columns dropped, not with all nine squeezed — nine columns in 420 pixels is a table you scroll forever and read nothing from. The dashboard, which has the width, shows the lot and drops the profile rail instead: on this one screen, *who am I* earns nothing and the table needs every pixel.
+
+**Export** is RFC 4180 CSV with those column names exactly — `Company`, `Position`, `Application Date`, `Reference Link` — so importing it into a Notion database that already has them maps the fields instead of arriving as thirteen new ones to remap by hand. Leading `=`, `+`, `-` and `@` are neutralised on the way out, because a company name comes off a page we do not control and a spreadsheet evaluates a formula the moment it opens the file.
+
+<br clear="right">
+
 ### The ledger rules
 
 | Rule | Why |
 |---|---|
-| A deed is banked **once per application, ever** | Dragging a card back and forth is not four interviews. The award is keyed on what the application has already banked, not on the move. |
+| A deed is banked **once per application, ever** | Dragging a card back and forth is not four interviews. The award is keyed on what the application has already banked, not on the move. The researched columns work the same way: fill the last one, clear it, fill it again — one payment. |
 | Skipping a stage banks only what you did | Applied → Interview is extremely common — most companies have no OA. It banks the river, not the village. You did not sit one. |
 | Moving backwards **takes nothing back** | Nothing in this economy decays. You did the work; the outcome was never the part you controlled. |
 | A rejection earns nothing and costs nothing | It is not a deed. The villages stay razed. |

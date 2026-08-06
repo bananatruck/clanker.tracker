@@ -32,8 +32,17 @@ import {
 } from '@/lib/tracker/funnel';
 import { applicationsToCsv, csvFilename, downloadCsv } from '@/lib/tracker/csv';
 import { costStats, funnelStats } from '@/lib/tracker/stats';
+import { INTEL_FIELDS } from '@/lib/tracker/table';
+import TrackerTable, { type IntelFlash } from '@/ui/tracker/Table';
 
-type View = 'board' | 'list';
+/**
+ * Three readings of the same rows.
+ *
+ * `board` answers "what stage is this in", `table` answers everything else,
+ * and `list` is the glance. None of them is a separate store — editing a cell
+ * in the table moves the card on the board, because they are the same row.
+ */
+type View = 'board' | 'table' | 'list';
 
 /**
  * What a move just earned.
@@ -47,17 +56,26 @@ export interface Flash {
   status: ApplicationStatus;
 }
 
-export default function Tracker() {
+export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
   const apps = useLiveQuery(() => allApplications(), [], undefined);
-  const [view, setView] = useState<View>('board');
+  // The table is the better default where there is room for it; the panel
+  // opens on the board, which is what 420 pixels is actually good for.
+  const [view, setView] = useState<View>(wide ? 'table' : 'board');
   const [adding, setAdding] = useState(false);
   const [flash, setFlash] = useState<Flash | null>(null);
+  const [intel, setIntel] = useState<IntelFlash | null>(null);
 
   useEffect(() => {
     if (!flash) return;
     const timer = setTimeout(() => setFlash(null), 6000);
     return () => clearTimeout(timer);
   }, [flash]);
+
+  useEffect(() => {
+    if (!intel) return;
+    const timer = setTimeout(() => setIntel(null), 6000);
+    return () => clearTimeout(timer);
+  }, [intel]);
 
   const stats = useMemo(() => (apps ? funnelStats(apps) : null), [apps]);
   const cost = useMemo(() => (apps ? costStats(apps) : null), [apps]);
@@ -72,7 +90,7 @@ export default function Tracker() {
     <div className="space-y-3">
       <div className="flex items-center gap-1">
         <div className="flex border-2 border-frame-dim">
-          {(['board', 'list'] as const).map((v) => (
+          {(['board', 'table', 'list'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -107,11 +125,21 @@ export default function Tracker() {
       {stats && cost && apps.length > 0 && <Summary stats={stats} cost={cost} />}
 
       {flash && <FlashBanner flash={flash} />}
+      {intel && <IntelBanner flash={intel} />}
 
       {apps.length === 0 ? (
         <Empty />
       ) : view === 'board' ? (
         <Board apps={apps} onMoved={setFlash} />
+      ) : view === 'table' ? (
+        <>
+          <TrackerTable apps={apps} wide={wide} onEarned={setIntel} />
+          <p className="font-mono text-[12px] text-faint">
+            Click any cell to edit. Fill all {INTEL_FIELDS.length} researched columns on a row —
+            salary, next action, website, contact — and it banks{' '}
+            <span className="text-gold">{DEEDS.intel.dp} DP</span>, once.
+          </p>
+        </>
       ) : (
         <List apps={apps} />
       )}
@@ -214,6 +242,21 @@ function FlashBanner({ flash }: { flash: Flash }) {
           : deedForStatus(flash.status) === null
             ? 'A rejection earns nothing and takes nothing back. The villages stay razed.'
             : 'Already banked — a deed pays once.'}
+      </p>
+    </section>
+  );
+}
+
+/** What researching a row paid. Same shape of reward as a funnel move. */
+function IntelBanner({ flash }: { flash: IntelFlash }) {
+  return (
+    <section className="border border-gold-dim bg-gold-dim/15 px-2.5 py-2">
+      <p className="font-mono text-[13px] text-gold">
+        +{flash.dp} DP · {DEEDS.intel.label}
+      </p>
+      <p className="mt-0.5 text-[13px] leading-snug text-muted">
+        {flash.company} is fully scouted. Nothing about that row was something the autofill could
+        have known.
       </p>
     </section>
   );
