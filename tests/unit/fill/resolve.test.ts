@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { matchLabel, matchOption, type FillContext } from '@/lib/fill/labels';
-import { resolveFields, candidatesFor, tierBreakdown } from '@/lib/fill/resolve';
-import { cosine, resolveBySimilarity, type Embedder } from '@/lib/fill/similarity';
+import { resolveFields, tierBreakdown } from '@/lib/fill/resolve';
+import { diceSimilarity, resolveLexically } from '@/lib/fill/lexical';
+import { autocompleteToken, autocompleteValue } from '@/lib/fill/autocomplete';
 import { applyValue, highlight, clearHighlight } from '@/lib/fill/apply';
 import { detectAts, knownFieldFor } from '@/lib/fill/adapters';
 import { harvestForm, findApplicationForm } from '@/lib/fill/harvest';
@@ -114,47 +115,76 @@ describe('option matching', () => {
   });
 });
 
-describe('tier 4 similarity', () => {
-  it('computes cosine and handles degenerate vectors', () => {
-    expect(cosine(Float32Array.from([1, 0]), Float32Array.from([1, 0]))).toBeCloseTo(1);
-    expect(cosine(Float32Array.from([1, 0]), Float32Array.from([0, 1]))).toBeCloseTo(0);
-    expect(cosine(Float32Array.from([0, 0]), Float32Array.from([1, 0]))).toBe(0);
-    expect(cosine(Float32Array.from([1]), Float32Array.from([1, 0]))).toBe(0);
+describe('tier 4 fuzzy matching', () => {
+  it('scores identical strings 1 and unrelated ones near 0', () => {
+    expect(diceSimilarity('first name', 'first name')).toBe(1);
+    expect(diceSimilarity('first name', 'zzzzzz')).toBe(0);
   });
 
-  /** Scores the first candidate high, everything else low. */
-  const fakeEmbedder = (winner: string): Embedder => ({
-    async embed(texts) {
-      return texts.map((t) =>
-        t === texts[0] || t === winner ? Float32Array.from([1, 0]) : Float32Array.from([0, 1]),
-      );
-    },
+  it('absorbs the typos and punctuation real forms are full of', () => {
+    expect(resolveLexically('E-Mail Addres', ctx)?.value).toBe('ada@example.com');
+    expect(resolveLexically('Frst Name', ctx)?.value).toBe('Ada');
+    expect(resolveLexically('Phone No.', ctx)?.value).toBe('+44 20 7946 0958');
   });
 
-  it('picks the best candidate above the threshold', async () => {
-    const match = await resolveBySimilarity(
-      'where do you currently live',
-      [
-        { text: 'city location where you live', value: 'London, UK' },
-        { text: 'email address', value: 'ada@example.com' },
-      ],
-      fakeEmbedder('city location where you live'),
-    );
-    expect(match?.value).toBe('London, UK');
+  it('finds the phrase inside a wordier label', () => {
+    expect(resolveLexically('What is your first name?', ctx)?.value).toBe('Ada');
   });
 
-  it('returns null when nothing clears the threshold', async () => {
-    const match = await resolveBySimilarity(
-      'favourite dinosaur',
-      [{ text: 'email address', value: 'ada@example.com' }],
-      fakeEmbedder('nothing matches this'),
-    );
-    expect(match).toBeNull();
+  it('escalates a transposition rather than guessing at it', () => {
+    // Swapping two letters destroys four bigrams, so "emial" scores 0.25.
+    // Being sure or silent is the contract; tier 5 can have this one.
+    expect(resolveLexically('Emial', ctx)).toBeNull();
   });
 
-  it('ignores candidates the profile has no value for', () => {
-    const empty = candidatesFor({ ...ctx, preferences: emptyPreferences() });
-    expect(empty.some((c) => c.text.includes('pronouns') && c.value !== '')).toBe(false);
+  it('refuses to guess at a question it does not recognise', () => {
+    // The tier that answers confidently and wrongly is worse than no tier:
+    // the user is one click from submitting whatever it wrote.
+    expect(resolveLexically('What is your favourite dinosaur?', ctx)).toBeNull();
+    expect(resolveLexically('Describe a time you failed', ctx)).toBeNull();
+    expect(resolveLexically('', ctx)).toBeNull();
+  });
+
+  it('keeps the closest confusable pair apart', () => {
+    // "last name" ~ "first name" scores 0.667, the highest false pair there is.
+    // If this ever starts matching, the threshold has been nudged too low.
+    expect(resolveLexically('Last name', ctx)?.value).toBe('Lovelace');
+    expect(resolveLexically('First name', ctx)?.value).toBe('Ada');
+  });
+
+  it('does not confuse two fields that share a word', () => {
+    expect(resolveLexically('Company name', ctx)?.value).not.toBe('Ada');
+    expect(resolveLexically('School name', ctx)?.value).not.toBe('Ada Lovelace');
+  });
+
+  it('skips candidates the profile has no value for', () => {
+    // Pronouns are empty in this context, so the tier must not claim the field.
+    expect(resolveLexically('Pronouns', ctx)).toBeNull();
+  });
+});
+
+describe('tier 1 autocomplete', () => {
+  it('reads the field-naming token past section and mode prefixes', () => {
+    expect(autocompleteToken('section-blue shipping given-name')).toBe('given-name');
+    expect(autocompleteToken('email')).toBe('email');
+  });
+
+  it('treats on/off as saying nothing about the field', () => {
+    expect(autocompleteToken('off')).toBeNull();
+    expect(autocompleteToken('on')).toBeNull();
+    expect(autocompleteToken('  ')).toBeNull();
+  });
+
+  it('answers straight from the profile when the site states the field', () => {
+    expect(autocompleteValue('given-name', ctx)).toBe('Ada');
+    expect(autocompleteValue('family-name', ctx)).toBe('Lovelace');
+    expect(autocompleteValue('tel', ctx)).toBe('+44 20 7946 0958');
+    expect(autocompleteValue('organization', ctx)).toBe('Acme Corp');
+  });
+
+  it('returns null for a token we hold nothing for, so the chain carries on', () => {
+    expect(autocompleteValue('cc-number', ctx)).toBeNull();
+    expect(autocompleteValue('bday', ctx)).toBeNull();
   });
 });
 

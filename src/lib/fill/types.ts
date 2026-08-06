@@ -53,7 +53,7 @@ export const TIER_LABEL: Record<ResolverTier, string> = {
   1: 'site adapter',
   2: 'answer memory',
   3: 'label match',
-  4: 'similarity',
+  4: 'fuzzy match',
   5: 'model',
 };
 

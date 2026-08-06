@@ -14,7 +14,6 @@ import { findApplicationForm, harvestForm, type FieldElement } from './harvest';
 import { batchModel } from './model';
 import { clearOverlays, showReview, type ReviewRow } from './overlay';
 import { resolveFields, tierBreakdown, type AnswerMemory } from './resolve';
-import { loadLocalEmbedder } from './similarity';
 import type { FillContext } from './labels';
 import type { RunRecord } from './autosubmit';
 import type { HarvestedField, Resolution } from './types';
@@ -25,8 +24,6 @@ export interface RunHooks {
   remember(question: string, answer: string): Promise<void>;
   /** Called with the completed run so the auto-submit gate can score it. */
   record(run: RunRecord): Promise<void>;
-  /** Tier 4 is optional; pass false to skip loading the model entirely. */
-  useEmbedder?: boolean;
 }
 
 export interface RunOutcome {
@@ -62,14 +59,10 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   const { fields, elements } = harvestForm(form);
   const { hits, ats } = adapterHitsFor(elements, doc, location.hostname);
 
-  // Tier 4 is best-effort: if the model will not load we simply escalate.
-  const embedder = hooks.useEmbedder === false ? null : await loadLocalEmbedder();
-
   const plan = await resolveFields(fields, {
     ctx,
     adapterHits: hits,
     memory: hooks.memory,
-    embedder,
     model: batchModel,
   });
 

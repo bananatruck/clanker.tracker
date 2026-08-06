@@ -28,7 +28,8 @@ import type {
 import { resolutionConfidence } from './types';
 import { matchLabel, matchOption, type FillContext } from './labels';
 import { questionHash } from './normalize';
-import { resolveBySimilarity, type Candidate, type Embedder } from './similarity';
+import { autocompleteValue } from './autocomplete';
+import { resolveLexically } from './lexical';
 import type { KnownField } from './adapters';
 
 /** Tier 2 lookup, injected so the chain has no direct Dexie dependency. */
@@ -49,7 +50,6 @@ export interface ResolveDeps {
   /** Tier 1: field id → known profile field, precomputed from the adapter. */
   adapterHits?: Map<string, KnownField>;
   memory?: AnswerMemory;
-  embedder?: Embedder | null;
   model?: BatchModel | null;
 }
 
@@ -78,36 +78,6 @@ function knownFieldValue(field: KnownField, ctx: FillContext): string {
     case 'resume':
       return ''; // file inputs are handled outside the value chain
   }
-}
-
-/** What tier 4 compares a label against. */
-export function candidatesFor(ctx: FillContext): Candidate[] {
-  const { contact } = ctx.profile;
-  const { preferences } = ctx;
-
-  return [
-    { text: 'first name given name', value: contact.firstName.value },
-    { text: 'last name surname family name', value: contact.lastName.value },
-    { text: 'full legal name', value: contact.fullName.value },
-    { text: 'email address', value: contact.email.value },
-    { text: 'phone number', value: contact.phone.value },
-    { text: 'city location where you live', value: contact.location.value },
-    { text: 'linkedin profile url', value: contact.linkedin.value },
-    { text: 'github profile url', value: contact.github.value },
-    { text: 'personal website portfolio url', value: contact.website.value },
-    { text: 'authorised to work legally eligible', value: preferences.workAuthorized },
-    { text: 'need visa sponsorship', value: preferences.requiresSponsorship },
-    { text: 'willing to relocate', value: preferences.willingToRelocate },
-    { text: 'salary expectation desired compensation', value: preferences.salaryExpectation },
-    { text: 'notice period when can you start', value: preferences.noticePeriod },
-    { text: 'pronouns', value: preferences.pronouns },
-    { text: 'gender', value: preferences.gender },
-    { text: 'race ethnicity', value: preferences.race },
-    { text: 'veteran status', value: preferences.veteranStatus },
-    { text: 'disability status', value: preferences.disabilityStatus },
-    { text: 'current employer company', value: ctx.profile.experience[0]?.company ?? '' },
-    { text: 'current job title role', value: ctx.profile.experience[0]?.title ?? '' },
-  ];
 }
 
 /**
@@ -150,7 +120,7 @@ export async function resolveFields(
   fields: readonly HarvestedField[],
   deps: ResolveDeps,
 ): Promise<FillPlan> {
-  const { ctx, adapterHits, memory, embedder, model } = deps;
+  const { ctx, adapterHits, memory, model } = deps;
 
   const resolutions: Resolution[] = [];
   const unresolved: UnresolvedField[] = [];
@@ -167,6 +137,14 @@ export async function resolveFields(
       if (value && record(resolutions, field, value, 1)) continue;
     }
 
+    // --- tier 1: the field's own autocomplete attribute ---
+    // Standardised, unambiguous, and stated by the site itself, so it is as
+    // trustworthy as an adapter selector and costs exactly as little.
+    if (field.autocomplete) {
+      const stated = autocompleteValue(field.autocomplete, ctx);
+      if (stated && record(resolutions, field, stated, 1)) continue;
+    }
+
     // --- tier 2: answer memory, the reason a repeat costs nothing ---
     if (memory && field.label) {
       const remembered = await memory.recall(field.label);
@@ -174,14 +152,24 @@ export async function resolveFields(
     }
 
     // --- tier 3: the deterministic label table ---
-    const matched = matchLabel(field.label, ctx);
+    // Tried against every text the field carries, not just the label. A field
+    // whose visible label is "Input 4" is often still `name="first_name"`, and
+    // that costs nothing to read.
+    const texts = [field.label, field.name, field.placeholder].filter(Boolean);
+    let matched: string | null = null;
+    for (const text of texts) {
+      matched = matchLabel(text, ctx);
+      if (matched) break;
+    }
     if (matched && record(resolutions, field, matched, 3)) continue;
 
-    // --- tier 4: local embedding similarity, still free ---
-    if (embedder && field.label) {
-      const similar = await resolveBySimilarity(field.label, candidatesFor(ctx), embedder);
-      if (similar && record(resolutions, field, similar.value, 4)) continue;
+    // --- tier 4: fuzzy surface matching, still free and still instant ---
+    let fuzzy: string | null = null;
+    for (const text of texts) {
+      fuzzy = resolveLexically(text, ctx)?.value ?? null;
+      if (fuzzy) break;
     }
+    if (fuzzy && record(resolutions, field, fuzzy, 4)) continue;
 
     remaining.push(field);
   }
