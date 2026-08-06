@@ -14,7 +14,8 @@
     "test:fill": "vitest run tests/unit/fill",
     "check:bundle": "node scripts/check-bundle.mjs",
     "sprites": "node scripts/render-sprites.mjs",
-    "shots": "node scripts/shoot.mjs"
+    "shots": "node scripts/shoot.mjs",
+    "art": "node scripts/art.mjs"
   },
   "keywords": [],
   "author": "",
