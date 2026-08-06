@@ -41,7 +41,7 @@ export interface ActorArt {
  */
 export const ACTORS: Record<string, ActorArt> = {
   'khlaude-walk': {
-    file: 'Sprites/Hero_Roto.png',
+    file: 'Sprites/hero-khlaude.png',
     row: 2,
     frames: [0, 4],
     fps: 6,
@@ -49,7 +49,7 @@ export const ACTORS: Record<string, ActorArt> = {
     fallback: 'khlaude',
   },
   'khlaude-battle': {
-    file: 'Sprites/Hero_Roto.png',
+    file: 'Sprites/hero-khlaude.png',
     row: -1,
     fps: 5,
     height: 168,
@@ -61,7 +61,7 @@ export const ACTORS: Record<string, ActorArt> = {
    * because cast.md says he was the last line of defence and not a monster.
    */
   chudlord: {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Deadnaut.png',
+    file: 'Sprites/enemy-skeleton-knight.png',
     row: 0,
     fps: 5,
     height: 150,
@@ -70,7 +70,7 @@ export const ACTORS: Record<string, ActorArt> = {
 
   /** The Pig King is a crowned bag of money, which required no interpretation. */
   pigking: {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Goodybag.png',
+    file: 'Sprites/enemy-goodybag.png',
     row: 0,
     fps: 4,
     height: 150,
@@ -87,35 +87,35 @@ export const ACTORS: Record<string, ActorArt> = {
  */
 export const ENCOUNTERS: readonly ActorArt[] = [
   {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Healslime.png',
+    file: 'Sprites/enemy-healslime.png',
     row: 0,
     fps: 6,
     height: 96,
     fallback: 'pawn',
   },
   {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Grimlin.png',
+    file: 'Sprites/enemy-grimlin.png',
     row: 0,
     fps: 6,
     height: 118,
     fallback: 'child',
   },
   {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Dark Skeleton.png',
+    file: 'Sprites/enemy-deadnaut.png',
     row: 0,
     fps: 5,
     height: 138,
     fallback: 'chudlord',
   },
   {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Stone Golem.png',
+    file: 'Sprites/enemy-stone-golem.png',
     row: 0,
     fps: 4,
     height: 178,
     fallback: 'tower',
   },
   {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Dread Dragon.png',
+    file: 'Sprites/enemy-dragon.png',
     row: 0,
     fps: 5,
     height: 196,
@@ -133,7 +133,7 @@ export const ENCOUNTERS: readonly ActorArt[] = [
 export const BOSSES: Record<string, ActorArt> = {
   /** What the Chud Lord turns out to have been standing in front of. */
   malroth: {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Malroth.png',
+    file: 'Sprites/boss-malroth.png',
     row: 0,
     fps: 4,
     height: 210,
@@ -141,14 +141,14 @@ export const BOSSES: Record<string, ActorArt> = {
   },
   /** The thing in the tower. Never comes down; is drawn anyway. */
   zoma: {
-    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Unused_leftover - Zoma.png',
+    file: 'Sprites/boss-zoma.png',
     row: 0,
     fps: 3,
     height: 220,
     fallback: 'tower',
   },
   calasmalroth: {
-    file: 'Sprites/T_MN_051_001S_Calasmalroth_BC.png',
+    file: 'Sprites/boss-calasmalroth.png',
     row: 0,
     fps: 3,
     height: 240,
@@ -176,11 +176,11 @@ export function encounterFor(requiredGaps: number): ActorArt {
  * is stated in words here — the floor just keeps changing under it.
  */
 export const BACKDROPS: Record<Tier, string> = {
-  squire: 'Sprites/T_UI_EventSS_DQ1_17.png',
-  'knight-errant': 'Sprites/T_UI_EventSS_DQ1_11.png',
-  warlord: 'Sprites/T_UI_EventSS_DQ1_12.png',
-  devastator: 'Sprites/T_UI_EventSS_DQ1_04.png',
-  ascendant: 'Sprites/T_UI_EventSS_DQ1_06.png',
+  squire: 'Sprites/backdrop-meadow.png',
+  'knight-errant': 'Sprites/backdrop-river.png',
+  warlord: 'Sprites/backdrop-dust.png',
+  devastator: 'Sprites/backdrop-waste.png',
+  ascendant: 'Sprites/backdrop-hall.png',
 };
 
 /** Tint over each backdrop, so the command window stays readable on all five. */

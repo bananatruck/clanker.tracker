@@ -23,8 +23,8 @@
  *      picture between renders is noise; the picker is a hash, not a shuffle.
  */
 
-const ITEMS = 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Items - Item Icons';
-const SWORDS = 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Items - Swords';
+const ITEMS = 'Sprites/items';
+const SWORDS = 'Sprites/swords';
 
 /** Path to an item icon, by bare name. */
 export const item = (name: string): string => `${ITEMS}/${name}.png`;
@@ -81,6 +81,12 @@ export const medalFor = (id: string): string | null => MEDALS[id] ?? null;
  * which tracks the level, which tracks the applications. It is the one place
  * the game lets you look more powerful over time, and the joke is that the
  * sword gets better exactly as the thing you are doing with it gets worse.
+ *
+ * The names are the crusade's own vocabulary, taken from the storyboard rather
+ * than from whatever pack the art came out of: what he was handed, his one
+ * distinction, the bark from the act, the word the Tower used, and finally the
+ * thing he does not have. A blade called Throughput is the whole joke in two
+ * words, and it belongs to Act IV because that is the act that says it.
  */
 export interface Weapon {
   /** Level from which it is carried. */
@@ -90,12 +96,18 @@ export interface Weapon {
 }
 
 export const WEAPONS: readonly Weapon[] = [
-  { from: 1, name: 'Copper Sword', file: sword('Copper_Sword') },
-  { from: 10, name: 'Iron Broadsword', file: sword('Bastard_Sword') },
-  { from: 20, name: 'Fire Blade', file: sword('Fire_Blade') },
-  { from: 35, name: 'Dragonsbane', file: sword('Dragonsbane') },
-  { from: 50, name: 'Massacre Sword', file: sword('MassacreSword') },
-  { from: 60, name: "Erdrick's Sword", file: sword('ErdricksSword') },
+  // Act I. What he was handed. It came with a stipend.
+  { from: 1, name: 'The Commission', file: sword('RustySword') },
+  // Act II. His one distinction, per the proclamation.
+  { from: 10, name: 'Excellent Handwriting', file: sword('Bastard_Sword') },
+  // Act III. The bark of the act he stops being able to say anything else in.
+  { from: 20, name: 'Count Them', file: sword('Falcon_Blade') },
+  // Act IV. The first time anyone used that word about him.
+  { from: 35, name: 'Throughput', file: sword('Fire_Blade') },
+  // Act V. Silence, and the racks running warm.
+  { from: 50, name: 'Cooling Capacity', file: sword('AuroraBlade') },
+  // The Citadel. The one you are not supposed to be able to get.
+  { from: 60, name: 'The Offer', file: sword('Rubisss_Sword') },
 ];
 
 export function weaponFor(level: number): Weapon {

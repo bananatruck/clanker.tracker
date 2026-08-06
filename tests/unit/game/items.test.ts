@@ -68,7 +68,7 @@ describe('medals', () => {
 describe('weapons', () => {
   it('starts at level 1, so there is never an empty hand', () => {
     expect(WEAPONS[0]!.from).toBe(1);
-    expect(weaponFor(0).name).toBe('Copper Sword');
+    expect(weaponFor(0).name).toBe('The Commission');
   });
 
   it('is ordered by level', () => {
@@ -78,13 +78,13 @@ describe('weapons', () => {
   });
 
   it('carries the best one reached, not the one exactly matched', () => {
-    expect(weaponFor(19).name).toBe('Iron Broadsword');
-    expect(weaponFor(20).name).toBe('Fire Blade');
-    expect(weaponFor(34).name).toBe('Fire Blade');
+    expect(weaponFor(19).name).toBe('Excellent Handwriting');
+    expect(weaponFor(20).name).toBe('Count Them');
+    expect(weaponFor(34).name).toBe('Count Them');
   });
 
   it('tops out rather than running off the end', () => {
-    expect(weaponFor(999).name).toBe("Erdrick's Sword");
+    expect(weaponFor(999).name).toBe('The Offer');
   });
 });
 
