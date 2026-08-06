@@ -38,13 +38,13 @@ import ResumeIntake from '@/ui/ResumeIntake';
 export default function Profile() {
   const profile = useLiveQuery(() => getProfile(), []);
 
-  if (profile === undefined) return <p className="text-[11px] text-faint">Loading…</p>;
+  if (profile === undefined) return <p className="text-[13px] text-faint">Loading…</p>;
 
   if (!profile) {
     return (
       <div className="space-y-2">
         <Window title="No resume yet">
-          <p className="text-[11px] leading-snug text-muted">
+          <p className="text-[13px] leading-snug text-muted">
             Nothing can be filled until there is a resume to fill from. Add one and every field
             below becomes editable.
           </p>
@@ -67,7 +67,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
       <Window
         title={profile.source.fileName}
         right={
-          <span className="font-mono text-[10px] text-muted">
+          <span className="font-mono text-[12px] text-muted">
             <span className="text-gold">{certain}</span>/{total}
             {missing > 0 && <span className="text-bad"> · {missing} missing</span>}
           </span>
@@ -115,7 +115,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
 
       <Window title={`Experience · ${profile.experience.length}`}>
         {profile.experience.length === 0 ? (
-          <p className="text-[11px] leading-snug text-muted">
+          <p className="text-[13px] leading-snug text-muted">
             No work history parsed. Check the resume has an <em>Experience</em> heading, or re-add
             it as pasted text.
           </p>
@@ -142,7 +142,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
                         className="text-muted"
                       />
                     </div>
-                    <p className="px-1 font-mono text-[10px] text-faint">
+                    <p className="px-1 font-mono text-[12px] text-faint">
                       {formatRange(entry.start, entry.end)}
                       {entry.location && ` · ${entry.location}`}
                     </p>
@@ -151,7 +151,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
                     type="button"
                     title="Remove this entry"
                     onClick={() => void removeEntry('experience', entry.id)}
-                    className="shrink-0 px-1 font-mono text-[10px] text-faint hover:text-bad"
+                    className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
                   >
                     ✖
                   </button>
@@ -159,7 +159,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
 
                 <ul className="mt-1.5 space-y-0.5">
                   {entry.bullets.map((bullet, i) => (
-                    <li key={i} className="flex gap-1 text-[11px] leading-snug text-muted">
+                    <li key={i} className="flex gap-1 text-[13px] leading-snug text-muted">
                       <span className="shrink-0 text-faint">·</span>
                       <Editable
                         value={bullet}
@@ -180,7 +180,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
                   onClick={() =>
                     void correctExperience(entry.id, { bullets: [...entry.bullets, 'New bullet'] })
                   }
-                  className="mt-1 px-1 font-mono text-[10px] text-faint hover:text-gold"
+                  className="mt-1 px-1 font-mono text-[12px] text-faint hover:text-gold"
                 >
                   + bullet
                 </button>
@@ -188,7 +188,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
             ))}
           </div>
         )}
-        <p className="mt-2 text-[10px] leading-snug text-faint">
+        <p className="mt-2 text-[12px] leading-snug text-faint">
           These bullets are the evidence the keyword scan matches a posting against. Sharpening
           them here sharpens every scan.
         </p>
@@ -196,7 +196,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
 
       <Window title={`Education · ${profile.education.length}`}>
         {profile.education.length === 0 ? (
-          <p className="text-[11px] text-muted">Nothing parsed.</p>
+          <p className="text-[13px] text-muted">Nothing parsed.</p>
         ) : (
           <div className="space-y-1">
             {profile.education.map((entry) => (
@@ -224,7 +224,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
                   type="button"
                   title="Remove this entry"
                   onClick={() => void removeEntry('education', entry.id)}
-                  className="shrink-0 px-1 font-mono text-[10px] text-faint hover:text-bad"
+                  className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
                 >
                   ✖
                 </button>
@@ -256,7 +256,7 @@ function Skills({ profile }: { profile: ResumeProfile }) {
             type="button"
             title="Remove"
             onClick={() => void setSkills(profile.skills.filter((s) => s !== skill))}
-            className="border-2 border-frame-dim px-1.5 py-0.5 font-mono text-[10px] text-muted hover:border-bad hover:text-bad"
+            className="border-2 border-frame-dim px-1.5 py-0.5 font-mono text-[12px] text-muted hover:border-bad hover:text-bad"
           >
             {skill} ✖
           </button>
@@ -276,7 +276,7 @@ function Skills({ profile }: { profile: ResumeProfile }) {
           value={adding}
           onChange={(e) => setAdding(e.target.value)}
           placeholder="Add a skill"
-          className="dq-input min-w-0 flex-1 px-1.5 py-0.5 text-[11px]"
+          className="dq-input min-w-0 flex-1 px-1.5 py-0.5 text-[13px]"
         />
         <Button type="submit" disabled={!adding.trim()}>
           Add
@@ -293,7 +293,7 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
   return (
     <div className="flex items-center gap-1.5 py-1">
       <Mark confidence={value.confidence} />
-      <span className="w-20 shrink-0 font-mono text-[10px] text-faint">
+      <span className="w-20 shrink-0 font-mono text-[12px] text-faint">
         {CONTACT_LABELS[field]}
       </span>
       <Editable
@@ -302,7 +302,7 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
         className={value.value ? 'text-parchment' : ''}
       />
       {value.source === 'user' && (
-        <span className="shrink-0 font-mono text-[9px] text-ok">edited</span>
+        <span className="shrink-0 font-mono text-[11px] text-ok">edited</span>
       )}
     </div>
   );

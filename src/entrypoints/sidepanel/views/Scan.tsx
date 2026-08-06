@@ -61,7 +61,7 @@ export default function Scan() {
     void readPage();
   }, [readPage]);
 
-  if (profile === undefined) return <p className="text-[11px] text-faint">Loading…</p>;
+  if (profile === undefined) return <p className="text-[13px] text-faint">Loading…</p>;
 
   if (!profile) {
     return (
@@ -85,21 +85,21 @@ export default function Scan() {
         right={
           <button
             onClick={() => void readPage()}
-            className="font-mono text-[10px] text-faint hover:text-gold"
+            className="font-mono text-[12px] text-faint hover:text-gold"
           >
             re-read ▶
           </button>
         }
       >
         {reading ? (
-          <p className="text-[11px] text-faint">Reading the page…</p>
+          <p className="text-[13px] text-faint">Reading the page…</p>
         ) : posting ? (
           <>
-            <p className="truncate text-[12px] text-parchment">{posting.title || 'Untitled role'}</p>
-            <p className="truncate font-mono text-[10px] text-muted">
+            <p className="truncate text-[14px] text-parchment">{posting.title || 'Untitled role'}</p>
+            <p className="truncate font-mono text-[12px] text-muted">
               {posting.company || 'unknown company'}
             </p>
-            <p className="mt-1 font-mono text-[9px] text-faint">
+            <p className="mt-1 font-mono text-[11px] text-faint">
               {posting.description.length.toLocaleString()} characters ·{' '}
               {posting.source === 'json-ld'
                 ? 'structured data'
@@ -109,12 +109,12 @@ export default function Scan() {
             </p>
           </>
         ) : (
-          <p className="text-[11px] leading-snug text-muted">{error}</p>
+          <p className="text-[13px] leading-snug text-muted">{error}</p>
         )}
       </Window>
 
       <details className="dq-window">
-        <summary className="cursor-pointer px-2 py-1 font-mono text-[10px] text-faint hover:text-gold">
+        <summary className="cursor-pointer px-2 py-1 font-mono text-[12px] text-faint hover:text-gold">
           {posting ? 'Edit what was read' : 'Paste the description'}
         </summary>
         <div className="p-2 pt-0">
@@ -123,7 +123,7 @@ export default function Scan() {
             onChange={(e) => setJd(e.target.value)}
             placeholder="Paste the job description…"
             rows={8}
-            className="dq-input w-full resize-y p-2 text-[11px] leading-snug"
+            className="dq-input w-full resize-y p-2 text-[13px] leading-snug"
           />
         </div>
       </details>
@@ -132,7 +132,7 @@ export default function Scan() {
         <Button primary onClick={run} disabled={!jd.trim()} className="flex-1">
           Scan against my resume
         </Button>
-        <span className="shrink-0 font-mono text-[10px] text-faint">free · local</span>
+        <span className="shrink-0 font-mono text-[12px] text-faint">free · local</span>
       </div>
 
       {scan && <Results scan={scan} />}
@@ -156,14 +156,14 @@ function Results({ scan }: { scan: ScanResult }) {
   return (
     <div className="space-y-2">
       <Window title={`${summary.total} requirements`}>
-        <div className="flex justify-between font-mono text-[10px]">
+        <div className="flex justify-between font-mono text-[12px]">
           <span className="text-ok">✔ {summary.covered} covered</span>
           <span className="text-warn">~ {summary.partial} partial</span>
           <span className="text-bad">✖ {summary.gaps} gap</span>
         </div>
 
         {summary.requiredGaps > 0 && (
-          <p className="mt-2 text-[11px] leading-snug text-muted">
+          <p className="mt-2 text-[13px] leading-snug text-muted">
             <span className="text-bad">{summary.requiredGaps}</span> of the gaps are on
             requirements the posting calls required — those are the ones that get you filtered.
           </p>
@@ -176,7 +176,7 @@ function Results({ scan }: { scan: ScanResult }) {
             {gaps.map((gap) => (
               <span
                 key={gap}
-                className="border-2 border-frame-dim px-1.5 py-0.5 font-mono text-[10px] text-bad"
+                className="border-2 border-frame-dim px-1.5 py-0.5 font-mono text-[12px] text-bad"
               >
                 {gap}
               </span>
@@ -209,12 +209,12 @@ function Row({ row }: { row: EvidenceRow }) {
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-start gap-1.5 px-2 py-1.5 text-left hover:bg-window-hi"
       >
-        <span className={`shrink-0 font-mono text-[10px] ${mark.tone}`} title={mark.label}>
+        <span className={`shrink-0 font-mono text-[12px] ${mark.tone}`} title={mark.label}>
           {mark.glyph}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] leading-snug text-parchment">{requirement.text}</span>
-          <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-wide text-faint">
+          <span className="block text-[13px] leading-snug text-parchment">{requirement.text}</span>
+          <span className="mt-0.5 block font-mono text-[11px] uppercase tracking-wide text-faint">
             {requirement.necessity}
             {' · '}
             <span className={mark.tone}>{mark.label}</span>
@@ -227,9 +227,9 @@ function Row({ row }: { row: EvidenceRow }) {
         <div className="space-y-1.5 border-t-2 border-frame-dim px-2 py-1.5">
           {row.evidence.length > 0 ? (
             row.evidence.map((ev, i) => (
-              <div key={i} className="text-[11px] leading-snug">
+              <div key={i} className="text-[13px] leading-snug">
                 <p className="text-muted">{ev.text}</p>
-                <p className="mt-0.5 font-mono text-[9px] text-faint">
+                <p className="mt-0.5 font-mono text-[11px] text-faint">
                   {ev.company || 'profile'}
                   {ev.title && ` · ${ev.title}`}
                   {' · '}
@@ -238,13 +238,13 @@ function Row({ row }: { row: EvidenceRow }) {
               </div>
             ))
           ) : (
-            <p className="text-[11px] leading-snug text-muted">
+            <p className="text-[13px] leading-snug text-muted">
               Nothing in your resume covers this.
             </p>
           )}
 
           {row.missing.length > 0 && (
-            <p className="font-mono text-[9px] text-faint">
+            <p className="font-mono text-[11px] text-faint">
               missing: <span className="text-bad">{row.missing.join(', ')}</span>
             </p>
           )}

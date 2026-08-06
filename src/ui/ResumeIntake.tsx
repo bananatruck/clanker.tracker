@@ -75,10 +75,10 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
             }`}
           >
             <div className="space-y-1">
-              <p className="text-[12px] text-parchment">
+              <p className="text-[14px] text-parchment">
                 {busy ? 'Reading…' : 'Drop a resume — PDF, DOCX, or text'}
               </p>
-              <p className="text-[10px] text-faint">Parsed on your machine. Nothing is uploaded.</p>
+              <p className="text-[12px] text-faint">Parsed on your machine. Nothing is uploaded.</p>
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
             onChange={(e) => setPasted(e.target.value)}
             rows={10}
             placeholder="Paste the whole resume here — headings included, so Experience and Education can be found."
-            className="dq-input w-full p-2 text-[11px] leading-snug"
+            className="dq-input w-full p-2 text-[13px] leading-snug"
           />
           <Button primary onClick={takePaste} disabled={busy || pasted.trim().length === 0}>
             {busy ? 'Parsing…' : 'Parse this'}

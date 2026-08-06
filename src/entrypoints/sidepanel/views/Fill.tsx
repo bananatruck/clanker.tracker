@@ -77,7 +77,7 @@ export default function Fill() {
     }
   };
 
-  if (profile === undefined) return <p className="text-[11px] text-faint">Loading…</p>;
+  if (profile === undefined) return <p className="text-[13px] text-faint">Loading…</p>;
 
   if (!profile) {
     return (
@@ -89,21 +89,21 @@ export default function Fill() {
     <div className="space-y-2">
       <Window title="This page">
         {probing ? (
-          <p className="text-[11px] text-faint">Looking for a form…</p>
+          <p className="text-[13px] text-faint">Looking for a form…</p>
         ) : probe ? (
           <>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[12px] text-gold">{probe.ats}</span>
-              <span className="font-mono text-[10px] text-muted">
+              <span className="font-mono text-[14px] text-gold">{probe.ats}</span>
+              <span className="font-mono text-[12px] text-muted">
                 {probe.fieldCount} fields · {probe.requiredCount} required
               </span>
             </div>
-            <p className="mt-1.5 text-[11px] leading-snug text-muted">
+            <p className="mt-1.5 text-[13px] leading-snug text-muted">
               Nothing is submitted. You review every field before it lands.
             </p>
           </>
         ) : (
-          <p className="text-[11px] leading-snug text-muted">
+          <p className="text-[13px] leading-snug text-muted">
             {probeError || 'No form found on this tab. Open a job application and refresh.'}
           </p>
         )}
@@ -122,7 +122,7 @@ export default function Fill() {
       </div>
 
       {budget && (
-        <p className="font-mono text-[10px] text-faint">
+        <p className="font-mono text-[12px] text-faint">
           budget · {budget.used}/{budget.limit} today
           {budget.warn && !budget.exhausted && (
             <span className="text-warn"> · nearing the daily limit</span>
@@ -137,10 +137,10 @@ export default function Fill() {
         <Window title="Result">
           {result.ok ? (
             result.cancelled ? (
-              <p className="text-[11px] text-muted">Cancelled — nothing was written.</p>
+              <p className="text-[13px] text-muted">Cancelled — nothing was written.</p>
             ) : (
               <>
-                <p className="text-[11px] text-parchment">
+                <p className="text-[13px] text-parchment">
                   Filled <span className="text-ok">{result.filled}</span>
                   {result.skipped ? (
                     <>
@@ -149,7 +149,7 @@ export default function Fill() {
                     </>
                   ) : null}
                 </p>
-                <p className="mt-1 font-mono text-[10px] text-faint">
+                <p className="mt-1 font-mono text-[12px] text-faint">
                   {result.llmCalls === 0
                     ? 'zero model calls — every field came from a free tier'
                     : `${result.llmCalls} batched ${TIER_LABEL[5]} call`}
@@ -157,7 +157,7 @@ export default function Fill() {
               </>
             )
           ) : (
-            <p className="text-[11px] text-bad">{result.error}</p>
+            <p className="text-[13px] text-bad">{result.error}</p>
           )}
         </Window>
       )}

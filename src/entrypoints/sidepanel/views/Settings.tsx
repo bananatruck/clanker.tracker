@@ -42,7 +42,7 @@ export default function Settings() {
     void getLlmConfig().then(setConfig);
   }, []);
 
-  if (!config) return <p className="text-[11px] text-faint">Loading…</p>;
+  if (!config) return <p className="text-[13px] text-faint">Loading…</p>;
 
   const provider = PROVIDERS[config.provider];
 
@@ -89,7 +89,7 @@ export default function Settings() {
         <select
           value={config.provider}
           onChange={(e) => void patch({ provider: e.target.value as ProviderId })}
-          className="dq-input mb-1 w-full px-2 py-1 text-[11px]"
+          className="dq-input mb-1 w-full px-2 py-1 text-[13px]"
         >
           {Object.values(PROVIDERS).map((p) => (
             <option key={p.id} value={p.id}>
@@ -103,10 +103,10 @@ export default function Settings() {
           onChange={(e) => setConfig({ ...config, model: e.target.value })}
           onBlur={() => void patch({ model: config.model })}
           placeholder="model"
-          className="dq-input w-full px-2 py-1 text-[11px]"
+          className="dq-input w-full px-2 py-1 text-[13px]"
         />
 
-        <p className="mt-1 font-mono text-[9px] leading-relaxed text-faint">
+        <p className="mt-1 font-mono text-[11px] leading-relaxed text-faint">
           {provider.local
             ? 'runs on your machine · no key, no quota, nothing leaves'
             : `${provider.dailyLimit}/day before the budget degrades to deterministic-only`}
@@ -124,7 +124,7 @@ export default function Settings() {
               placeholder="paste your key"
               spellCheck={false}
               autoComplete="off"
-              className="dq-input min-w-0 flex-1 px-2 py-1 text-[11px]"
+              className="dq-input min-w-0 flex-1 px-2 py-1 text-[13px]"
             />
             <Button onClick={() => setReveal((r) => !r)}>{reveal ? 'hide' : 'show'}</Button>
           </div>
@@ -133,13 +133,13 @@ export default function Settings() {
             <Button primary onClick={() => void runTest()} disabled={!config.apiKey || test.kind === 'testing'}>
               {test.kind === 'testing' ? 'Testing…' : 'Test key'}
             </Button>
-            {saved && <span className="font-mono text-[9px] text-ok">✔ saved</span>}
+            {saved && <span className="font-mono text-[11px] text-ok">✔ saved</span>}
             {provider.keyUrl && (
               <a
                 href={provider.keyUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto font-mono text-[9px] text-muted underline hover:text-gold"
+                className="ml-auto font-mono text-[11px] text-muted underline hover:text-gold"
               >
                 get a key
               </a>
@@ -147,15 +147,15 @@ export default function Settings() {
           </div>
 
           {test.kind === 'ok' && (
-            <p className="mt-1 font-mono text-[10px] text-ok">
+            <p className="mt-1 font-mono text-[12px] text-ok">
               ✔ key works · model replied “{test.echo}”
             </p>
           )}
           {test.kind === 'fail' && (
-            <p className="mt-1 font-mono text-[10px] leading-relaxed text-bad">✖ {test.error}</p>
+            <p className="mt-1 font-mono text-[12px] leading-relaxed text-bad">✖ {test.error}</p>
           )}
 
-          <p className="mt-1 text-[10px] leading-relaxed text-faint">
+          <p className="mt-1 text-[12px] leading-relaxed text-faint">
             Stored in <span className="font-mono">chrome.storage.local</span>, never in the
             database and never in a <span className="font-mono">.clankdb</span> export. It leaves
             this machine only as a header on a call you triggered.
@@ -164,7 +164,7 @@ export default function Settings() {
       )}
 
       <Window title="Your voice">
-        <p className="mb-2 text-[11px] leading-snug text-muted">
+        <p className="mb-2 text-[13px] leading-snug text-muted">
           Used only by the cover letter button, to write in your voice rather than a model's.
         </p>
         <WritingSamples />
@@ -173,13 +173,13 @@ export default function Settings() {
       {budget && (
         <Window title="Today">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[15px] leading-none text-gold">{budget.used}</span>
-            <span className="font-mono text-[10px] text-faint">of {budget.limit} calls</span>
+            <span className="font-mono text-[18px] leading-none text-gold">{budget.used}</span>
+            <span className="font-mono text-[12px] text-faint">of {budget.limit} calls</span>
           </div>
           <div className="mt-1.5">
             <Meter value={budget.used / Math.max(1, budget.limit)} />
           </div>
-          <p className="mt-1.5 text-[10px] leading-relaxed text-muted">
+          <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
             The median application costs zero calls. If this number climbs fast, tiers 1–4 are
             missing and that is a bug worth reporting.
           </p>

@@ -46,8 +46,35 @@
   --color-warn: #ffb347;
   --color-bad: #ff6f6f;
 
-  --font-ui: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
-  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  /**
+   * Three typefaces, three jobs.
+   *
+   * The panel used to be monospace end to end at 12px, which looked the part
+   * and was genuinely hard to read — a monospace face spends its width on
+   * making an `l` as wide as an `m`, and prose is not a column of code.
+   *
+   *   `ui`    everything you read. A real UI sans, at a size meant for reading.
+   *   `mono`  everything you compare. Counts, DP, tiers, tier attributions —
+   *           the places a fixed advance actually earns its keep.
+   *   `quest` the game speaking. A serif, because that is what Dragon Quest's
+   *           own dialogue windows use; it separates the story's voice from
+   *           the tool's without needing a second colour.
+   *
+   * No webfont is loaded. An extension that fetches a font has a network
+   * request in it, and this one has none by design.
+   */
+  --font-ui:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  --font-quest: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+
+  /* Reading sizes. The old scale bottomed out at 9px, which is a label size
+     being asked to do a sentence's work. */
+  --text-micro: 11px;
+  --text-small: 12.5px;
+  --text-body: 14px;
+  --text-lead: 15.5px;
+  --text-title: 18px;
 }
 
 :root {
@@ -65,10 +92,9 @@ body {
   background: var(--color-field);
   color: var(--color-parchment);
   font-family: var(--font-ui);
-  font-size: 12px;
-  line-height: 1.5;
-  font-variant-ligatures: none;
-  text-rendering: optimizeSpeed;
+  font-size: var(--text-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Pixel art must never be smoothed. */
@@ -106,15 +132,15 @@ img.pixel {
   align-items: center;
   gap: 0.25rem;
   width: 100%;
-  padding: 0.25rem 0.375rem;
+  padding: 0.375rem 0.5rem;
   text-align: left;
   border-radius: 0;
 }
 .dq-item::before {
   content: '\25B6';
   flex: none;
-  width: 0.75rem;
-  font-size: 9px;
+  width: 0.85rem;
+  font-size: 11px;
   color: var(--color-gold);
   visibility: hidden;
 }
@@ -137,6 +163,8 @@ img.pixel {
  * interpolated press is exactly the thing a 16-bit UI never did.
  */
 .dq-btn {
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
   background: var(--color-window);
   color: var(--color-parchment);
   border: 2px solid var(--color-frame);
@@ -172,6 +200,8 @@ img.pixel {
   border: 2px solid var(--color-frame-dim);
   border-radius: 0;
   font-family: var(--font-mono);
+  font-size: var(--text-small);
+  padding: 0.3rem 0.4rem;
 }
 .dq-input::placeholder {
   color: var(--color-faint);
@@ -191,10 +221,23 @@ img.pixel {
 
 /* A section heading reads as a status strip, not as prose. */
 .dq-label {
-  font-size: 9px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-faint);
+}
+
+/**
+ * The game's own voice: a serif dialogue window, as Dragon Quest draws it —
+ * the speaker's name on a tab above a box of narration. Used only for lines
+ * that come out of the storyboard, never for anything the tool says.
+ */
+.dq-speech {
+  font-family: var(--font-quest);
+  font-size: var(--text-lead);
+  line-height: 1.5;
+  letter-spacing: 0.005em;
 }
 
 /**
@@ -204,7 +247,7 @@ img.pixel {
 .dq-meter {
   display: flex;
   gap: 1px;
-  height: 6px;
+  height: 9px;
 }
 .dq-meter-cell {
   flex: 1;

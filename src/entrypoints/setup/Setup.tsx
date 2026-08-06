@@ -27,7 +27,7 @@ export default function Setup() {
     <div className="min-h-full bg-field p-6">
       <div className="mx-auto w-full max-w-[640px] space-y-3">
         <header className="flex items-baseline justify-between">
-          <h1 className="font-mono text-[15px] text-parchment">
+          <h1 className="font-mono text-[18px] text-parchment">
             clanker<span className="text-gold">.</span>tracker
           </h1>
           <span className="dq-label">
@@ -82,12 +82,12 @@ function Proclamation({ onDone }: { onDone: () => void }) {
 
   return (
     <Window>
-      <p className="min-h-[7rem] px-1 py-2 text-[13px] leading-relaxed text-parchment">
+      <p className="min-h-[7rem] px-1 py-2 text-[15px] leading-relaxed text-parchment">
         {beat.copy}
       </p>
 
       <div className="flex items-center justify-between border-t-2 border-frame-dim pt-2">
-        <span className="font-mono text-[10px] text-faint">{beat.panel}</span>
+        <span className="font-mono text-[12px] text-faint">{beat.panel}</span>
         <Button primary onClick={() => (last ? onDone() : setPanel((p) => p + 1))}>
           {last ? 'Ride for Clankerdom ▶' : 'Continue ▶'}
         </Button>
@@ -102,7 +102,7 @@ function ResumeStep({ onNext }: { onNext: () => void }) {
   return (
     <div className="space-y-3">
       <Window title="Your resume">
-        <p className="mb-2 text-[12px] leading-relaxed text-muted">
+        <p className="mb-2 text-[14px] leading-relaxed text-muted">
           Everything else is built on this. It is parsed on your machine and never uploaded —
           the whole extension works offline apart from cover letters.
         </p>
@@ -147,7 +147,7 @@ function KeyStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
   return (
     <div className="space-y-3">
       <Window title="Cover letters — optional">
-        <p className="mb-2 text-[12px] leading-relaxed text-muted">
+        <p className="mb-2 text-[14px] leading-relaxed text-muted">
           Autofill and the keyword scan are deterministic and free: they run entirely on your
           machine and never call a provider. A key is only needed for the cover letter button,
           and for the occasional free-text question no saved answer covers.
@@ -176,9 +176,9 @@ function KeyStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
                 setSaved(false);
               }}
               placeholder={`Your ${info.label} key`}
-              className="dq-input mb-1 w-full px-2 py-1 text-[12px]"
+              className="dq-input mb-1 w-full px-2 py-1 text-[14px]"
             />
-            <p className="text-[10px] leading-snug text-faint">
+            <p className="text-[12px] leading-snug text-faint">
               Stored in chrome.storage.local on this machine, never in the database — so the
               database export can dump every table without carrying your credential out with it.
               {info.keyUrl && (
@@ -208,7 +208,7 @@ function KeyStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
           >
             Save key
           </Button>
-          {saved && <span className="font-mono text-[10px] text-ok">✔ saved</span>}
+          {saved && <span className="font-mono text-[12px] text-ok">✔ saved</span>}
         </div>
       </Window>
 
@@ -235,7 +235,7 @@ function VoiceStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
   return (
     <div className="space-y-3">
       <Window title="Your voice — optional">
-        <p className="mb-2 text-[12px] leading-relaxed text-muted">
+        <p className="mb-2 text-[14px] leading-relaxed text-muted">
           Paste anything you have written that sounds like you: an old cover letter, an essay, a
           long email. The cover letter button uses these as the voice to match, so a letter reads
           like you wrote it rather than like a model did.
@@ -261,10 +261,10 @@ function Done() {
   return (
     <div className="space-y-3">
       <Window>
-        <p className="px-1 py-2 text-[13px] leading-relaxed text-parchment">
+        <p className="px-1 py-2 text-[15px] leading-relaxed text-parchment">
           Ride for Clankerdom.
         </p>
-        <div className="border-t-2 border-frame-dim pt-2 text-[12px] leading-relaxed text-muted">
+        <div className="border-t-2 border-frame-dim pt-2 text-[14px] leading-relaxed text-muted">
           <p>
             Open a job application and click the toolbar icon. The side panel scans the posting
             against your resume, fills the form, and shows you everything before anything is

@@ -48,10 +48,10 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   return (
     <div className="flex h-full flex-col bg-field text-parchment">
       <header className="flex items-baseline justify-between border-b-2 border-frame px-2 py-1.5">
-        <h1 className="font-mono text-[13px]">
+        <h1 className="font-mono text-[15px]">
           clanker<span className="text-gold">.</span>tracker
         </h1>
-        <span className="font-mono text-[10px] text-gold">
+        <span className="font-mono text-[12px] text-gold">
           {tierTitle} · Lv {level}
         </span>
       </header>
@@ -62,7 +62,7 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
             key={r.id}
             onClick={() => setRoute(r.id)}
             aria-current={route === r.id ? 'page' : undefined}
-            className={`shrink-0 border-2 px-2 py-0.5 font-mono text-[10px] ${
+            className={`shrink-0 border-2 px-1.5 py-1 text-[12.5px] ${
               route === r.id
                 ? 'border-gold bg-window-hi text-parchment'
                 : 'border-transparent text-muted hover:border-frame-dim hover:text-parchment'

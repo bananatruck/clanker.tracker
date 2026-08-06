@@ -44,7 +44,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
       {profile === null || profile === undefined ? (
         profile === undefined ? null : (
           <Window title="Start here">
-            <p className="mb-2 text-[12px] leading-relaxed text-muted">
+            <p className="mb-2 text-[14px] leading-relaxed text-muted">
               There is no resume yet, so there is nothing to fill an application from.
             </p>
             <Button primary onClick={() => onNavigate('profile')}>
@@ -58,7 +58,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
           right={
             <button
               onClick={() => onNavigate('profile')}
-              className="font-mono text-[10px] text-faint hover:text-gold"
+              className="font-mono text-[12px] text-faint hover:text-gold"
             >
               edit ▶
             </button>
@@ -68,29 +68,29 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
         </Window>
       )}
 
-      <Window title="The crusade" right={<span className="font-mono text-[10px] text-gold">{dp} DP</span>}>
+      <Window title="The crusade" right={<span className="font-mono text-[12px] text-gold">{dp} DP</span>}>
         <div className="flex items-baseline justify-between">
-          <span className="font-mono text-[12px] text-parchment">
+          <span className="font-mono text-[14px] text-parchment">
             {tierTitle} · Lv {level}
           </span>
-          <span className="font-mono text-[10px] text-muted">
+          <span className="font-mono text-[12px] text-muted">
             {dpIntoLevel}/{dpForNext}
           </span>
         </div>
         <div className="mt-1.5">
           <Meter value={progress} />
         </div>
-        <p className="mt-1.5 font-mono text-[10px] text-faint">
+        <p className="mt-1.5 font-mono text-[12px] text-faint">
           {distanceToCitadel(level)} nodes to the Citadel
         </p>
       </Window>
 
       <Window
         title="Applications"
-        right={<span className="font-mono text-[10px] text-gold">{funnel.total}</span>}
+        right={<span className="font-mono text-[12px] text-gold">{funnel.total}</span>}
       >
         {funnel.total === 0 ? (
-          <p className="text-[11px] leading-snug text-muted">
+          <p className="text-[13px] leading-snug text-muted">
             Nothing sent yet. Open a job application and the Fill tab will do the rest.
           </p>
         ) : (
@@ -98,10 +98,10 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
             <dl className="grid grid-cols-3 gap-x-2 gap-y-1">
               {FUNNEL_ORDER.map((status) => (
                 <div key={status} className="flex items-baseline justify-between gap-1">
-                  <dt className="truncate font-mono text-[10px] text-faint">
+                  <dt className="truncate font-mono text-[12px] text-faint">
                     {STATUS_LABEL[status]}
                   </dt>
-                  <dd className="font-mono text-[11px] text-parchment">
+                  <dd className="font-mono text-[13px] text-parchment">
                     {funnel.byStatus[status]}
                   </dd>
                 </div>
@@ -109,8 +109,8 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
             </dl>
 
             <div className="mt-2 flex items-baseline justify-between border-t-2 border-frame-dim pt-1.5">
-              <span className="font-mono text-[10px] text-faint">replied</span>
-              <span className="font-mono text-[11px] text-parchment">
+              <span className="font-mono text-[12px] text-faint">replied</span>
+              <span className="font-mono text-[13px] text-parchment">
                 {funnel.responses}
                 <span className="text-faint">
                   {' '}
@@ -120,7 +120,7 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
             </div>
 
             {funnel.stale > 0 && (
-              <p className="mt-1 font-mono text-[10px] text-warn">
+              <p className="mt-1 font-mono text-[12px] text-warn">
                 {funnel.stale} gone quiet — worth a nudge
               </p>
             )}
@@ -135,26 +135,26 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
       {funnel.total > 0 && (
         <Window title="What it cost">
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[10px] text-faint">median model calls</span>
+            <span className="font-mono text-[12px] text-faint">median model calls</span>
             <span
-              className={`font-mono text-[13px] ${cost.medianLlmCalls === 0 ? 'text-ok' : 'text-warn'}`}
+              className={`font-mono text-[15px] ${cost.medianLlmCalls === 0 ? 'text-ok' : 'text-warn'}`}
             >
               {cost.medianLlmCalls}
             </span>
           </div>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="font-mono text-[10px] text-faint">filled for free</span>
-            <span className="font-mono text-[11px] text-parchment">
+            <span className="font-mono text-[12px] text-faint">filled for free</span>
+            <span className="font-mono text-[13px] text-parchment">
               {Math.round(cost.freeShare * 100)}%
             </span>
           </div>
           {budget && !budget.exhausted && (
-            <p className="mt-1.5 font-mono text-[10px] text-faint">
+            <p className="mt-1.5 font-mono text-[12px] text-faint">
               budget · {budget.used}/{budget.limit} today
             </p>
           )}
           {budget?.exhausted && (
-            <p className="mt-1.5 font-mono text-[10px] text-warn">
+            <p className="mt-1.5 font-mono text-[12px] text-warn">
               budget spent — filling deterministically only
             </p>
           )}
@@ -180,13 +180,13 @@ function Identity({ profile }: { profile: ResumeProfile }) {
 
   return (
     <>
-      <p className="truncate text-[12px] text-parchment">{name}</p>
-      <p className="truncate font-mono text-[10px] text-muted">
+      <p className="truncate text-[14px] text-parchment">{name}</p>
+      <p className="truncate font-mono text-[12px] text-muted">
         {profile.contact.email.value || <span className="text-bad">no email parsed</span>}
         {profile.contact.phone.value && ` · ${profile.contact.phone.value}`}
       </p>
 
-      <div className="mt-1.5 flex items-baseline justify-between font-mono text-[10px]">
+      <div className="mt-1.5 flex items-baseline justify-between font-mono text-[12px]">
         <span className="text-faint">
           {profile.experience.length} roles · {profile.skills.length} skills
         </span>
@@ -196,7 +196,7 @@ function Identity({ profile }: { profile: ResumeProfile }) {
       </div>
 
       {missing > 0 && (
-        <p className="mt-1 font-mono text-[10px] text-warn">
+        <p className="mt-1 font-mono text-[12px] text-warn">
           {missing} contact {missing === 1 ? 'field' : 'fields'} missing — forms will ask for
           them
         </p>

@@ -10,6 +10,17 @@ stats.html
 !.env.example
 *.key
 
+# Third-party art the build reads but the repo must not redistribute.
+#
+# public/Sprites/ is where you drop ripped or licensed sheets — see
+# docs/ASSETS.md. The atlas in src/lib/game/atlas.ts names the files and the
+# frames inside them, and the game falls back to its own pixel sprites when
+# they are absent, so a fresh clone works with nothing in here. What you put
+# in this folder is between you and whoever owns it; it does not go to the
+# remote from this repo.
+public/Sprites/
+public/sprites/
+
 # Personal data exports
 *.clankdb
 storyboard/panels/private-*

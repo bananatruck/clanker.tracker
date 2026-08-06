@@ -36,14 +36,14 @@ export default function WritingSamples() {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="What is this? e.g. cover letter, Acme"
-          className="dq-input w-full px-2 py-1 text-[11px]"
+          className="dq-input w-full px-2 py-1 text-[13px]"
         />
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={6}
           placeholder="Paste something you wrote that sounds like you — an old cover letter, an essay, a long email."
-          className="dq-input w-full p-2 text-[11px] leading-snug"
+          className="dq-input w-full p-2 text-[13px] leading-snug"
         />
         <Button type="submit" disabled={!text.trim()}>
           Add sample
@@ -54,15 +54,15 @@ export default function WritingSamples() {
         <ul className="mt-2 space-y-1">
           {samples.map((s) => (
             <li key={s.id} className="flex items-center gap-2 border-2 border-frame-dim px-2 py-1">
-              <span className="min-w-0 flex-1 truncate text-[11px] text-parchment">{s.label}</span>
-              <span className="shrink-0 font-mono text-[10px] text-faint">
+              <span className="min-w-0 flex-1 truncate text-[13px] text-parchment">{s.label}</span>
+              <span className="shrink-0 font-mono text-[12px] text-faint">
                 {s.text.split(/\s+/).filter(Boolean).length} words
               </span>
               <button
                 type="button"
                 title="Remove"
                 onClick={() => void deleteWritingSample(s.id)}
-                className="shrink-0 font-mono text-[10px] text-faint hover:text-bad"
+                className="shrink-0 font-mono text-[12px] text-faint hover:text-bad"
               >
                 ✖
               </button>

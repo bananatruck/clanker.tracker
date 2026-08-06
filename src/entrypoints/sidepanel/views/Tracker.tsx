@@ -63,7 +63,7 @@ export default function Tracker() {
   const cost = useMemo(() => (apps ? costStats(apps) : null), [apps]);
 
   if (apps === undefined) {
-    return <p className="font-mono text-[11px] text-faint">Loading…</p>;
+    return <p className="font-mono text-[13px] text-faint">Loading…</p>;
   }
 
   const exportCsv = () => downloadCsv(csvFilename(), applicationsToCsv(apps));
@@ -76,7 +76,7 @@ export default function Tracker() {
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-2 py-1 font-mono text-[10px] transition-colors ${
+              className={`px-2 py-1 font-mono text-[12px] transition-colors ${
                 view === v ? 'bg-window-hi text-parchment' : 'text-muted hover:text-parchment'
               }`}
             >
@@ -89,14 +89,14 @@ export default function Tracker() {
 
         <button
           onClick={() => setAdding((a) => !a)}
-          className="border-2 border-frame-dim px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
+          className="border-2 border-frame-dim px-2 py-1 font-mono text-[12px] text-muted hover:bg-window hover:text-parchment"
         >
           {adding ? 'Close' : '+ Log one'}
         </button>
         <button
           onClick={exportCsv}
           disabled={apps.length === 0}
-          className="border-2 border-frame-dim px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-40"
+          className="border-2 border-frame-dim px-2 py-1 font-mono text-[12px] text-muted hover:bg-window hover:text-parchment disabled:opacity-40"
         >
           Export CSV
         </button>
@@ -122,10 +122,10 @@ export default function Tracker() {
 function Empty() {
   return (
     <div className="dq-window p-3">
-      <h2 className="mb-1.5 font-mono text-[11px] text-muted">Nothing sent yet</h2>
-      <p className="text-[12px] leading-relaxed text-muted">
+      <h2 className="mb-1.5 font-mono text-[13px] text-muted">Nothing sent yet</h2>
+      <p className="text-[14px] leading-relaxed text-muted">
         Fill an application and submit it — it logs itself. Anything you sent by hand or over
-        email, log with <span className="font-mono text-[11px] text-parchment">+ Log one</span>.
+        email, log with <span className="font-mono text-[13px] text-parchment">+ Log one</span>.
         Every row here razed something.
       </p>
     </div>
@@ -162,7 +162,7 @@ function Summary({
         <Segment n={stats.byStatus.rejected} total={stats.total} cls="bg-bad" />
       </div>
 
-      <p className="font-mono text-[10px] text-faint">
+      <p className="font-mono text-[12px] text-faint">
         median{' '}
         <span className={cost.medianLlmCalls === 0 ? 'text-ok' : 'text-warn'}>
           {cost.medianLlmCalls}
@@ -182,8 +182,8 @@ function Summary({
 function Stat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
   return (
     <div>
-      <div className={`font-mono text-[15px] leading-none ${tone ?? 'text-parchment'}`}>{value}</div>
-      <div className="mt-1 font-mono text-[9px] uppercase tracking-wide text-faint">{label}</div>
+      <div className={`font-mono text-[18px] leading-none ${tone ?? 'text-parchment'}`}>{value}</div>
+      <div className="mt-1 font-mono text-[11px] uppercase tracking-wide text-faint">{label}</div>
     </div>
   );
 }
@@ -203,10 +203,10 @@ function FlashBanner({ flash }: { flash: Flash }) {
         earned ? 'border-gold-dim bg-gold-dim/15' : 'border-frame bg-window'
       }`}
     >
-      <p className={`font-mono text-[11px] ${earned ? 'text-gold' : 'text-muted'}`}>
+      <p className={`font-mono text-[13px] ${earned ? 'text-gold' : 'text-muted'}`}>
         {earned ? `+${flash.dp} DP · ${STATUS_DEED_LABEL[flash.status]}` : 'Board updated'}
       </p>
-      <p className="mt-0.5 text-[11px] leading-snug text-muted">
+      <p className="mt-0.5 text-[13px] leading-snug text-muted">
         {earned
           ? STATUS_LABEL[flash.status] === 'Offer'
             ? 'The Adoption. You are inside now.'
@@ -239,16 +239,16 @@ function Board({
         return (
           <section key={status}>
             <h3 className="mb-1 flex items-baseline justify-between">
-              <span className={`font-mono text-[10px] uppercase tracking-wide ${STATUS_COLOR[status]}`}>
+              <span className={`font-mono text-[12px] uppercase tracking-wide ${STATUS_COLOR[status]}`}>
                 {STATUS_LABEL[status]}
               </span>
-              <span className="font-mono text-[9px] text-faint">
+              <span className="font-mono text-[11px] text-faint">
                 {inColumn.length} · {STATUS_DEED_LABEL[status]}
               </span>
             </h3>
 
             {inColumn.length === 0 ? (
-              <div className="border border-dashed border-frame px-2 py-1.5 font-mono text-[10px] text-faint">
+              <div className="border border-dashed border-frame px-2 py-1.5 font-mono text-[12px] text-faint">
                 empty
               </div>
             ) : (
@@ -276,10 +276,10 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
         className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left hover:bg-window-hi"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[11px] leading-snug text-parchment">
+          <span className="block truncate text-[13px] leading-snug text-parchment">
             {app.company || 'Unknown company'}
           </span>
-          <span className="mt-0.5 block truncate font-mono text-[9px] text-faint">
+          <span className="mt-0.5 block truncate font-mono text-[11px] text-faint">
             {app.role || 'role unrecorded'} · {app.ats}
             {app.llmCalls === 0 ? (
               <span className="text-ok"> · free</span>
@@ -292,7 +292,7 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
           </span>
         </span>
         {stale && (
-          <span className="mt-0.5 shrink-0 font-mono text-[9px] text-bad">quiet</span>
+          <span className="mt-0.5 shrink-0 font-mono text-[11px] text-bad">quiet</span>
         )}
       </button>
 
@@ -320,7 +320,7 @@ function CardDetail({
             key={status}
             onClick={() => void move(status)}
             disabled={status === app.status}
-            className={` border px-1.5 py-0.5 font-mono text-[9px] transition-colors ${
+            className={` border px-1.5 py-0.5 font-mono text-[11px] transition-colors ${
               status === app.status
                 ? 'border-gold-dim bg-gold-dim/20 text-gold'
                 : 'border-frame text-muted hover:bg-window-hi hover:text-parchment'
@@ -331,7 +331,7 @@ function CardDetail({
         ))}
       </div>
 
-      <p className="font-mono text-[9px] text-faint">
+      <p className="font-mono text-[11px] text-faint">
         sent {new Date(app.appliedAt).toISOString().slice(0, 10)}
         {app.url && (
           <>
@@ -350,7 +350,7 @@ function CardDetail({
 
       <button
         onClick={() => void deleteApplication(app.id)}
-        className="font-mono text-[9px] text-faint hover:text-bad"
+        className="font-mono text-[11px] text-faint hover:text-bad"
       >
         remove from board
       </button>
@@ -361,13 +361,13 @@ function CardDetail({
 function List({ apps }: { apps: readonly Application[] }) {
   return (
     <div className="overflow-x-auto border-2 border-frame-dim">
-      <table className="w-full border-collapse text-[11px]">
+      <table className="w-full border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-frame bg-window text-left">
             {['Company', 'Role', 'Status', 'Sent'].map((h) => (
               <th
                 key={h}
-                className="px-2 py-1.5 font-mono text-[9px] uppercase tracking-wide text-faint"
+                className="px-2 py-1.5 font-mono text-[11px] uppercase tracking-wide text-faint"
               >
                 {h}
               </th>
@@ -379,10 +379,10 @@ function List({ apps }: { apps: readonly Application[] }) {
             <tr key={a.id} className="border-b border-frame last:border-0 hover:bg-window">
               <td className="max-w-24 truncate px-2 py-1.5 text-parchment">{a.company || '—'}</td>
               <td className="max-w-32 truncate px-2 py-1.5 text-muted">{a.role || '—'}</td>
-              <td className={`px-2 py-1.5 font-mono text-[10px] ${STATUS_COLOR[a.status]}`}>
+              <td className={`px-2 py-1.5 font-mono text-[12px] ${STATUS_COLOR[a.status]}`}>
                 {STATUS_LABEL[a.status]}
               </td>
-              <td className="px-2 py-1.5 font-mono text-[10px] text-faint">
+              <td className="px-2 py-1.5 font-mono text-[12px] text-faint">
                 {new Date(a.appliedAt).toISOString().slice(5, 10)}
               </td>
             </tr>
@@ -419,19 +419,19 @@ function AddForm({ onDone }: { onDone: () => void }) {
         value={company}
         onChange={(e) => setCompany(e.target.value)}
         placeholder="Company"
-        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <input
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role"
         onKeyDown={(e) => e.key === 'Enter' && void submit()}
-        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <button
         onClick={() => void submit()}
         disabled={!company.trim()}
-        className="w-full bg-gold-dim px-2 py-1 font-mono text-[10px] text-parchment hover:bg-gold disabled:opacity-40"
+        className="w-full bg-gold-dim px-2 py-1 font-mono text-[12px] text-parchment hover:bg-gold disabled:opacity-40"
       >
         Log it · +{DEEDS.application.dp} DP
       </button>

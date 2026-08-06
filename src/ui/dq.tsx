@@ -51,7 +51,7 @@ export function MenuItem({
   return (
     <button
       type="button"
-      className="dq-item text-[11px]"
+      className="dq-item text-[13px]"
       data-selected={selected}
       disabled={disabled}
       onClick={onClick}
@@ -83,7 +83,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`dq-btn ${primary ? 'dq-btn-primary' : ''} px-2.5 py-1 text-[11px] ${className}`}
+      className={`dq-btn ${primary ? 'dq-btn-primary' : ''} px-2.5 py-1 text-[13px] ${className}`}
     >
       {children}
     </button>
@@ -108,7 +108,7 @@ const MARK: Record<Confidence, { glyph: string; tone: string; hint: string }> = 
 export function Mark({ confidence }: { confidence: Confidence }) {
   const { glyph, tone, hint } = MARK[confidence];
   return (
-    <span title={hint} aria-label={hint} className={`shrink-0 font-mono text-[10px] ${tone}`}>
+    <span title={hint} aria-label={hint} className={`shrink-0 font-mono text-[12px] ${tone}`}>
       {glyph}
     </span>
   );
@@ -169,7 +169,7 @@ export function Editable({
           if (e.key === 'Enter') commit();
           if (e.key === 'Escape') setDraft(null);
         }}
-        className={`dq-input min-w-0 flex-1 px-1 py-0.5 text-[11px] ${className}`}
+        className={`dq-input min-w-0 flex-1 px-1 py-0.5 text-[13px] ${className}`}
       />
     );
   }
@@ -178,7 +178,7 @@ export function Editable({
     <button
       type="button"
       onClick={() => setDraft(value)}
-      className={`min-w-0 flex-1 truncate px-1 py-0.5 text-left text-[11px] hover:bg-window-hi ${className}`}
+      className={`min-w-0 flex-1 truncate px-1 py-0.5 text-left text-[13px] hover:bg-window-hi ${className}`}
     >
       {value ? value : <span className="text-faint">{placeholder}</span>}
     </button>
@@ -190,7 +190,7 @@ export function Editable({
 export function Notice({ tone = 'muted', children }: { tone?: 'muted' | 'bad'; children: ReactNode }) {
   return (
     <p
-      className={`border-2 px-2 py-1.5 text-[11px] leading-snug ${
+      className={`border-2 px-2 py-1.5 text-[13px] leading-snug ${
         tone === 'bad' ? 'border-bad text-bad' : 'border-frame-dim text-muted'
       }`}
     >

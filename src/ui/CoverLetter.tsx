@@ -67,18 +67,18 @@ export default function CoverLetter({ scan }: { scan: ScanResult }) {
     <Window
       title="Cover letter"
       right={
-        <span className="font-mono text-[10px] text-faint">
+        <span className="font-mono text-[12px] text-faint">
           {grounded.length} grounded {grounded.length === 1 ? 'claim' : 'claims'}
         </span>
       }
     >
-      <p className="mb-2 text-[11px] leading-snug text-muted">
+      <p className="mb-2 text-[13px] leading-snug text-muted">
         Written from the {grounded.length} requirements your resume actually covers. It is told
         not to claim the gaps — a fabricated line in a cover letter is one you sign your name to.
       </p>
 
       {samples.length === 0 && (
-        <p className="mb-2 font-mono text-[10px] text-warn">
+        <p className="mb-2 font-mono text-[12px] text-warn">
           No writing samples yet — it will write plainly rather than in your voice. Add some in
           Settings.
         </p>
@@ -89,18 +89,18 @@ export default function CoverLetter({ scan }: { scan: ScanResult }) {
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
         placeholder="Anything to mention that your resume doesn't say? (optional)"
-        className="dq-input mb-2 w-full p-1.5 text-[11px] leading-snug"
+        className="dq-input mb-2 w-full p-1.5 text-[13px] leading-snug"
       />
 
       <div className="flex items-center gap-2">
         <Button primary onClick={write} disabled={busy || !hasKey || !profile}>
           {busy ? 'Writing…' : 'Write a cover letter'}
         </Button>
-        <span className="font-mono text-[10px] text-faint">costs 1 call</span>
+        <span className="font-mono text-[12px] text-faint">costs 1 call</span>
       </div>
 
       {!hasKey && (
-        <p className="mt-2 font-mono text-[10px] text-warn">
+        <p className="mt-2 font-mono text-[12px] text-warn">
           This is the one feature that needs an API key. Add one in Settings.
         </p>
       )}
@@ -146,14 +146,14 @@ function LetterCard({
   return (
     <article className="dq-window p-2">
       <div className="mb-1 flex items-baseline justify-between">
-        <span className="font-mono text-[9px] text-faint">
+        <span className="font-mono text-[11px] text-faint">
           {new Date(createdAt).toLocaleString()}
           {edited && <span className="text-muted"> · edited</span>}
         </span>
         <button
           type="button"
           onClick={() => void deleteLetter(id)}
-          className="font-mono text-[10px] text-faint hover:text-bad"
+          className="font-mono text-[12px] text-faint hover:text-bad"
         >
           ✖
         </button>
@@ -163,7 +163,7 @@ function LetterCard({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={12}
-        className="dq-input w-full p-2 text-[11px] leading-relaxed"
+        className="dq-input w-full p-2 text-[13px] leading-relaxed"
       />
 
       <div className="mt-1 flex items-center gap-1">
@@ -179,7 +179,7 @@ function LetterCard({
         <Button disabled={!dirty} onClick={() => void updateLetterText(id, draft)}>
           Save edits
         </Button>
-        <span className="ml-auto font-mono text-[9px] text-faint">
+        <span className="ml-auto font-mono text-[11px] text-faint">
           {draft.trim().split(/\s+/).filter(Boolean).length} words
         </span>
       </div>

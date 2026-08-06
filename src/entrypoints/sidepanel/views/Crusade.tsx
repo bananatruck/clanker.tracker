@@ -24,8 +24,11 @@ import {
 } from '@/lib/game/economy';
 import { ACT_0, ACTS, ENDING, fanfareAllowed } from '@/lib/game/lore';
 import { evaluateAchievements, statsFrom } from '@/lib/game/achievements';
+import { ACTORS, encounterFor } from '@/lib/game/atlas';
 import { Meter, Window } from '@/ui/dq';
 import Sprite from '@/ui/Sprite';
+import Scene from '@/ui/game/Scene';
+import Actor from '@/ui/Actor';
 
 /** How many march nodes to draw. The whole crusade, compressed to one strip. */
 const NODES = 24;
@@ -54,49 +57,50 @@ export default function Crusade() {
 
   return (
     <div className="space-y-2">
+      {/*
+        The scene leads, because the level number is not the story — the ground
+        Kh. Laude is standing on is, and it changes act by act underneath him.
+        The most recent panel he has actually reached speaks over it.
+      */}
+      <Scene
+        tier={tier}
+        hero={ACTORS['khlaude-battle']!}
+        foe={encounterFor(stats.interviews > 0 ? 3 : 1)}
+        speaker={latest ? 'Kh. Laude' : undefined}
+        line={latest?.copy}
+      />
+
       <Window
         title={tierTitle}
-        right={<span className="font-mono text-[10px] text-gold">{dp} DP</span>}
+        right={<span className="font-mono text-[12px] text-gold">{dp} DP</span>}
       >
-        <div className="flex items-center gap-2">
-          <Sprite
-            id={tier === 'devastator' || tier === 'ascendant' ? 'khlaude-sponsored' : 'khlaude'}
-            scale={2}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="font-mono text-[13px] text-parchment">Level {level}</p>
-            <p className="font-mono text-[10px] text-muted">
-              {dpIntoLevel}/{dpForNext} to next
-            </p>
-            <div className="mt-1">
-              <Meter value={progress} cells={16} />
-            </div>
-          </div>
+        <div className="flex items-baseline justify-between">
+          <p className="font-mono text-[16px] text-parchment">Level {level}</p>
+          <p className="font-mono text-[12px] text-muted">
+            {dpIntoLevel}/{dpForNext} to next
+          </p>
         </div>
+        <div className="mt-1.5">
+          <Meter value={progress} cells={16} />
+        </div>
+        {latest && <p className="mt-1.5 font-mono text-[11px] text-faint">{latest.panel}</p>}
 
         {/* Act V turns the fanfare off. The silence is a story beat. */}
         {!fanfareAllowed(level) && (
-          <p className="mt-2 font-mono text-[10px] text-faint">— no fanfare from here</p>
+          <p className="mt-2 font-mono text-[12px] text-faint">— no fanfare from here</p>
         )}
       </Window>
 
       <March level={level} tier={tier} />
 
-      {latest && (
-        <Window title="The march">
-          <p className="text-[12px] leading-relaxed text-parchment">{latest.copy}</p>
-          <p className="mt-1 font-mono text-[9px] text-faint">{latest.panel}</p>
-        </Window>
-      )}
-
       {hasOffer && (
         <Window title="The Adoption">
-          <div className="mb-2 flex items-center gap-2">
-            <Sprite id="pigking" scale={2} />
-            <Sprite id="chudlord-wave" scale={2} />
+          <div className="mb-2 flex items-end justify-center gap-6">
+            <Actor art={ACTORS['pigking']!} scale={0.8} label="The Pig King" />
+            <Actor art={ACTORS['chudlord']!} scale={0.55} label="The Chud Lord, waving" />
           </div>
           {ENDING.filter((b) => b.trigger.kind === 'offer').map((beat) => (
-            <p key={beat.id} className="mb-1 text-[12px] leading-relaxed text-parchment">
+            <p key={beat.id} className="mb-1 text-[14px] leading-relaxed text-parchment">
               {beat.copy}
             </p>
           ))}
@@ -106,17 +110,17 @@ export default function Crusade() {
       <Window
         title="The ledger"
         right={
-          <span className="font-mono text-[10px] text-faint">
+          <span className="font-mono text-[12px] text-faint">
             {distanceToCitadel(level)} to the Citadel
           </span>
         }
       >
-        <dl className="space-y-0.5 font-mono text-[10px]">
+        <dl className="space-y-0.5 font-mono text-[12px]">
           <Deed label={DEEDS.application.label} count={stats.applications} each={DEEDS.application.dp} />
           <Deed label={DEEDS.oa.label} count={stats.oas} each={DEEDS.oa.dp} />
           <Deed label={DEEDS.interview.label} count={stats.interviews} each={DEEDS.interview.dp} />
         </dl>
-        <p className="mt-2 text-[10px] leading-snug text-faint">
+        <p className="mt-2 text-[12px] leading-snug text-faint">
           DP is only ever the sum of this ledger. Nothing decays, and nothing idle can outpace
           what you actually did.
         </p>
@@ -125,7 +129,7 @@ export default function Crusade() {
       <Window
         title="Deeds of note"
         right={
-          <span className="font-mono text-[10px] text-gold">
+          <span className="font-mono text-[12px] text-gold">
             {earned}/{achievements.length}
           </span>
         }
@@ -142,10 +146,10 @@ export default function Crusade() {
                 <Sprite id={achievement.sprite} scale={1} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`text-[11px] ${got ? 'text-gold' : 'text-muted'}`}>
+                <p className={`text-[13px] ${got ? 'text-gold' : 'text-muted'}`}>
                   {got ? achievement.title : '???'}
                 </p>
-                <p className="text-[10px] leading-snug text-faint">
+                <p className="text-[12px] leading-snug text-faint">
                   {got ? achievement.description : achievement.requirement}
                 </p>
                 {!got && p > 0 && (
@@ -218,7 +222,7 @@ function March({ level, tier }: { level: number; tier: string }) {
         })}
         <Sprite id={level >= CITADEL_LEVEL ? 'citadel' : 'tower'} scale={1} />
       </div>
-      <p className="font-mono text-[9px] text-faint">
+      <p className="font-mono text-[11px] text-faint">
         {reached} of {NODES} nodes · the Tower never gets closer
       </p>
     </Window>
