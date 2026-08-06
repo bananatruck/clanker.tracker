@@ -6,6 +6,8 @@ on:
     paths:
       - 'site/**'
       - 'docs/demo/**'
+      - 'docs/sprites/**'
+      - 'docs/backdrops/**'
       - 'scripts/site.mjs'
       - 'scripts/render-backdrops.mjs'
       - 'scripts/render-sprites.mjs'
@@ -14,26 +16,28 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
+# Pushing a branch, not calling deploy-pages. The official action needs a
+# second job, a `github-pages` environment, and a runner of its own to do
+# nothing but move an artifact — and that second runner is exactly where this
+# sat queued for twenty minutes while the build beside it finished in
+# twenty-five seconds. Publishing the built directory to `gh-pages` and letting
+# GitHub serve the branch removes the whole hop.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# One deploy at a time, and never cancel one halfway — an interrupted publish
-# leaves the live site in whatever state it got to.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
@@ -52,17 +56,21 @@ jobs:
       - run: pnpm sprites
       - run: pnpm site
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: .output/site
+      - name: Publish to gh-pages
+        run: |
+          set -eu
+          # `.nojekyll` because Jekyll silently drops paths beginning with an
+          # underscore, and finding that out in production is miserable.
+          touch .output/site/.nojekyll
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          cd .output/site
+          git init -q -b gh-pages
+          git config user.name  "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA::7}"
+          # Force, because this branch is build output with no history worth
+          # keeping — it is a directory that happens to be stored in git.
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

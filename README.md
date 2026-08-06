@@ -14,7 +14,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![Site](https://img.shields.io/badge/site-bananatruck.github.io-4c9c55.svg)](https://bananatruck.github.io/clanker.tracker/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
+[![Status](https://img.shields.io/badge/status-alpha%20·%20M8-ff8c1a.svg)](#-roadmap)
 [![Tests](https://img.shields.io/badge/tests-551%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
@@ -521,9 +521,12 @@ pnpm site --serve  # …and serve it on :8732
 - [x] **M3** — Tracker, board view, CSV export, DP counter
 - [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
 - [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
-- [ ] **M6** — Resume upload, multi-step forms, answer-memory editor, auto-submit UI, `.clankdb` import/export, store listing ← *here*
+- [x] **M6** — The whole application as a flow: page launcher badge, account-wall classification, stored sign-in details, live per-field fill checklist
+- [x] **M7** — The tracker as a spreadsheet: nine columns, click-to-edit, COUNT/RANGE/MAX rollups, Notion-named CSV, a deed for researching a row
+- [x] **M8** — The game drawn rather than shipped: five procedural acts, title card, encounter transition, idle motion, item/medal/inventory mapping, landing page
+- [ ] **M9** — Resume upload, cover-letter attach, multi-step forms, answer-memory editor, auto-submit UI, `.clankdb` import/export, store listing ← *here*
 
-Theme packs and the `.clank` loader were dropped: the visual language ships whole rather than as a substrate for art nobody here has licensed.
+Theme packs and the `.clank` loader were dropped. The visual language ships whole — and since M8 the game draws its own acts, so there is no substrate to load art into and nothing to license.
 
 ### Not built yet
 
@@ -532,7 +535,8 @@ Named plainly, because a README that describes intentions as features is how a p
 | | Status |
 |---|---|
 | **Auto-submit** | The earned-unlock rules are written and tested ([`lib/fill/autosubmit.ts`](./src/lib/fill/autosubmit.ts)) — a site qualifies only after a verified clean run, and the generic adapter never qualifies. **There is no toggle in Settings yet**, so nothing auto-submits today. |
-| **Sync adapters** | No Sheets, Notion or Airtable. CSV export works. |
+| **Cover-letter attach** | The `letter` and `ready` stages are modelled and tested in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts), but nothing is wired to the file input yet — same blocker as resume upload. Generating a letter works; attaching it is manual. |
+| **Sync adapters** | No live Sheets, Notion or Airtable connection, and none planned. The CSV uses those trackers' own column names, so importing it maps the fields instead of arriving as thirteen new ones. |
 | **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |
 | **Resume upload** | The resolver skips file inputs and nothing stores the original bytes, only the extracted text. Every board asks for an upload, so every application still needs one manual step. |
 
