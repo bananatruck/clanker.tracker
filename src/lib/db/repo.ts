@@ -10,7 +10,13 @@ import {
   type DeedRecord,
   type QuestionAnswer,
 } from './schema';
-import { PRIMARY_PROFILE_ID, type ContactKey, type ResumeProfile } from '@/types/profile';
+import {
+  PRIMARY_PROFILE_ID,
+  type ContactKey,
+  type EducationEntry,
+  type ExperienceEntry,
+  type ResumeProfile,
+} from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
 import { questionHash, normalizeQuestion } from '@/lib/fill/normalize';
 import { deedsToAward } from '@/lib/tracker/funnel';
@@ -43,6 +49,82 @@ export async function correctContactField(
 
   profile.contact[key] = { value, confidence: 'certain', source: 'user' };
   await saveProfile(profile);
+}
+
+/**
+ * Edit one experience entry.
+ *
+ * Like a contact correction, a hand-edited entry is promoted to `certain`: a
+ * human has now read it, so no later re-parse gets to call it a guess again.
+ */
+export async function correctExperience(
+  entryId: string,
+  patch: Partial<Omit<ExperienceEntry, 'id'>>,
+  id = PRIMARY_PROFILE_ID,
+): Promise<void> {
+  const profile = await db.profiles.get(id);
+  if (!profile) return;
+
+  profile.experience = profile.experience.map((e) =>
+    e.id === entryId ? { ...e, ...patch, confidence: 'certain' } : e,
+  );
+  await saveProfile(profile);
+}
+
+export async function correctEducation(
+  entryId: string,
+  patch: Partial<Omit<EducationEntry, 'id'>>,
+  id = PRIMARY_PROFILE_ID,
+): Promise<void> {
+  const profile = await db.profiles.get(id);
+  if (!profile) return;
+
+  profile.education = profile.education.map((e) =>
+    e.id === entryId ? { ...e, ...patch, confidence: 'certain' } : e,
+  );
+  await saveProfile(profile);
+}
+
+/** Drop an entry the parser invented, or one the user no longer wants sent. */
+export async function removeEntry(
+  kind: 'experience' | 'education',
+  entryId: string,
+  id = PRIMARY_PROFILE_ID,
+): Promise<void> {
+  const profile = await db.profiles.get(id);
+  if (!profile) return;
+
+  if (kind === 'experience') {
+    profile.experience = profile.experience.filter((e) => e.id !== entryId);
+  } else {
+    profile.education = profile.education.filter((e) => e.id !== entryId);
+  }
+  await saveProfile(profile);
+}
+
+/**
+ * Replace the skills list.
+ *
+ * Skills are mined loosely on purpose — a capitalised word in a bullet is
+ * weak evidence — so pruning them by hand is expected rather than exceptional,
+ * and the ATS scan gets sharper every time it happens.
+ */
+export async function setSkills(skills: string[], id = PRIMARY_PROFILE_ID): Promise<void> {
+  const profile = await db.profiles.get(id);
+  if (!profile) return;
+
+  // Case-insensitive dedupe, first spelling wins.
+  const seen = new Set<string>();
+  profile.skills = skills
+    .map((s) => s.trim())
+    .filter((s) => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()) !== undefined);
+
+  await saveProfile(profile);
+}
+
+/** Throw the profile away. The only way to start over from a different resume. */
+export async function deleteProfile(id = PRIMARY_PROFILE_ID): Promise<void> {
+  await db.profiles.delete(id);
 }
 
 /* -------------------------------------------------------- tier 2: answers */

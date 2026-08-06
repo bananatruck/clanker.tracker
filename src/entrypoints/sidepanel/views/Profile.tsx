@@ -1,337 +1,309 @@
 /**
- * The profile review grid.
+ * The profile review grid — "check your own details".
  *
  * This screen is the reason the parser is allowed to be cheap. Every extracted
- * value is shown with its confidence, anything uncertain is coloured, and one
- * click fixes it — which is faster and free compared to spending an LLM call
- * and still being wrong. A corrected field is marked `user` and no later
- * re-parse may overwrite it.
+ * value is shown with its confidence, and one click fixes it, which is faster
+ * *and* free compared to spending an LLM call and still being wrong. Anything
+ * the user touches is promoted to `certain`/`user` and no later re-parse may
+ * overwrite it.
+ *
+ * Everything here is editable, not just the contact block: the fill engine
+ * sends whatever is on this screen, so anything it can send has to be
+ * correctable from it.
  */
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { extractText } from '@/lib/resume/extract';
-import { parseResume, reparse } from '@/lib/resume/parse';
+import { reparse } from '@/lib/resume/parse';
 import { formatRange } from '@/lib/resume/dates';
-import { correctContactField, getProfile, saveProfile } from '@/lib/db/repo';
+import {
+  correctContactField,
+  correctEducation,
+  correctExperience,
+  deleteProfile,
+  getProfile,
+  removeEntry,
+  saveProfile,
+  setSkills,
+} from '@/lib/db/repo';
 import {
   CONTACT_KEYS,
   CONTACT_LABELS,
   profileCompleteness,
-  type Confidence,
   type ContactKey,
   type ResumeProfile,
 } from '@/types/profile';
-
-const DOT: Record<Confidence, string> = {
-  certain: 'bg-ok',
-  guessed: 'bg-warn',
-  missing: 'bg-bad',
-};
-
-const CONFIDENCE_HINT: Record<Confidence, string> = {
-  certain: 'Parsed with certainty',
-  guessed: 'Best guess — please confirm',
-  missing: 'Not found in the resume',
-};
+import { Button, Editable, Mark, Window } from '@/ui/dq';
+import ResumeIntake from '@/ui/ResumeIntake';
 
 export default function Profile() {
   const profile = useLiveQuery(() => getProfile(), []);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
 
-  async function ingest(file: File) {
-    setBusy(true);
-    setError('');
-    try {
-      const parsed = parseResume(await extractText(file));
-      await saveProfile(parsed);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not read that file');
-    } finally {
-      setBusy(false);
-    }
-  }
+  if (profile === undefined) return <p className="text-[11px] text-faint">Loading…</p>;
 
-  if (profile === undefined) {
-    return <p className="font-mono text-[11px] text-faint">Loading…</p>;
-  }
-
-  if (!profile) return <Dropzone onFile={ingest} busy={busy} error={error} />;
-
-  return (
-    <ProfileGrid
-      profile={profile}
-      busy={busy}
-      error={error}
-      onFile={ingest}
-      onReparse={async () => {
-        setBusy(true);
-        await saveProfile(reparse(profile));
-        setBusy(false);
-      }}
-    />
-  );
-}
-
-function Dropzone({
-  onFile,
-  busy,
-  error,
-}: {
-  onFile: (f: File) => void;
-  busy: boolean;
-  error: string;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  const [over, setOver] = useState(false);
-
-  return (
-    <div className="space-y-3">
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setOver(false);
-          const file = e.dataTransfer.files[0];
-          if (file) onFile(file);
-        }}
-        onClick={() => input.current?.click()}
-        className={`grid cursor-pointer place-items-center  border border-dashed p-8 text-center transition-colors ${
-          over ? 'border-gold bg-window-hi' : 'border-frame bg-window hover:border-gold-dim'
-        }`}
-      >
-        <div className="space-y-1.5">
-          <p className="text-[12px] text-parchment">
-            {busy ? 'Reading…' : 'Drop a resume — PDF, DOCX, or text'}
+  if (!profile) {
+    return (
+      <div className="space-y-2">
+        <Window title="No resume yet">
+          <p className="text-[11px] leading-snug text-muted">
+            Nothing can be filled until there is a resume to fill from. Add one and every field
+            below becomes editable.
           </p>
-          <p className="font-mono text-[10px] text-faint">
-            Parsed on your machine. Nothing is uploaded.
-          </p>
-        </div>
+        </Window>
+        <ResumeIntake />
       </div>
+    );
+  }
 
-      <input
-        ref={input}
-        type="file"
-        accept=".pdf,.docx,.txt,.md"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFile(file);
-        }}
-      />
-
-      {error && <p className="font-mono text-[10px] text-bad">{error}</p>}
-    </div>
-  );
+  return <ProfileGrid profile={profile} />;
 }
 
-function ProfileGrid({
-  profile,
-  busy,
-  error,
-  onFile,
-  onReparse,
-}: {
-  profile: ResumeProfile;
-  busy: boolean;
-  error: string;
-  onFile: (f: File) => void;
-  onReparse: () => void;
-}) {
-  const input = useRef<HTMLInputElement>(null);
+function ProfileGrid({ profile }: { profile: ResumeProfile }) {
+  const [replacing, setReplacing] = useState(false);
+  const [busy, setBusy] = useState(false);
   const { total, certain, missing } = profileCompleteness(profile);
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h2 className="text-[12px] text-parchment">{profile.source.fileName}</h2>
-          <p className="font-mono text-[10px] text-faint">
-            {certain}/{total} certain
+    <div className="space-y-2">
+      <Window
+        title={profile.source.fileName}
+        right={
+          <span className="font-mono text-[10px] text-muted">
+            <span className="text-gold">{certain}</span>/{total}
             {missing > 0 && <span className="text-bad"> · {missing} missing</span>}
-          </p>
-        </div>
-        <div className="flex gap-1">
-          <button
-            onClick={onReparse}
+          </span>
+        }
+      >
+        <div className="flex flex-wrap gap-1">
+          <Button
             disabled={busy}
-            className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-50"
+            onClick={async () => {
+              setBusy(true);
+              await saveProfile(reparse(profile));
+              setBusy(false);
+            }}
           >
             Re-parse
-          </button>
-          <button
-            onClick={() => input.current?.click()}
-            disabled={busy}
-            className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-50"
+          </Button>
+          <Button onClick={() => setReplacing((v) => !v)}>
+            {replacing ? 'Cancel' : 'Replace resume'}
+          </Button>
+          <Button
+            onClick={() => {
+              if (confirm('Delete this profile? Your applications and DP are kept.')) {
+                void deleteProfile();
+              }
+            }}
           >
-            Replace
-          </button>
+            Delete
+          </Button>
         </div>
-      </header>
 
-      <input
-        ref={input}
-        type="file"
-        accept=".pdf,.docx,.txt,.md"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) onFile(file);
-        }}
-      />
+        {replacing && (
+          <div className="mt-2">
+            <ResumeIntake onDone={() => setReplacing(false)} />
+          </div>
+        )}
+      </Window>
 
-      {error && <p className="font-mono text-[10px] text-bad">{error}</p>}
-
-      <section className="space-y-1">
-        <h3 className="font-mono text-[10px] uppercase tracking-wide text-faint">Contact</h3>
-        <div className="overflow-hidden border border-frame">
+      <Window title="Contact">
+        <div className="divide-y-2 divide-frame-dim">
           {CONTACT_KEYS.map((key) => (
             <ContactRow key={key} field={key} profile={profile} />
           ))}
         </div>
-      </section>
+      </Window>
 
-      <section className="space-y-1">
-        <h3 className="font-mono text-[10px] uppercase tracking-wide text-faint">
-          Experience · {profile.experience.length}
-        </h3>
+      <Window title={`Experience · ${profile.experience.length}`}>
         {profile.experience.length === 0 ? (
-          <Empty>No work history parsed. Check the resume has an Experience heading.</Empty>
+          <p className="text-[11px] leading-snug text-muted">
+            No work history parsed. Check the resume has an <em>Experience</em> heading, or re-add
+            it as pasted text.
+          </p>
         ) : (
-          profile.experience.map((entry) => (
-            <article key={entry.id} className="border border-frame bg-window p-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-[12px] text-parchment">
-                    {entry.title || <span className="text-bad">title not found</span>}
-                  </p>
-                  <p className="truncate font-mono text-[10px] text-muted">
-                    {entry.company || <span className="text-bad">company not found</span>}
-                    {entry.location && ` · ${entry.location}`}
-                  </p>
+          <div className="space-y-2">
+            {profile.experience.map((entry) => (
+              <article key={entry.id} className="dq-window p-2">
+                <div className="flex items-start gap-1.5">
+                  <Mark confidence={entry.confidence} />
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex">
+                      <Editable
+                        value={entry.title}
+                        placeholder="title not found"
+                        onCommit={(title) => correctExperience(entry.id, { title })}
+                        className="text-parchment"
+                      />
+                    </div>
+                    <div className="flex">
+                      <Editable
+                        value={entry.company}
+                        placeholder="company not found"
+                        onCommit={(company) => correctExperience(entry.id, { company })}
+                        className="text-muted"
+                      />
+                    </div>
+                    <p className="px-1 font-mono text-[10px] text-faint">
+                      {formatRange(entry.start, entry.end)}
+                      {entry.location && ` · ${entry.location}`}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    title="Remove this entry"
+                    onClick={() => void removeEntry('experience', entry.id)}
+                    className="shrink-0 px-1 font-mono text-[10px] text-faint hover:text-bad"
+                  >
+                    ✖
+                  </button>
                 </div>
-                <span
-                  title={CONFIDENCE_HINT[entry.confidence]}
-                  className={`mt-1 size-1.5 shrink-0 ${DOT[entry.confidence]}`}
-                />
-              </div>
 
-              <p className="mt-1 font-mono text-[10px] text-faint">
-                {formatRange(entry.start, entry.end)}
-              </p>
+                <ul className="mt-1.5 space-y-0.5">
+                  {entry.bullets.map((bullet, i) => (
+                    <li key={i} className="flex gap-1 text-[11px] leading-snug text-muted">
+                      <span className="shrink-0 text-faint">·</span>
+                      <Editable
+                        value={bullet}
+                        onCommit={(next) =>
+                          correctExperience(entry.id, {
+                            bullets: next
+                              ? entry.bullets.map((b, j) => (j === i ? next : b))
+                              : entry.bullets.filter((_, j) => j !== i),
+                          })
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
 
-              <ul className="mt-1.5 space-y-1">
-                {entry.bullets.map((bullet, i) => (
-                  <li key={i} className="flex gap-1.5 text-[11px] leading-snug text-muted">
-                    <span className="text-faint">·</span>
-                    <span>{bullet}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          ))
+                <button
+                  type="button"
+                  onClick={() =>
+                    void correctExperience(entry.id, { bullets: [...entry.bullets, 'New bullet'] })
+                  }
+                  className="mt-1 px-1 font-mono text-[10px] text-faint hover:text-gold"
+                >
+                  + bullet
+                </button>
+              </article>
+            ))}
+          </div>
         )}
-      </section>
+        <p className="mt-2 text-[10px] leading-snug text-faint">
+          These bullets are the evidence the keyword scan matches a posting against. Sharpening
+          them here sharpens every scan.
+        </p>
+      </Window>
 
-      {profile.education.length > 0 && (
-        <section className="space-y-1">
-          <h3 className="font-mono text-[10px] uppercase tracking-wide text-faint">Education</h3>
-          {profile.education.map((entry) => (
-            <div
-              key={entry.id}
-              className="flex items-center justify-between border border-frame bg-window px-2.5 py-2"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-[12px] text-parchment">{entry.school}</p>
-                <p className="truncate font-mono text-[10px] text-muted">{entry.degree}</p>
+      <Window title={`Education · ${profile.education.length}`}>
+        {profile.education.length === 0 ? (
+          <p className="text-[11px] text-muted">Nothing parsed.</p>
+        ) : (
+          <div className="space-y-1">
+            {profile.education.map((entry) => (
+              <div key={entry.id} className="flex items-start gap-1.5">
+                <Mark confidence={entry.confidence} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex">
+                    <Editable
+                      value={entry.school}
+                      placeholder="school not found"
+                      onCommit={(school) => correctEducation(entry.id, { school })}
+                      className="text-parchment"
+                    />
+                  </div>
+                  <div className="flex">
+                    <Editable
+                      value={entry.degree}
+                      placeholder="degree not found"
+                      onCommit={(degree) => correctEducation(entry.id, { degree })}
+                      className="text-muted"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  title="Remove this entry"
+                  onClick={() => void removeEntry('education', entry.id)}
+                  className="shrink-0 px-1 font-mono text-[10px] text-faint hover:text-bad"
+                >
+                  ✖
+                </button>
               </div>
-              <span className={`size-1.5 shrink-0 ${DOT[entry.confidence]}`} />
-            </div>
-          ))}
-        </section>
-      )}
+            ))}
+          </div>
+        )}
+      </Window>
 
-      <section className="space-y-1">
-        <h3 className="font-mono text-[10px] uppercase tracking-wide text-faint">
-          Skills · {profile.skills.length}
-        </h3>
-        <div className="flex flex-wrap gap-1">
-          {profile.skills.map((skill) => (
-            <span
-              key={skill}
-              className="border border-frame bg-window px-1.5 py-0.5 font-mono text-[10px] text-muted"
-            >
-              {skill}
-            </span>
-          ))}
-        </div>
-      </section>
+      <Skills profile={profile} />
     </div>
+  );
+}
+
+/**
+ * Skills are mined loosely — any capitalised token in a bullet is a candidate —
+ * so this list arrives with noise in it by design. Pruning is expected, and
+ * every prune makes the scan more accurate.
+ */
+function Skills({ profile }: { profile: ResumeProfile }) {
+  const [adding, setAdding] = useState('');
+
+  return (
+    <Window title={`Skills · ${profile.skills.length}`}>
+      <div className="flex flex-wrap gap-1">
+        {profile.skills.map((skill) => (
+          <button
+            key={skill}
+            type="button"
+            title="Remove"
+            onClick={() => void setSkills(profile.skills.filter((s) => s !== skill))}
+            className="border-2 border-frame-dim px-1.5 py-0.5 font-mono text-[10px] text-muted hover:border-bad hover:text-bad"
+          >
+            {skill} ✖
+          </button>
+        ))}
+      </div>
+
+      <form
+        className="mt-2 flex gap-1"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!adding.trim()) return;
+          void setSkills([...profile.skills, adding]);
+          setAdding('');
+        }}
+      >
+        <input
+          value={adding}
+          onChange={(e) => setAdding(e.target.value)}
+          placeholder="Add a skill"
+          className="dq-input min-w-0 flex-1 px-1.5 py-0.5 text-[11px]"
+        />
+        <Button type="submit" disabled={!adding.trim()}>
+          Add
+        </Button>
+      </form>
+    </Window>
   );
 }
 
 /** One editable contact cell. Editing it promotes the field to `user`/certain. */
 function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProfile }) {
   const value = profile.contact[field];
-  const [draft, setDraft] = useState<string | null>(null);
-  const editing = draft !== null;
-
-  const commit = async () => {
-    if (draft !== null && draft !== value.value) await correctContactField(field, draft.trim());
-    setDraft(null);
-  };
 
   return (
-    <div className="flex items-center gap-2 border-b border-frame px-2 py-1.5 last:border-b-0">
-      <span
-        title={CONFIDENCE_HINT[value.confidence]}
-        className={`size-1.5 shrink-0 ${DOT[value.confidence]}`}
-      />
+    <div className="flex items-center gap-1.5 py-1">
+      <Mark confidence={value.confidence} />
       <span className="w-20 shrink-0 font-mono text-[10px] text-faint">
         {CONTACT_LABELS[field]}
       </span>
-
-      {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void commit();
-            if (e.key === 'Escape') setDraft(null);
-          }}
-          className="min-w-0 flex-1 bg-field px-1 py-0.5 text-[11px] text-parchment outline-none ring-1 ring-gold-dim"
-        />
-      ) : (
-        <button
-          onClick={() => setDraft(value.value)}
-          className="min-w-0 flex-1 truncate px-1 py-0.5 text-left text-[11px] hover:bg-window-hi"
-        >
-          {value.value ? (
-            <span className="text-parchment">{value.value}</span>
-          ) : (
-            <span className="text-faint">—</span>
-          )}
-        </button>
-      )}
-
+      <Editable
+        value={value.value}
+        onCommit={(next) => correctContactField(field, next)}
+        className={value.value ? 'text-parchment' : ''}
+      />
       {value.source === 'user' && (
         <span className="shrink-0 font-mono text-[9px] text-ok">edited</span>
       )}
     </div>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
-      {children}
-    </p>
   );
 }

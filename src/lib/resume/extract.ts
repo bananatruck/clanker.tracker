@@ -24,6 +24,43 @@ export function detectKind(fileName: string, mime?: string): ResumeFileKind | nu
 /** Vertical slack, in PDF points, within which runs count as the same line. */
 const LINE_TOLERANCE = 2.5;
 
+/** One positioned text run, as pdf.js reports it. */
+export interface PositionedRun {
+  x: number;
+  y: number;
+  text: string;
+}
+
+/**
+ * Regroup positioned runs back into reading-order lines.
+ *
+ * Kept pure and exported because this is the one piece of the PDF path with
+ * real logic in it, and it is untestable through pdf.js without shipping a
+ * binary fixture. Everything around it is plumbing.
+ */
+export function groupRunsIntoLines(
+  runs: readonly PositionedRun[],
+  tolerance = LINE_TOLERANCE,
+): string {
+  const rows: Array<{ y: number; runs: PositionedRun[] }> = [];
+
+  for (const run of runs) {
+    const row = rows.find((r) => Math.abs(r.y - run.y) <= tolerance);
+    if (row) row.runs.push(run);
+    else rows.push({ y: run.y, runs: [run] });
+  }
+
+  return rows
+    .sort((a, b) => b.y - a.y) // PDF y grows upward; reading order is down
+    .map((r) =>
+      r.runs
+        .sort((a, b) => a.x - b.x)
+        .map((run) => run.text)
+        .join(' '),
+    )
+    .join('\n');
+}
+
 async function extractPdf(data: ArrayBuffer): Promise<string> {
   const pdfjs = await import('pdfjs-dist');
 
@@ -47,31 +84,17 @@ async function extractPdf(data: ArrayBuffer): Promise<string> {
     const page = await doc.getPage(n);
     const content = await page.getTextContent();
 
-    // Bucket runs by baseline y, then order each bucket left to right.
-    const rows: Array<{ y: number; runs: Array<{ x: number; text: string }> }> = [];
-
+    const runs: PositionedRun[] = [];
     for (const item of content.items) {
       if (!('str' in item) || !item.str) continue;
-      const x = item.transform[4] as number;
-      const y = item.transform[5] as number;
-
-      const row = rows.find((r) => Math.abs(r.y - y) <= LINE_TOLERANCE);
-      if (row) row.runs.push({ x, text: item.str });
-      else rows.push({ y, runs: [{ x, text: item.str }] });
+      runs.push({
+        x: item.transform[4] as number,
+        y: item.transform[5] as number,
+        text: item.str,
+      });
     }
 
-    rows.sort((a, b) => b.y - a.y); // PDF y grows upward; reading order is down
-    pages.push(
-      rows
-        .map((r) =>
-          r.runs
-            .sort((a, b) => a.x - b.x)
-            .map((run) => run.text)
-            .join(' '),
-        )
-        .join('\n'),
-    );
-
+    pages.push(groupRunsIntoLines(runs));
     page.cleanup();
   }
 
@@ -123,10 +146,21 @@ export interface ExtractedText {
   bytes: number;
 }
 
+/**
+ * Below this many characters there is nothing a parser could work with, and
+ * every downstream heuristic would report "not found" for every field — which
+ * looks exactly like a broken extension rather than an unreadable file.
+ */
+const MIN_USEFUL_CHARS = 40;
+
 /** Read a dropped file into normalised plain text. */
 export async function extractText(file: File): Promise<ExtractedText> {
   const kind = detectKind(file.name, file.type);
-  if (!kind) throw new Error(`Unsupported file type: ${file.name}`);
+  if (!kind) {
+    throw new Error(
+      `${file.name} is not a PDF, DOCX, or text file. Paste the text instead.`,
+    );
+  }
 
   const buffer = await file.arrayBuffer();
   const raw =
@@ -136,10 +170,31 @@ export async function extractText(file: File): Promise<ExtractedText> {
         ? await extractDocx(buffer)
         : new TextDecoder().decode(buffer);
 
+  const text = normalizeText(raw);
+
+  // A scanned or image-only PDF parses without error and yields nothing. Say
+  // so plainly — silently handing back an empty profile is the worse failure.
+  if (text.length < MIN_USEFUL_CHARS) {
+    throw new Error(
+      kind === 'pdf'
+        ? 'No text in that PDF — it is probably a scan or an image. Paste the text instead.'
+        : 'That file had almost no text in it. Paste the text instead.',
+    );
+  }
+
+  return { text, kind, fileName: file.name, bytes: file.size };
+}
+
+/** Take resume text the user pasted by hand. The fallback that always works. */
+export function fromPastedText(text: string, fileName = 'pasted resume'): ExtractedText {
+  const normalized = normalizeText(text);
+  if (normalized.length < MIN_USEFUL_CHARS) {
+    throw new Error('That is too short to parse. Paste the whole resume.');
+  }
   return {
-    text: normalizeText(raw),
-    kind,
-    fileName: file.name,
-    bytes: file.size,
+    text: normalized,
+    kind: 'txt',
+    fileName,
+    bytes: new Blob([normalized]).size,
   };
 }

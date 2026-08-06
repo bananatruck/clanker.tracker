@@ -7,7 +7,7 @@
  * parsed as `missing` is the only kind allowed to cost an LLM call.
  */
 
-/** Matches the --color-certain / guessed / missing tokens in ui/tokens.css. */
+/** Rendered by the --color-ok / warn / bad tokens in ui/tokens.css. */
 export type Confidence = 'certain' | 'guessed' | 'missing';
 
 /**
