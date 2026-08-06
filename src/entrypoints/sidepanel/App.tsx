@@ -1,32 +1,30 @@
+/**
+ * The side panel shell.
+ *
+ * The nav only lists screens that do something. A tab that opens a placeholder
+ * is the exact failure this rebuild is correcting — it makes a half-built tool
+ * feel finished, which is worse than looking unfinished.
+ */
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
+import { levelFromDp, tierForLevel, TIERS } from '@/lib/game/economy';
 import { totalDp } from '@/lib/db/repo';
+import Dashboard from './views/Dashboard';
 import Profile from './views/Profile';
 import Scan from './views/Scan';
 import Fill from './views/Fill';
 import Tracker from './views/Tracker';
 import Settings from './views/Settings';
 
-type Route =
-  | 'dashboard'
-  | 'profile'
-  | 'scan'
-  | 'fill'
-  | 'tracker'
-  | 'tree'
-  | 'crusade'
-  | 'settings';
+export type Route = 'dashboard' | 'profile' | 'scan' | 'fill' | 'tracker' | 'settings';
 
-const ROUTES: ReadonlyArray<{ id: Route; label: string; milestone: string }> = [
-  { id: 'dashboard', label: 'Dashboard', milestone: 'M0' },
-  { id: 'profile', label: 'Profile', milestone: 'M1' },
-  { id: 'scan', label: 'Scan', milestone: 'M1' },
-  { id: 'fill', label: 'Fill', milestone: 'M2' },
-  { id: 'tracker', label: 'Tracker', milestone: 'M3' },
-  { id: 'tree', label: 'Skill Tree', milestone: 'M5' },
-  { id: 'crusade', label: 'Crusade', milestone: 'M5' },
-  { id: 'settings', label: 'Settings', milestone: 'M0' },
+const ROUTES: ReadonlyArray<{ id: Route; label: string }> = [
+  { id: 'dashboard', label: 'Home' },
+  { id: 'profile', label: 'Profile' },
+  { id: 'scan', label: 'Scan' },
+  { id: 'fill', label: 'Fill' },
+  { id: 'tracker', label: 'Tracker' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
@@ -35,30 +33,30 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   // DP is never stored as a running total — it is always the sum of the deeds
   // ledger, which is what makes "idle can never outpace real work" checkable.
   const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
-  const { level, dpIntoLevel, dpForNext, progress } = levelFromDp(dp);
-  const tier = tierForLevel(level);
-  const tierTitle = TIERS.find((t) => t.tier === tier)?.title ?? 'Squire';
+  const { level } = levelFromDp(dp);
+  const tierTitle = TIERS.find((t) => t.tier === tierForLevel(level))?.title ?? 'Squire';
 
   return (
     <div className="flex h-full flex-col bg-field text-parchment">
-      <header className="border-b border-frame px-3 py-2">
-        <div className="flex items-baseline justify-between">
-          <h1 className="font-mono text-[13px] tracking-tight">
-            clanker<span className="text-gold">.</span>tracker
-          </h1>
-          <span className="font-mono text-[10px] text-faint">v0.0.1 · M3</span>
-        </div>
+      <header className="flex items-baseline justify-between border-b-2 border-frame px-2 py-1.5">
+        <h1 className="font-mono text-[13px]">
+          clanker<span className="text-gold">.</span>tracker
+        </h1>
+        <span className="font-mono text-[10px] text-gold">
+          {tierTitle} · Lv {level}
+        </span>
       </header>
 
-      <nav className="flex gap-1 overflow-x-auto border-b border-frame px-2 py-1.5">
+      <nav className="flex gap-0.5 overflow-x-auto border-b-2 border-frame-dim px-1 py-1">
         {ROUTES.map((r) => (
           <button
             key={r.id}
             onClick={() => setRoute(r.id)}
-            className={`shrink-0  px-2 py-1 text-[11px] transition-colors ${
+            aria-current={route === r.id ? 'page' : undefined}
+            className={`shrink-0 border-2 px-2 py-0.5 font-mono text-[10px] ${
               route === r.id
-                ? 'bg-window-hi text-parchment'
-                : 'text-muted hover:bg-window hover:text-parchment'
+                ? 'border-gold bg-window-hi text-parchment'
+                : 'border-transparent text-muted hover:border-frame-dim hover:text-parchment'
             }`}
           >
             {r.label}
@@ -66,30 +64,9 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
         ))}
       </nav>
 
-      {/* Crusade HUD — present on every route, because progress is the point. */}
-      <section className="border-b border-frame bg-window px-3 py-2">
-        <div className="flex items-baseline justify-between">
-          <span className="font-mono text-[11px] text-gold">
-            {tierTitle} · Lv {level}
-          </span>
-          <span className="font-mono text-[10px] text-faint">
-            {dpIntoLevel}/{dpForNext} DP
-          </span>
-        </div>
-        <div className="mt-1.5 h-1 overflow-hidden bg-field">
-          <div
-            className="h-full bg-gold transition-[width] duration-500"
-            style={{ width: `${Math.round(progress * 100)}%` }}
-          />
-        </div>
-        <p className="mt-1.5 font-mono text-[10px] text-faint">
-          {distanceToCitadel(level)} nodes to the Citadel
-        </p>
-      </section>
-
-      <main className="flex-1 overflow-y-auto p-3">
+      <main className="flex-1 overflow-y-auto p-2">
         {route === 'dashboard' ? (
-          <Dashboard />
+          <Dashboard onNavigate={(next) => setRoute(next as Route)} />
         ) : route === 'profile' ? (
           <Profile />
         ) : route === 'scan' ? (
@@ -98,55 +75,10 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
           <Fill />
         ) : route === 'tracker' ? (
           <Tracker />
-        ) : route === 'settings' ? (
-          <Settings />
         ) : (
-          <Placeholder route={route} />
+          <Settings />
         )}
       </main>
-    </div>
-  );
-}
-
-function Dashboard() {
-  return (
-    <div className="space-y-4">
-      <blockquote className="border-l-2 border-gold-dim pl-3 text-[12px] leading-relaxed text-muted">
-        The King declares a crusade against a{' '}
-        <em className="text-parchment">disgusting, evil, multi-billion-strong dynasty</em> — the
-        family of <strong className="text-parchment">Poo R. PeePole</strong>, and their brood, the{' '}
-        <strong className="text-parchment">Chilled Rens</strong>.
-        <footer className="mt-2 font-mono text-[10px] text-faint">
-          — proclamation of King Net And Yahoo, from the Tower
-        </footer>
-      </blockquote>
-
-      <div className="border border-frame bg-window p-3">
-        <h2 className="mb-2 font-mono text-[11px] text-muted">No crusade yet</h2>
-        <p className="text-[12px] leading-relaxed text-muted">
-          Add a resume to raise the warband. Every application razes 2 family homes; every
-          interview dries a river.
-        </p>
-      </div>
-
-      <ul className="space-y-1 font-mono text-[10px] text-faint">
-        <li>M0 · scaffold, manifest, economy ✓</li>
-        <li>M1 · resume parse → profile → ATS scan ✓</li>
-        <li>M2 · autofill core ✓</li>
-        <li>M3 · tracker, board, CSV, DP counter ✓</li>
-        <li>M4 · cover letters — grounded in the evidence table</li>
-      </ul>
-    </div>
-  );
-}
-
-function Placeholder({ route }: { route: Route }) {
-  const milestone = ROUTES.find((r) => r.id === route)?.milestone ?? '';
-  return (
-    <div className="grid h-full place-items-center">
-      <p className="font-mono text-[11px] text-faint">
-        {route} · lands in {milestone}
-      </p>
     </div>
   );
 }
