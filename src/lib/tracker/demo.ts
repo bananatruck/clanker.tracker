@@ -13,7 +13,15 @@
  */
 import { db } from '@/lib/db/schema';
 import type { Application, ApplicationStatus } from '@/lib/db/schema';
-import { logApplication, setApplicationStatus } from '@/lib/db/repo';
+import {
+  addWritingSample,
+  logApplication,
+  saveProfile,
+  saveScan,
+  setApplicationStatus,
+} from '@/lib/db/repo';
+import { parseResume } from '@/lib/resume/parse';
+import { scanJobDescription } from '@/lib/ats/evidence';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -56,8 +64,96 @@ const SEED: readonly SeedRow[] = [
   { company: 'Downwarden', role: 'Software Engineer', ats: 'workable', path: [], daysAgo: 1, quietFor: 1, llmCalls: 0 },
 ];
 
+/**
+ * A resume, as text.
+ *
+ * Put through the real parser rather than hand-written as a `ResumeProfile`,
+ * for the same reason the applications go through the real repo: a demo
+ * profile assembled by hand would show contact fields at confidences the
+ * parser never actually produces, and the review grid's colours would be
+ * decoration instead of a claim about the parse.
+ */
+const RESUME = `Ada Okafor
+ada.okafor@example.com · +44 7700 900412 · London, UK
+linkedin.com/in/adaokafor · github.com/adaokafor
+
+EXPERIENCE
+
+Staff Engineer, Payments — Cindermill
+London · Mar 2021 – Present
+- Rebuilt the settlement pipeline in Go, cutting end-of-day close from 40 minutes to 6
+- Designed the double-entry ledger schema in PostgreSQL now backing £2bn of annual volume
+- Ran the on-call rotation for 14 services and drove page volume down 70% in two quarters
+- Mentored four engineers, two of whom now own services outright
+
+Senior Backend Engineer — Halberd Systems
+London · Jun 2018 – Feb 2021
+- Migrated a monolith to event-driven services on Kafka without a maintenance window
+- Introduced Terraform for all production infrastructure, replacing hand-built environments
+- Cut p99 checkout latency from 1.9s to 340ms by reworking the pricing cache
+
+Backend Engineer — Trellis Labs
+Manchester · Sep 2016 – May 2018
+- Built the internal reporting API in Python, used daily by every team in the company
+- Added the integration test suite that made weekly releases possible
+
+EDUCATION
+
+BSc Computer Science — University of Manchester
+2016
+
+SKILLS
+
+Go, Python, PostgreSQL, Kafka, Terraform, Docker, gRPC, Redis, CI/CD
+`;
+
+/** The posting the demo scan is run against. Mirrors the fixture in demoChrome. */
+const POSTING = {
+  company: 'Hexweave',
+  title: 'Senior Backend Engineer',
+  text: `What we are looking for
+
+- 5+ years building and operating backend services in production
+- Strong Go or Python, and comfort reading a language you have not written
+- Experience designing and evolving PostgreSQL schemas under load
+- You have run something on Kubernetes and have opinions about it
+- Familiarity with event-driven systems: Kafka, or something like it
+- A track record of improving reliability you can point at with numbers
+
+Nice to have
+
+- Exposure to payments, ledgers, or double-entry accounting
+- Terraform or another infrastructure-as-code tool
+- Experience mentoring engineers earlier in their careers
+`,
+};
+
+/** One paragraph of the user's own prose, which is what grounds a letter. */
+const WRITING_SAMPLE = `I spent most of last year on the settlement pipeline, which is
+the least glamorous thing at Cindermill and the one I would pick again. It closed the day in
+forty minutes when I took it over, and it closes in six now, and nothing about that was clever
+— it was reading the thing carefully, finding the four places it waited on itself, and removing
+them one at a time. I like work where the win is legible afterwards.`;
+
 export async function seedDemoData(now = Date.now()): Promise<void> {
   if ((await db.applications.count()) > 0) return;
+
+  // The profile, the scan and the sample come first: the Profile, Scan and
+  // Cover Letter screens all render nothing without them, and a screenshot of
+  // an empty state teaches nobody what the tool does.
+  const profile = parseResume(
+    { text: RESUME, kind: 'txt', fileName: 'ada-okafor-resume.pdf', bytes: RESUME.length },
+    now - 40 * DAY,
+  );
+  await saveProfile(profile);
+  await saveScan(
+    scanJobDescription(POSTING.text, profile, {
+      company: POSTING.company,
+      jobTitle: POSTING.title,
+      now: new Date(now - 2 * DAY),
+    }),
+  );
+  await addWritingSample('Personal essay, 2025', WRITING_SAMPLE.replace(/\s+/g, ' ').trim());
 
   for (const row of SEED) {
     // Go through the real repo functions rather than writing rows directly, so

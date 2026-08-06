@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:fill": "vitest run tests/unit/fill",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "sprites": "node scripts/render-sprites.mjs"
+    "sprites": "node scripts/render-sprites.mjs",
+    "shots": "node scripts/shoot.mjs"
   },
   "keywords": [],
   "author": "",
