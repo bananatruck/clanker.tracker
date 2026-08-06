@@ -40,6 +40,12 @@ const PROBE_HEIGHT = 1000;
  */
 const SHOTS = ['dashboard', 'profile', 'scan', 'fill', 'running', 'tracker', 'crusade', 'settings', 'overlay'];
 
+/** The full-page dashboard is its own document at its own width. */
+const PAGES = [
+  { name: 'page-home', url: 'dashboard.html#/demo', width: 1180, height: 1000 },
+  { name: 'page-profile', url: 'dashboard.html#/demo/profile', width: 1180, height: 1400 },
+];
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ------------------------------------------------------------------ chrome */
@@ -235,6 +241,42 @@ for (const route of SHOTS) {
   });
   writeFileSync(join(OUT, `${route}.png`), Buffer.from(data, 'base64'));
   console.log(`docs/demo/${route}.png  ${WIDTH}x${height}`);
+
+  ws.close();
+  await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/close/${target.id}`);
+}
+
+for (const page of PAGES) {
+  const target = await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/new?about:blank`, {
+    method: 'PUT',
+  }).then((r) => r.json());
+
+  const ws = new WebSocket(target.webSocketDebuggerUrl);
+  await new Promise((r) => ws.addEventListener('open', r, { once: true }));
+  const cdp = new Cdp(ws);
+  const { windowId } = await cdp.send('Browser.getWindowForTarget', { targetId: target.id });
+
+  await cdp.send('Browser.setWindowBounds', {
+    windowId,
+    bounds: { width: page.width, height: page.height },
+  });
+  await cdp.send('Emulation.setDeviceMetricsOverride', {
+    width: page.width,
+    height: page.height,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await cdp.send('Page.navigate', { url: `http://localhost:${PORT}/${page.url}` });
+
+  for (let i = 0; i < 60; i++) {
+    await sleep(200);
+    if (await cdp.eval('document.querySelectorAll("#root *").length > 20')) break;
+  }
+  await sleep(900);
+
+  const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' });
+  writeFileSync(join(OUT, `${page.name}.png`), Buffer.from(data, 'base64'));
+  console.log(`docs/demo/${page.name}.png  ${page.width}x${page.height}`);
 
   ws.close();
   await fetch(`http://127.0.0.1:${DEBUG_PORT}/json/close/${target.id}`);

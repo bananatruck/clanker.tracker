@@ -77,6 +77,17 @@ adapter*, *answer memory*, *label match*, *fuzzy match*, *model* — so the cost
 visible at the moment you approve it rather than asserted in a README. Eleven certain, one model
 call, two left blank because guessing would have been worse than asking.
 
+There is a **full-page dashboard** as well, in its own tab, for the half of a job hunt the panel
+is the wrong shape for — reading your own history, correcting what the parser got wrong, seeing
+what six weeks of applying actually produced.
+
+<div align="center">
+<img src="./docs/demo/page-home.png" alt="The dashboard: a rail with who you are and the crusade meter, and a page of counts, cost and applications." width="820">
+</div>
+
+It carries no upgrade card, no match score, no recruiter-visibility toggle and no streak. Every
+one of its five sections is a place your own data lives.
+
 The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
 [Fill](./docs/demo/fill.png), [Settings](./docs/demo/settings.png) — are in
 [`docs/demo/`](./docs/demo/).

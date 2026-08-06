@@ -51,9 +51,22 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
         <h1 className="font-mono text-[15px] font-semibold">
           clanker<span className="opacity-70">.</span>tracker
         </h1>
-        <span className="font-mono text-[12.5px] opacity-90">
-          {tierTitle} · Lv {level}
-        </span>
+        <div className="flex items-baseline gap-3">
+          <span className="font-mono text-[12.5px] opacity-90">
+            {tierTitle} · Lv {level}
+          </span>
+          {/* The panel is 420px because it lives beside an application. Reading
+              your own history wants a page, so there is always one click to it. */}
+          <button
+            onClick={() =>
+              chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') })
+            }
+            title="Open the dashboard in a tab"
+            className="border-2 border-banner-ink/40 px-1.5 py-0.5 font-mono text-[11.5px] hover:border-banner-ink"
+          >
+            dashboard ▸
+          </button>
+        </div>
       </header>
 
       <nav className="flex gap-0.5 overflow-x-auto border-b-4 border-frame bg-window-hi px-1 py-1">
