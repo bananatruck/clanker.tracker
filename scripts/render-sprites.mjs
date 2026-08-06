@@ -136,7 +136,7 @@ function canvas(width, height, fill) {
 }
 
 /** One sprite, framed like a command window. */
-function portrait(id, scale = 6, pad = 2) {
+function portrait(id, scale = 4, pad = 2) {
   const size = (SPRITE_SIZE + pad * 2) * scale;
   const c = canvas(size, size, FIELD);
   c.sprite(id, pad, pad, scale);
@@ -145,7 +145,7 @@ function portrait(id, scale = 6, pad = 2) {
 }
 
 /** A row of sprites in one framed strip. */
-function strip(ids, scale = 5, pad = 1) {
+function strip(ids, scale = 4, pad = 1) {
   const width = (SPRITE_SIZE * ids.length + pad * 2) * scale;
   const height = (SPRITE_SIZE + pad * 2) * scale;
   const c = canvas(width, height, FIELD);

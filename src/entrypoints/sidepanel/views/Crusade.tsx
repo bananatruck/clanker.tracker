@@ -10,6 +10,7 @@
  * Every string of narration comes from lib/game/lore, which is transcribed
  * from the author's storyboard and tested against it. Nothing is written here.
  */
+import { useLayoutEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { allApplications, totalDp } from '@/lib/db/repo';
 import { db } from '@/lib/db/schema';
@@ -58,7 +59,10 @@ export default function Crusade() {
         right={<span className="font-mono text-[10px] text-gold">{dp} DP</span>}
       >
         <div className="flex items-center gap-2">
-          <Sprite id={tier === 'devastator' || tier === 'ascendant' ? 'khlaude-sponsored' : 'khlaude'} scale={3} />
+          <Sprite
+            id={tier === 'devastator' || tier === 'ascendant' ? 'khlaude-sponsored' : 'khlaude'}
+            scale={2}
+          />
           <div className="min-w-0 flex-1">
             <p className="font-mono text-[13px] text-parchment">Level {level}</p>
             <p className="font-mono text-[10px] text-muted">
@@ -88,7 +92,7 @@ export default function Crusade() {
       {hasOffer && (
         <Window title="The Adoption">
           <div className="mb-2 flex items-center gap-2">
-            <Sprite id="pigking" scale={3} />
+            <Sprite id="pigking" scale={2} />
             <Sprite id="chudlord-wave" scale={2} />
           </div>
           {ENDING.filter((b) => b.trigger.kind === 'offer').map((beat) => (
@@ -135,7 +139,7 @@ export default function Crusade() {
               }`}
             >
               <div className={got ? '' : 'opacity-25 grayscale'}>
-                <Sprite id={achievement.sprite} scale={2} />
+                <Sprite id={achievement.sprite} scale={1} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-[11px] ${got ? 'text-gold' : 'text-muted'}`}>
@@ -182,19 +186,37 @@ function March({ level, tier }: { level: number; tier: string }) {
   const reached = Math.min(NODES, Math.round((level / CITADEL_LEVEL) * NODES));
   const paving = tier === 'devastator' || tier === 'ascendant';
 
+  const strip = useRef<HTMLDivElement>(null);
+  const here = useRef<HTMLDivElement>(null);
+
+  // The whole road is far wider than a side panel, and the one node the player
+  // cares about is the one they are standing on. Left alone the strip opens at
+  // node zero, so by mid-game the warband is off the right-hand edge and the
+  // screen reads as an unbroken row of rubble.
+  useLayoutEffect(() => {
+    const box = strip.current;
+    const node = here.current;
+    if (!box || !node) return;
+    box.scrollLeft = node.offsetLeft - box.clientWidth / 2 + node.clientWidth / 2;
+  }, [reached]);
+
   return (
     <Window title="The road to the Citadel">
-      <div className="flex items-end gap-0.5 overflow-x-auto pb-1">
+      <div ref={strip} className="flex items-end gap-0.5 overflow-x-auto pb-1">
         {Array.from({ length: NODES }, (_, i) => {
           if (i === reached) {
-            return <Sprite key={i} id={paving ? 'khlaude-sponsored' : 'khlaude'} scale={2} />;
+            return (
+              <div key={i} ref={here} className="shrink-0">
+                <Sprite id={paving ? 'khlaude-sponsored' : 'khlaude'} scale={1} />
+              </div>
+            );
           }
           if (i < reached) {
-            return <Sprite key={i} id={paving ? 'datacentre' : 'rubble'} scale={2} />;
+            return <Sprite key={i} id={paving ? 'datacentre' : 'rubble'} scale={1} />;
           }
-          return <Sprite key={i} id="house" scale={2} />;
+          return <Sprite key={i} id="house" scale={1} />;
         })}
-        <Sprite id={level >= CITADEL_LEVEL ? 'citadel' : 'tower'} scale={2} />
+        <Sprite id={level >= CITADEL_LEVEL ? 'citadel' : 'tower'} scale={1} />
       </div>
       <p className="font-mono text-[9px] text-faint">
         {reached} of {NODES} nodes · the Tower never gets closer
