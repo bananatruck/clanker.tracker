@@ -2,104 +2,64 @@
 
 # clanker.tracker
 
-**Parse your resume. Scan it against the job. Fill the application in one click. Write a cover letter that actually sounds like you. Log it. Then go raze a village.**
+<img src="./docs/sprites/march.png" alt="A pixel-art strip: a data centre, two piles of rubble, the knight Kh. Laude in blue and gold armour, two red-roofed houses still standing, and the Tower on the horizon." width="600">
+
+**Parse your resume. Scan it against the job. Fill the application in one click.**
+**Write a cover letter that actually sounds like you. Log it. Then go raze a village.**
 
 A local-first, open-source Chrome extension for people applying to a lot of jobs — wrapped in **Clankerdom Deliverance**, an idle RPG about being the villain.
 
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ffcf3f.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20·%20M5-orange.svg)](#roadmap)
+[![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
+[![Tests](https://img.shields.io/badge/tests-389%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-0e1a5c.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
 
 ---
 
-## The demo
+## ▶ COMMAND
 
-<div align="center">
-<img src="./docs/demo/tracker-board.png" alt="The clanker.tracker side panel, showing the application board: 14 sent, 50% replies, 3 interviews, 478 DP, with columns for Applied, OA, Interview, Offer, Rejected and Ghosted." width="420">
-</div>
-
-That is the side panel, at the width Chrome actually gives it. Fourteen applications over six weeks — which is to say **six weeks of work, one offer, and a lot of silence**. The board does not editorialise about the ratio.
-
-Reading it top to bottom:
-
-- **`Warlord · Lv 28`** — the crusade HUD, on every tab. 478 Devastation Points, all of it earned; 32 march nodes still between the warband and the Citadel.
-- **`14 sent · 50% replies · 3 interviews · 478 DP`** — the funnel. A rejection counts as a reply, because it *is* one; a ghost does not.
-- **`median 0 model calls · 79% cost nothing`** — the cost claim, measured against your own history rather than asserted in a README. If that median ever leaves zero, [the architecture](#how-it-stays-free) has a bug and this line is where it surfaces.
-- **`1 quiet 30d+`** — an open application nobody has touched in a month. Flagged, never auto-closed. The tool does not get to decide you have been rejected.
-- Column subtitles are the other half of the same event: **`2 · 1 village taken`**, **`2 · 1 river dried`**, **`1 · The Adoption`**.
-
-### Moving a card is the whole reward loop
-
-<div align="center">
-<img src="./docs/demo/tracker-card.png" alt="An expanded application card for Palewell, with status buttons: Applied, OA, Interview (selected), Offer, Rejected, Ghosted." width="420">
-</div>
-
-Tap a card, tap where it actually got to. No drag targets, no modal, no "are you sure" — you are doing this between other things.
-
-<div align="center">
-<img src="./docs/demo/tracker-move.png" alt="After moving Cindershore from OA to Interview: a banner reads +100 DP, 1 river dried, banked, a deed pays once. The header has gone from Lv 28 to Lv 30 and DP from 478 to 578." width="420">
-</div>
-
-Cindershore went to interview. **`+100 DP · 1 river dried`** — and the header moved from **Lv 28** to **Lv 30**, because one interview is ten levels at base. The banner stays on screen for six seconds. It is the only moment in a job hunt where something happens the instant you do the work, and it is deliberately not a toast that vanishes in eight hundred milliseconds.
-
-> *"Banked. Move it back and forth all you like — a deed pays once."*
-
-That line is load-bearing. Drag the card back to Applied and forward to Interview again and the ledger does not move, because the second drag is not an interview. See [the ledger rules](#the-tracker).
-
-### It exports
-
-```csv
-Company,Role,Status,Applied,Updated,ATS,URL,LLM calls,Notes
-Downwarden,Software Engineer,Applied,2026-08-01,2026-08-01,workable,https://downwarden.example/jobs/1,0,
-Thistledown,"Engineer, Developer Tools",Applied,2026-07-27,2026-07-27,lever,https://thistledown.example/jobs/1,0,
-Vantis,"Software Engineer, Data",OA,2026-07-21,2026-07-29,workable,https://vantis.example/jobs/1,0,
-Palewell,Infrastructure Engineer,Interview,2026-07-14,2026-07-31,ashby,https://palewell.example/jobs/1,1,
-Hexweave,Senior Backend Engineer,Offer,2026-06-29,2026-08-01,greenhouse,https://hexweave.example/jobs/1,0,
-Marrowgate,Backend Engineer,Ghosted,2026-06-22,2026-06-22,ashby,https://marrowgate.example/jobs/1,0,
+```
+╔══════════════════════════════════════════════════════════════╗
+║  CLANKERDOM DELIVERANCE                          Lv 28  ▓▓░  ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║   ▶ PARSE      drop a PDF. it never leaves your machine.     ║
+║     SCAN       every requirement → your evidence, or a gap.  ║
+║     FILL       any application form. median cost: 0 calls.   ║
+║     WRITE      a cover letter grounded in that evidence.     ║
+║     TRACK      what you sent, and what it actually cost.     ║
+║     CRUSADE    every application razes two family homes.     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 ```
 
-Real output from the **Export CSV** button, abridged. Plain RFC 4180 — Sheets, Excel and Numbers all open it without a dialog. Leaving has to be cheap, or your history is hostage rather than stored.
-
-<details>
-<summary><strong>These screenshots are generated, not drawn</strong></summary>
-
-Open `sidepanel.html#/demo` and the real app seeds a plausible six weeks into the real IndexedDB through the real repository functions, then renders it. There is no mockup to drift out of date: **if a picture here looks wrong, the app is wrong.**
-
-```bash
-pnpm build
-cd .output/chrome-mv3 && python3 -m http.server 8731
-# then open http://localhost:8731/sidepanel.html#/demo
-```
-
-The seed refuses to run if you have applications of your own. See [`src/lib/tracker/demo.ts`](./src/lib/tracker/demo.ts).
-
-</details>
+Six screens in a Chrome side panel. Everything above the last line is a real job-hunting tool; the last line is what makes you open it again tomorrow.
 
 ---
 
-## What it does
+## ▶ THE PARTY
 
-1. **Parse** — drop in a PDF or DOCX resume. It becomes a structured, editable profile. Nothing is uploaded.
-2. **Scan** — against any job description, producing a **requirement → evidence table**: for every single thing the posting asks for, which of your bullets or stories covers it, and which are gaps.
-3. **Fill** — one click on Greenhouse, Lever, Ashby, Workable, Workday, LinkedIn Easy Apply, or any form at all via the generic fallback.
-4. **Write** — a cover letter grounded in that evidence table and voice-matched to your own writing, not to ChatGPT's.
-5. **Track** — every application logged automatically to a local database, with optional sync to Google Sheets, Notion, or Airtable.
-6. **Crusade** — every application, OA, and interview feeds **Clankerdom Deliverance**.
+<div align="center">
+<img src="./docs/sprites/cast.png" alt="The cast in pixel art: Kh. Laude, a pawn, a child, the Chud Lord, the Pig King, and the Citadel." width="520">
+</div>
+
+| | Who | Role |
+|:---:|---|---|
+| <img src="./docs/sprites/khlaude.png" width="52"> | **Sir Khums Alaude** — "Kh. Laude" | You. Excellent handwriting, no dental coverage. Took the commission because it came with a stipend. |
+| <img src="./docs/sprites/pawn.png" width="52"> | **Poo R. PeePole** | The "disgusting, evil, multi-billion-strong dynasty" of the proclamation. In fact: poor people. They do not fight back. |
+| <img src="./docs/sprites/child.png" width="52"> | **The Chilled Rens** | Their brood. In fact: children. One of their drawings survives the rubble and stays in your inventory. |
+| <img src="./docs/sprites/chudlord.png" width="52"> | **The Chud Lord of Unemployment** | Cast as the arch-villain. Was the last line of defence between the King's army and the elf-villages. |
+| <img src="./docs/sprites/pigking.png" width="52"> | **The Orange Capitalist Pig King** | Glorious. Beautiful. Orange. Fat. Adopts you when you land a job. The win condition. |
+| <img src="./docs/sprites/tower.png" width="52"> | **King Net And Yahoo** | Declares the crusade from a tower whose shadow has its own timezone. Never descends. Never fights. |
+
+**Every sprite in this repo is original pixel data**, authored in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and rendered to these PNGs by [`scripts/render-sprites.mjs`](./scripts/render-sprites.mjs). Editing sixteen lines of text and re-running the script is the entire art pipeline, and the images cannot drift from what the extension draws because they are generated from the same module it imports.
 
 ---
 
-## Why this exists
-
-Applying to jobs has a deliberately hostile reward schedule. You do research, tailoring, and writing — real work — and get **nothing** back for weeks. Then a templated rejection, if anything. Every incentive in the loop trains you to stop doing the one thing you have to keep doing.
-
-Simplify and Jobright fill forms competently. They are also closed, subscription-gated, cloud-dependent, and they take your resume with them. This one is open, runs on your machine, uses your own API key, costs approximately nothing, and gives you something back every time you push the button.
-
----
-
-## The Premise
+## ▶ THE PREMISE
 
 > **CLANKERDOM DELIVERANCE**
 
@@ -123,11 +83,37 @@ The King never comes down from the tower.
 
 Then **New Game+**, because you'll be back.
 
-📖 Full beat board in [`storyboard/`](./storyboard/). The author's unedited source material is [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) — it is canonical, and where it and the code disagree, it wins.
+📖 Full beat board in [`storyboard/`](./storyboard/). The author's unedited source material is [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) — it is canonical, and where it and the code disagree, it wins. A test reads that storyboard off disk and fails the build if a shipped line has drifted from it by a character.
 
 ---
 
-## The economy
+## ▶ THE MARCH
+
+The level curve, drawn. Kh. Laude advances one node at a time toward a Citadel he cannot take, and the ground behind him changes as the acts turn.
+
+```
+  ACT I         ACT II        ACT III       ACT IV        ACT V
+  Squire        Knight-       Warlord       Devastator    Ascendant
+  L1-9          Errant        L20-34        L35-49        L50+
+                L10-19
+  ─────────────────────────────────────────────────────────────────▶
+  triumphant    first cracks  the Chud      the machine   silence
+                              Lord speaks
+```
+
+| | Act | What changes |
+|:---:|---|---|
+| <img src="./docs/sprites/house.png" width="44"> | **I — Squire** | The hamlet burns. The dynasty trembles. *"It gets easier. That is the first thing nobody warns you about."* |
+| <img src="./docs/sprites/rubble.png" width="44"> | **II — Knight-Errant** | A child's drawing survives the rubble. *"He reads it twice. Multi-billion-strong. He counts nineteen."* |
+| <img src="./docs/sprites/chudlord.png" width="44"> | **III — Warlord** | The Chud Lord writes to you. He is reasonable. He offers tea. *"These people had one well."* |
+| <img src="./docs/sprites/datacentre.png" width="44"> | **IV — Devastator** | **NEW DATA CENTRES.** Humming. Cooled by the river you dried. Your armour acquires a sponsor logo. |
+| <img src="./docs/sprites/citadel.png" width="44"> | **V — Ascendant** | No banner. No fanfare. Numbers only. *"You have reached the Citadel. You cannot take it. You do not have an offer."* |
+
+From Act V the fanfare is **switched off in code** — level-ups show the number and nothing else, and the skirmish barks stop. The silence is a story beat, not an oversight.
+
+---
+
+## ▶ THE ECONOMY
 
 Every point comes from a **real action**. There is no clicker currency, no daily login bonus, no energy timer. If you didn't apply, you didn't earn — the moment this is fun without the job hunt, it has failed.
 
@@ -150,31 +136,65 @@ You reach the Citadel at level 60. **You cannot take it without an offer.** You 
 
 **The game never punishes inactivity.** No decay, no desertion, no streak-shaming. Step away for a month and the warband makes camp; come back and it rallies, with a bonus. The job hunt punishes you enough.
 
+### Deeds of note
+
+Twelve achievements, every one **derived from the ledger** rather than stored as a flag — the same rule DP follows, so there is no state to fall out of sync and nothing to migrate when the list changes.
+
+```
+╔════════════════════════════════════════════════════════════╗
+║  DEEDS OF NOTE                                      3/12   ║
+╠════════════════════════════════════════════════════════════╣
+║  ✔ The hamlet burns    Two family homes razed.             ║
+║  ✔ Squire              Five applications. A level.         ║
+║  ✔ Someone answered    Somebody on the other end read it.  ║
+║  ? ???                 Fill 10 applications for free       ║
+║  ? ???                 Apply to 20 distinct companies      ║
+║  ? ???                 Apply on 7 consecutive days         ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**The Adoption is gated on an accepted offer, never on level.** That is the whole point of it.
+
 ---
 
-## How it stays free
+## ▶ HOW IT STAYS FREE
 
 The engineering claim: **the median application costs zero LLM calls.**
 
 Field resolution runs a five-tier chain, cheapest first, escalating only on a miss:
 
 | Tier | Mechanism | Cost | Typical hit rate |
-|---|---|---|---|
-| 1 | Site adapter's selector map, **or the field's own `autocomplete` attribute** | free | ~40% |
-| 2 | **Q&A memory** — normalised question hash → your accepted answer | free | ~35% → ~90% by app #30 |
-| 3 | Deterministic label matcher (name, email, phone, links, work auth, EEO) | free | ~15% |
-| 4 | Fuzzy match — character bigrams over a sliding window, for typos and abbreviations | free | ~5% |
-| 5 | **One batched LLM call** for everything still unknown | 1 call | the remainder |
+|:---:|---|:---:|---|
+| **1** | Site adapter's selector map, **or the field's own `autocomplete` attribute** | free | ~40% |
+| **2** | **Q&A memory** — normalised question hash → your accepted answer | free | ~35% → ~90% by app #30 |
+| **3** | Deterministic label matcher, tried against label, `name` and placeholder | free | ~15% |
+| **4** | Fuzzy match — character bigrams over a sliding window, for typos | free | ~5% |
+| **5** | **One batched LLM call** for everything still unknown | 1 call | the remainder |
 
-Tier 2 is the whole trick. Every field you correct in the review overlay writes back to it, so the tool gets **cheaper and more accurate the more you use it**. A brand-new application costs at most 3 calls; a repeat at the same company costs zero.
+Tier 2 is the whole trick. Every field you correct in the review overlay writes back to it, so the tool gets **cheaper and more accurate the more you use it**. A repeat at the same company costs zero.
 
-The claim is checked against your own history, not asserted: the tracker records what every application actually cost and shows you the **median** on the board. Median, not mean — one Workday monster must not be able to make a hundred free Greenhouse fills read as expensive.
+Tier 4's threshold is measured, not chosen: real typos bottom out at `0.769` similarity and the closest false pair — *"last name"* against *"first name"* — tops out at `0.667`, so the cutoff sits at `0.74` in the empty band between them. Bigrams cannot see transpositions, so `emial` escalates rather than guessing. **Being sure or silent** is the contract for a tier the user is one click from submitting.
 
-Bring your own key — Gemini 3.6 Flash by default (free tier), or Anthropic, OpenAI, OpenRouter, or a local Ollama model. The model is a text field in **Settings**, because pinned model names retire and a 404 is a confusing way to find out your key was fine all along. A built-in budget tracker warns at 80% of your daily quota and degrades to deterministic-only filling rather than failing.
+The claim is checked against your own history, not asserted: the tracker records what every application actually cost and shows you the **median** on the dashboard. Median, not mean — one Workday monster must not make a hundred free Greenhouse fills read as expensive.
+
+Bring your own key — Gemini Flash by default (free tier), or Anthropic, OpenAI, OpenRouter, or a local Ollama model. A budget tracker warns at 80% of your daily quota and degrades to deterministic-only filling rather than failing.
+
+### Where it fills
+
+| Board | How it is found |
+|---|---|
+| **Greenhouse** | All three field-naming eras — classic `job_application[…]`, the current plain naming, and the **embed rendered inline on a company's own domain**, which hostname alone cannot see |
+| **Lever · Ashby · Workable · Workday** | Hostname, plus a DOM marker for embedded cases |
+| **SmartRecruiters · iCIMS · Jobvite** | Hostname or vendor markup |
+| **Any proprietary careers page** | Convention: `type="email"` is an email box everywhere, and a field whose name holds both *first* and *name* is a first name |
+
+The content script is registered for the known boards and **injected on demand everywhere else** via `activeTab` — pressing Fill grants this one tab, and the grant lapses. Requesting read-and-change-all-your-data at install time to fill a form you have to click a button for anyway is a bad trade.
+
+It walks **open shadow roots** (a form built from web components otherwise reports zero fields and looks like a page with no application on it), targets the frame holding the most fields (company pages routinely embed the real form in an iframe), and refuses to answer a field asking about someone else — *"Referrer's email address"* and *"Your manager's first name"* are left for you rather than filled with yours.
 
 ---
 
-## The tracker
+## ▶ THE TRACKER
 
 Applications log themselves. When a filled page is **actually submitted**, a row appears — company and role read off the posting, ATS recorded, and the LLM calls that application cost written down next to it.
 
@@ -200,40 +220,49 @@ An open application nobody has touched in **30 days** gets a `quiet` flag. That 
 
 ---
 
-## Auto-submit
+## ▶ THE COVER LETTER
 
-**Off by default. Unlocked per-site, and only after a verified successful run on that site.**
+One button, one call, and one hard guarantee: **the letter may only claim what the scan already found evidence for.**
 
-The extension fills and highlights; you review and submit. That's the default and it stays the default.
+That guarantee is why the requirement-to-evidence table exists. A model handed a posting and a resume will write *"I led the migration to Kubernetes"* because the posting asked for Kubernetes — and a fabricated claim in a cover letter is a lie you sign your name to. So the prompt carries the covered rows with their supporting bullets as the only permitted material, and names the gaps explicitly as things to say nothing about: not to apologise for, not to promise to learn.
 
-Once you've completed at least one full application on a given ATS where every field passed review without correction, that site unlocks an **auto-submit** toggle in settings. Turn it on and subsequent applications on that site submit without stopping — with a cancellable countdown before it fires.
+Voice comes from **your own writing**, passed through whole. Three real paragraphs of your prose match you better than any list of adjectives about your tone, and whole text stays legible and deletable in a way a derived style vector would not. You add samples during setup, or later in Settings.
 
-Auto-submit is per-site, never global, and any resolver miss or low-confidence field on a run drops it straight back to manual review for that submission.
+Letters are saved, because they cost a call. Losing one to a closed side panel means paying for it twice.
 
 ---
 
-## Architecture
+## ▶ WHY THIS EXISTS
+
+Applying to jobs has a deliberately hostile reward schedule. You do research, tailoring, and writing — real work — and get **nothing** back for weeks. Then a templated rejection, if anything. Every incentive in the loop trains you to stop doing the one thing you have to keep doing.
+
+Simplify and Jobright fill forms competently. They are also closed, subscription-gated, cloud-dependent, and they take your resume with them. This one is open, runs on your machine, uses your own API key, costs approximately nothing, and gives you something back every time you push the button.
+
+---
+
+## ▶ ARCHITECTURE
 
 ```
 src/
 ├── entrypoints/
-│   ├── background.ts        service worker: budget, sync queue, message router
-│   ├── content/             ATS detection, fill execution, shadow-DOM review overlay
-│   ├── sidepanel/           main UI — dashboard, profile, scan, fill, tracker, crusade
+│   ├── background.ts        service worker: owns the database, budget, routing
+│   ├── content/             ATS detection, fill execution, shadow-DOM overlay
 │   ├── setup/               first-run onboarding, opened once on install
-│   └── content/             the fill engine, injected on demand
+│   └── sidepanel/           home · profile · scan · fill · tracker · crusade
 ├── lib/
-│   ├── db/                  Dexie schema + repositories + worker message bus
-│   ├── llm/                 provider adapters, budget tracking, structured schemas
+│   ├── db/                  Dexie schema, repositories, worker message bus
+│   ├── llm/                 provider adapters, budget tracking, JSON schemas
 │   ├── resume/              PDF/DOCX parse, structured extraction
 │   ├── ats/                 posting extraction, requirements, evidence table
-│   ├── fill/                harvest → 5-tier resolve → fill → review
+│   ├── fill/                harvest → 5-tier resolve → apply → review
 │   ├── letter/              grounded cover letter generation
-│   ├── tracker/             funnel + ledger rules, submission watcher, CSV, stats
+│   ├── tracker/             funnel + ledger rules, submission watcher, CSV
 │   └── game/                economy, lore, sprites, achievements
-├── ui/                      design tokens, DQ component kit, shared screens
+├── ui/                      design tokens, the DQ component kit
 └── types/
 ```
+
+**The database lives in the background worker.** A content script runs in the *page's* origin, so `indexedDB` inside one belongs to the job board — calling the repository directly from it looked like it worked and silently did the wrong thing for every read and every write.
 
 | Layer | Choice |
 |---|---|
@@ -242,24 +271,11 @@ src/
 | Surface | Chrome Side Panel API |
 | Storage | Dexie (IndexedDB), local-first |
 | Game | Canvas2D, sprites authored as pixel data in-repo |
+| Network | Nothing, except the provider key you supply, on the one button that needs it |
 
 ---
 
-## Roadmap
-
-- [x] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, design tokens, provider adapter, CI
-- [x] **M1** — Resume parse → profile review grid → ATS scan + evidence table
-- [x] **M2** — Autofill core: harvest, 5-tier resolver, fillers, review overlay, Greenhouse/Lever/Ashby/Workable + generic
-- [x] **M3** — Tracker, board view, CSV export, DP counter
-- [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
-- [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
-- [ ] **M6** — Workday and LinkedIn adapters, sync adapters, auto-submit unlock, store listing ← *here*
-
-Theme packs and the `.clank` loader were dropped: the visual language ships whole rather than as a substrate for art nobody here has licensed.
-
----
-
-## Install (development)
+## ▶ INSTALL
 
 ```bash
 git clone https://github.com/bananatruck/clanker.tracker
@@ -274,35 +290,59 @@ Then load it, which Chrome now insists you do by hand:
 2. **Developer mode** on
 3. **Load unpacked** → select `.output/chrome-mv3`
 
-`pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change, since that flag was being used to sideload extensions silently. There is no flag to bring it back; `--disable-features=DisableLoadExtensionCommandLineSwitch` no longer helps on current Chrome. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
+Setup opens by itself the first time. It wants a resume; the API key and writing samples are optional and can wait, because autofill and the keyword scan never call a provider at all.
 
-Then open the side panel, go to **Settings**, paste an API key, and hit **Test key** — it spends one real call, because a check that only looks at the string cannot catch the failure people actually hit. [Gemini keys are free.](https://aistudio.google.com/apikey)
+`pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test             # unit tests — 200 of them, all green
-pnpm test:fill        # fill-coverage regression against saved ATS fixtures
-pnpm compile          # typecheck
-pnpm build            # production bundle
+pnpm test                        # 389 unit tests
+pnpm test:fill                   # the fill pipeline against board fixtures
+pnpm compile                     # typecheck
+pnpm build                       # production bundle
+node scripts/render-sprites.mjs  # regenerate docs/sprites/ from the sprite data
 ```
 
-The economy and the ledger rules are specified **as tests**. `tests/unit/economy.test.ts` asserts the author's numbers from [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) verbatim, and `tests/unit/tracker/` asserts that a deed cannot be farmed by dragging a card. If one of those fails, the game has drifted from the story — fix the code, not the test.
+**The economy and the ledger rules are specified as tests.** `tests/unit/economy.test.ts` asserts the author's numbers from [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) verbatim, `tests/unit/game/lore.test.ts` reads the storyboard off disk and fails if a shipped line has drifted from it, and `tests/unit/fill/boards.test.ts` runs whole application forms end to end. If one of those fails, the code has drifted from the story — fix the code, not the test.
 
 ---
 
-## Bring your own database
+## ▶ ROADMAP
 
-This isn't only for one person. Profile, STAR stories, and documents import and export as a versioned `.clankdb` JSON bundle — so anyone willing to write their own experience into it can use the whole pipeline. API keys and secrets are excluded from exports by default.
+- [x] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, design tokens, provider adapter, CI
+- [x] **M1** — Resume parse → profile review grid → ATS scan + evidence table
+- [x] **M2** — Autofill core: harvest, 5-tier resolver, fillers, review overlay
+- [x] **M3** — Tracker, board view, CSV export, DP counter
+- [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
+- [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
+- [ ] **M6** — Auto-submit UI, sync adapters, `.clankdb` import/export, Workday/LinkedIn hardening, store listing ← *here*
+
+Theme packs and the `.clank` loader were dropped: the visual language ships whole rather than as a substrate for art nobody here has licensed.
+
+### Not built yet
+
+Named plainly, because a README that describes intentions as features is how a project starts lying about itself:
+
+| | Status |
+|---|---|
+| **Auto-submit** | The earned-unlock rules are written and tested ([`lib/fill/autosubmit.ts`](./src/lib/fill/autosubmit.ts)) — a site qualifies only after a verified clean run, and the generic adapter never qualifies. **There is no toggle in Settings yet**, so nothing auto-submits today. |
+| **Sync adapters** | No Sheets, Notion or Airtable. CSV export works. |
+| **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |
+| **Screenshots** | The images under `docs/demo/` are from the pre-rehaul Obsidian UI and no longer show what ships. Regenerate via `sidepanel.html#/demo` and they will be accurate again. |
 
 ---
 
-## Privacy
+## ▶ PRIVACY
 
-Your resume, stories, answers, and application history live in IndexedDB **on your machine**. There is no backend, no account, no telemetry, and no analytics. The only network calls are to the LLM provider whose key you supplied, and only when you press the cover letter button. Autofill and the keyword scan never touch a provider at all.
+Your resume, answers, letters, and application history live in IndexedDB **on your machine**. There is no backend, no account, no telemetry, and no analytics.
+
+The only network call this extension ever makes is to the LLM provider whose key you supplied, and only when you press the cover letter button. **Autofill and the keyword scan never touch a provider.** Your API key lives in `chrome.storage.local` and never in the database, so a database export can dump every table without carrying a credential out with it.
 
 ---
 
-## Credits
+## ▶ CREDITS
 
-Art is CC0 — [Tiny Swords](https://pixelfrog-assets.itch.io/tiny-swords) by Pixel Frog, plus [Kenney](https://kenney.nl). Full provenance in [`docs/ASSETS.md`](./docs/ASSETS.md). Code is MIT.
+**All art is original**, authored as pixel data in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and MIT alongside the code. Nothing third-party is bundled — no packs to audit, no provenance to justify, and no upstream to go missing. Full manifest in [`docs/ASSETS.md`](./docs/ASSETS.md).
 
-**Not affiliated with** Greenhouse, Lever, Ashby, Workable, Workday, LinkedIn, Simplify, Jobright, or any employer. Clankerdom Deliverance is a work of satire.
+The look is Dragon Quest *inspired* and drawn from scratch. Sprites ripped from commercial games are deliberately excluded: a public repo and a store listing are both places a rightsholder can reach.
+
+**Not affiliated with** Greenhouse, Lever, Ashby, Workable, Workday, LinkedIn, SmartRecruiters, iCIMS, Jobvite, Simplify, Jobright, Square Enix, or any employer. Clankerdom Deliverance is a work of satire.
