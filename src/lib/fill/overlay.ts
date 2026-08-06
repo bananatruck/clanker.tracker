@@ -31,7 +31,7 @@ const STYLE = `
 }
 header { display: flex; align-items: baseline; justify-content: space-between;
   padding: 6px 8px; border-bottom: 2px solid #6b78b8; }
-h2 { margin: 0; font: 500 12px/1 inherit; }
+h2 { margin: 0; font: inherit; font-weight: 500; }
 .accent { color: #ffcf3f; }
 .meta { font-size: 10px; color: #7d87b8; }
 .bark { padding: 4px 8px; border-bottom: 2px solid #6b78b8; color: #ffcf3f;
@@ -45,13 +45,18 @@ h2 { margin: 0; font: 500 12px/1 inherit; }
 .missing, .t-missing { color: #ff6f6f; }
 label { display: block; font-size: 10px; line-height: 1.3; color: #b9c2e8;
   margin-bottom: 3px; word-break: break-word; }
+/* Form controls do not inherit typography, and the \`font\` shorthand rejects
+   \`inherit\` as a family — which silently left every value in the overlay in the
+   browser's default sans-serif, in the middle of a monospace design. */
 input { width: 100%; box-sizing: border-box; background: #050a24; color: #ffffff;
-  border: 2px solid #6b78b8; padding: 3px 5px; font: 11px/1.4 inherit; }
+  border: 2px solid #6b78b8; padding: 3px 5px;
+  font-family: inherit; font-size: 11px; line-height: 1.4; }
 input:focus { outline: none; border-color: #ffcf3f; }
 .tier { font-size: 9px; color: #7d87b8; margin-top: 3px; }
 footer { display: flex; gap: 6px; padding: 6px 8px; border-top: 2px solid #6b78b8; }
-button { flex: 1; border: 2px solid #ffffff; padding: 4px;
-  background: #0e1a5c; color: #ffffff; font: 11px/1 inherit; cursor: pointer;
+button { flex: 1; border: 2px solid #ffffff; padding: 5px 4px;
+  background: #0e1a5c; color: #ffffff; cursor: pointer;
+  font-family: inherit; font-size: 11px; line-height: 1;
   box-shadow: 2px 2px 0 0 #050a24; }
 button:hover { background: #1d2d86; }
 button:active { transform: translate(2px, 2px); box-shadow: none; }
