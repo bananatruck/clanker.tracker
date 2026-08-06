@@ -52,6 +52,18 @@ export default defineBackground(() => {
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((err) => console.error('[clanker] side panel behaviour:', err));
 
+  /**
+   * Setup opens once, on install, in a full tab.
+   *
+   * `reason === 'install'` and not `'update'`: reopening this on every version
+   * bump would put a wizard in front of someone who finished it months ago.
+   */
+  chrome.runtime.onInstalled.addListener(({ reason }) => {
+    if (reason === 'install') {
+      chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+    }
+  });
+
   chrome.runtime.onMessage.addListener((request: DbRequest, _sender, sendResponse) => {
     if (typeof request?.type !== 'string' || !request.type.startsWith('db:')) return false;
 

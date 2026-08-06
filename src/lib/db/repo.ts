@@ -9,6 +9,7 @@ import {
   type ApplicationStatus,
   type DeedRecord,
   type QuestionAnswer,
+  type WritingSample,
 } from './schema';
 import {
   PRIMARY_PROFILE_ID,
@@ -323,7 +324,31 @@ export async function trailingWeekDp(now = Date.now()): Promise<number> {
   return sum;
 }
 
+/* -------------------------------------------------------- writing samples */
+
+export function writingSamples(): Promise<WritingSample[]> {
+  return db.writingSamples.orderBy('addedAt').reverse().toArray();
+}
+
+export async function addWritingSample(label: string, text: string): Promise<WritingSample> {
+  const sample: WritingSample = {
+    id: crypto.randomUUID(),
+    label: label.trim() || 'Untitled',
+    text: text.trim(),
+    addedAt: Date.now(),
+  };
+  await db.writingSamples.put(sample);
+  return sample;
+}
+
+export async function deleteWritingSample(id: string): Promise<void> {
+  await db.writingSamples.delete(id);
+}
+
 /* --------------------------------------------------------------- settings */
+
+/** Whether first-run setup has been completed. Gates the welcome tab. */
+export const SETUP_DONE_KEY = 'setup.completed';
 
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const row = await db.settings.get(key);

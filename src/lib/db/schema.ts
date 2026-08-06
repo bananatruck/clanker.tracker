@@ -75,6 +75,23 @@ export interface SettingRow {
   value: unknown;
 }
 
+/**
+ * A piece of the user's own writing, kept to match their voice when a cover
+ * letter is generated.
+ *
+ * Stored whole rather than summarised into a "style profile": a model given
+ * three real paragraphs of someone's prose matches them far better than one
+ * given an adjective list, and the samples stay legible and deletable, which
+ * a derived embedding would not be.
+ */
+export interface WritingSample {
+  id: string;
+  /** What this is — "cover letter, Acme", "personal essay". User's words. */
+  label: string;
+  text: string;
+  addedAt: number;
+}
+
 export class ClankerDB extends Dexie {
   profiles!: EntityTable<ResumeProfile, 'id'>;
   questions!: EntityTable<QuestionAnswer, 'hash'>;
@@ -83,6 +100,7 @@ export class ClankerDB extends Dexie {
   runs!: EntityTable<RunRecord & { id?: number }, 'id'>;
   deeds!: EntityTable<DeedRecord, 'id'>;
   settings!: EntityTable<SettingRow, 'key'>;
+  writingSamples!: EntityTable<WritingSample, 'id'>;
 
   constructor(name = 'clanker.tracker') {
     super(name);
@@ -103,6 +121,12 @@ export class ClankerDB extends Dexie {
     // That question is a lookup by applicationId, so it needs an index.
     this.version(2).stores({
       deeds: '++id, deed, at, applicationId',
+    });
+
+    // v3: writing samples, collected during setup and used to ground the cover
+    // letter in the user's own voice.
+    this.version(3).stores({
+      writingSamples: 'id, addedAt',
     });
   }
 }
