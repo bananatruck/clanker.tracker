@@ -15,6 +15,8 @@ import { askBackground } from '@/lib/db/messages';
 import { extractPosting } from '@/lib/ats/posting';
 import { detectAts } from '@/lib/fill/adapters';
 import { findApplicationForm, harvestForm } from '@/lib/fill/harvest';
+import { readGate } from '@/lib/fill/account';
+import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
 import { emptyPreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
@@ -72,6 +74,49 @@ export default defineContentScript({
     /** Disarms any previous watcher, so re-filling a page cannot double-log. */
     let disarm: (() => void) | null = null;
 
+    /** Set once a run has completed here, so the badge stops offering. */
+    let filledHere = false;
+
+    /**
+     * Offer, without being asked.
+     *
+     * A side panel you have to remember to open is a side panel nobody opens.
+     * The moment a page turns out to be an application — or the wall in front
+     * of one — a badge appears in the corner and pressing it starts the run.
+     *
+     * Only the top frame draws it. Boards routinely embed the real form in an
+     * iframe, and a badge per frame is three badges stacked on each other.
+     */
+    function offer(): void {
+      if (window.top !== window.self) return;
+
+      const gate = readGate(document).gate;
+      const { fields } = harvestForm(findApplicationForm(document));
+
+      renderLauncher(
+        { gate, fields: fields.length, done: filledHere },
+        () => {
+          // Opening the panel is the background worker's job — a content
+          // script cannot open a side panel, and the gesture has to be
+          // forwarded while the user's click is still the reason for it.
+          void chrome.runtime.sendMessage({ type: 'clanker:open-panel' }).catch(() => {});
+        },
+        chrome.runtime.getURL('Sprites/Hero_Roto.png'),
+      );
+    }
+
+    /**
+     * Boards render their form after the script runs, and a single-page board
+     * replaces it without a navigation. Watching the DOM is the only way the
+     * badge appears at the right moment on both; debounced, because an
+     * application form emits a great many mutations while it settles.
+     */
+    let pending = 0;
+    const observer = new MutationObserver(() => {
+      clearTimeout(pending);
+      pending = setTimeout(offer, 400) as unknown as number;
+    });
+
     function armTracker(llmCalls: number): void {
       disarm?.();
       const form = findApplicationForm(document);
@@ -97,6 +142,17 @@ export default defineContentScript({
           },
         }).catch((err) => console.error('[clanker] could not log application:', err));
       });
+    }
+
+    if (window.top === window.self) {
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      // A history change on a single-page board is a new posting, so an
+      // earlier dismissal should not silence the badge on it forever.
+      window.addEventListener('popstate', () => {
+        resetLauncher();
+        filledHere = false;
+      });
+      setTimeout(offer, 600);
     }
 
     chrome.runtime.onMessage.addListener((request: Request, _sender, sendResponse) => {
@@ -183,7 +239,11 @@ export default defineContentScript({
             // The run is over, but the application is not sent until the user
             // actually submits the page. Arm the watcher and let it log — see
             // lib/tracker/watch.ts for why this is not done right here.
-            if (!outcome.cancelled && outcome.filled > 0) armTracker(outcome.llmCalls);
+            if (!outcome.cancelled && outcome.filled > 0) {
+              armTracker(outcome.llmCalls);
+              filledHere = true;
+              removeLauncher();
+            }
 
             sendResponse({ ok: true, ...outcome });
           } catch (err) {

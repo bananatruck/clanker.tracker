@@ -21,6 +21,14 @@ import {
   type LlmConfig,
   type ProviderId,
 } from '@/lib/llm';
+import {
+  clearCredentials,
+  emptyCredentials,
+  getCredentials,
+  maskPassword,
+  setCredentials,
+  type Credentials,
+} from '@/lib/fill/credentials';
 import { Button, Meter, Window } from '@/ui/dq';
 import WritingSamples from '@/ui/WritingSamples';
 
@@ -186,6 +194,8 @@ export default function Settings() {
         </Window>
       )}
 
+      <AccountCredentials />
+
       <Window title="Setup">
         <Button
           onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') })}
@@ -194,5 +204,109 @@ export default function Settings() {
         </Button>
       </Window>
     </div>
+  );
+}
+
+/**
+ * Sign-in details for the boards that make you register before they will show
+ * you a form.
+ *
+ * Deliberately blunt about where the password goes. A store that oversells its
+ * own protection is worse than one that does not exist, and the honest version
+ * is short: it is a file in your Chrome profile, it is not encrypted, and it
+ * never leaves the machine or enters an export.
+ */
+function AccountCredentials() {
+  const [creds, setCreds] = useState<Credentials>(emptyCredentials());
+  const [draft, setDraft] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    void getCredentials().then(setCreds);
+  }, []);
+
+  const save = async (next: Partial<Credentials>) => {
+    await setCredentials(next);
+    setCreds(await getCredentials());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1600);
+  };
+
+  return (
+    <Window
+      title="Sign-in details"
+      right={
+        saved ? <span className="font-mono text-[12px] text-ok">saved</span> : undefined
+      }
+    >
+      <p className="mb-2 text-[13px] leading-snug text-muted">
+        Half of all applications begin with "create an account". With these saved, that step
+        happens without you.
+      </p>
+
+      <label className="dq-label mb-1 block">Email</label>
+      <input
+        className="dq-input mb-2 w-full"
+        type="email"
+        value={creds.email}
+        placeholder="the address you apply with"
+        onChange={(e) => setCreds({ ...creds, email: e.target.value })}
+        onBlur={() => void save({ email: creds.email })}
+      />
+
+      <label className="dq-label mb-1 block">Password</label>
+      <div className="mb-2 flex gap-1">
+        <input
+          className="dq-input min-w-0 flex-1"
+          type="password"
+          value={draft}
+          placeholder={creds.password ? maskPassword(creds.password) : 'a password for job boards'}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <Button
+          disabled={draft === ''}
+          onClick={() => {
+            void save({ password: draft });
+            setDraft('');
+          }}
+        >
+          Save
+        </Button>
+      </div>
+
+      <label className="flex cursor-pointer items-start gap-2 py-1">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={creds.auto}
+          onChange={(e) => void save({ auto: e.target.checked })}
+        />
+        <span className="text-[13px] leading-snug">
+          Make accounts automatically
+          <span className="block text-[12px] text-faint">
+            Off by default. Typing a password into a page is not a thing to do on someone's
+            behalf until they have said so once.
+          </span>
+        </span>
+      </label>
+
+      <p className="mt-2 border-t-2 border-frame-dim pt-1.5 text-[12px] leading-snug text-faint">
+        Stored in <span className="font-mono">chrome.storage.local</span>, never in the database
+        and never in a <span className="font-mono">.clankdb</span> export. It is a file in your
+        Chrome profile and it is <b className="text-warn">not encrypted at rest</b> — anything
+        with your unlocked machine can read it.
+      </p>
+
+      {creds.password !== '' && (
+        <button
+          className="mt-2 font-mono text-[12px] text-bad underline"
+          onClick={() => {
+            void clearCredentials().then(() => setCreds(emptyCredentials()));
+          }}
+        >
+          forget these
+        </button>
+      )}
+    </Window>
   );
 }

@@ -12,7 +12,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-423%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-460%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -91,6 +91,62 @@ one of its five sections is a place your own data lives.
 The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
 [Fill](./docs/demo/fill.png), [Settings](./docs/demo/settings.png) — are in
 [`docs/demo/`](./docs/demo/).
+
+---
+
+## ▶ THE FLOW
+
+An application is not one action. It is a queue of them, and until now the extension knew how to
+do the middle step and nothing about the shape around it — so every other step was yours to
+remember.
+
+**It offers first.** A side panel you have to remember to open is a side panel nobody opens. The
+moment a page turns out to be an application, a badge appears in the corner with Kh. Laude on it
+and a count of what is waiting. Press it and the run starts. Dismiss it and it stays dismissed
+until the next posting.
+
+**It gets past the wall.** Half of all applications begin with *create an account*, and the
+account is a formality that exists so the board can email you a rejection. With sign-in details
+saved, that step happens without you.
+
+Reading that wall is where the care goes, because getting it backwards is expensive — a new
+password typed into a sign-in form fails the login, and an existing address typed into a signup
+form burns it. So [`lib/fill/account.ts`](./src/lib/fill/account.ts) classifies from structure
+first and wording second:
+
+| The page has | It is | Because |
+|---|---|---|
+| Two password boxes | **Signup** | Nothing else asks twice, in any language |
+| One password box | **Login**, unless the wording is unambiguously a signup | Signing in without an account fails harmlessly; signing up with an address you already used does not |
+| No password box, and it says it emailed you | **Confirmation wall** | Nothing on that page moves until you click their link |
+| No password box, and it doesn't | **No wall** | The application is right here |
+
+**Then the order, and the two edges that matter.** A confirmation wall outranks everything —
+hammering the form behind it is how an address gets rate-limited. And fields the resolver handed
+back **block the send**: refusing to invent a salary expectation is the tool working, and
+submitting over that empty box would throw the refusal away and send a worse application than you
+would have.
+
+```
+account ─▶ fill ─▶ cover letter ─▶ confirm ─▶ sent, logged, banked
+   │                    │              ▲
+   └─ blocked           └─ only if     └─ nothing is ever sent
+      without a yes        it asks        without this
+```
+
+The whole order is a pure function in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts) — no DOM, no
+storage — so it is asserted in tests rather than clicked through on a job board.
+
+### Where the password lives
+
+`chrome.storage.local`, next to the API key, and **never** IndexedDB. That split is why a
+`.clankdb` export can dump every table without leaking a credential.
+
+Said plainly, because a password store that oversells itself is worse than one that doesn't
+exist: **it is not encrypted at rest.** It is a file in your Chrome profile, and anything with
+your unlocked machine can read it. Automatic sign-up is **off by default** — typing a password
+into a page is not a thing to do on someone's behalf until they've said so once — and there is a
+*forget these* button, because a store you can't empty is a trap.
 
 ---
 
@@ -362,7 +418,7 @@ Setup opens by itself the first time. It wants a resume; the API key and writing
 `pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test        # 423 unit tests
+pnpm test        # 460 unit tests
 pnpm test:fill   # the fill pipeline against whole board fixtures
 pnpm compile     # typecheck
 pnpm build       # production bundle

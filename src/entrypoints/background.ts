@@ -74,6 +74,20 @@ export default defineBackground(() => {
     }
   });
 
+  /**
+   * The badge on the page asks for the panel.
+   *
+   * A content script cannot open a side panel — only an extension context can,
+   * and only while a user gesture is still the reason — so the click is
+   * forwarded here and opened against the tab it came from.
+   */
+  chrome.runtime.onMessage.addListener((request: { type?: string }, sender) => {
+    if (request?.type !== 'clanker:open-panel') return false;
+    const tabId = sender.tab?.id;
+    if (tabId !== undefined) void chrome.sidePanel.open({ tabId }).catch(() => {});
+    return false;
+  });
+
   chrome.runtime.onMessage.addListener((request: DbRequest, _sender, sendResponse) => {
     if (typeof request?.type !== 'string' || !request.type.startsWith('db:')) return false;
 

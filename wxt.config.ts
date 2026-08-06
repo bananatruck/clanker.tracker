@@ -104,6 +104,19 @@ export default defineConfig({
 
     side_panel: { default_path: 'sidepanel.html' },
 
+    /**
+     * The badge the content script draws needs to load the hero art out of the
+     * extension, which means the job board's page has to be allowed to fetch
+     * that one folder. Scoped to `Sprites/` — nothing else in the bundle is
+     * reachable from a page, and the folder is empty on a fresh clone anyway.
+     */
+    web_accessible_resources: [
+      {
+        resources: ['Sprites/*'],
+        matches: ['<all_urls>'],
+      },
+    ],
+
     action: { default_title: 'clanker.tracker' },
 
     // No remotely-hosted code anywhere: MV3 forbids it, and it is what
