@@ -12,67 +12,13 @@
  * for a format we need one corner of, and it keeps a devDependency out of a
  * repo whose whole pitch is that it does not phone anywhere.
  */
-import { deflateSync } from 'node:zlib';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { encodePng, hex } from './lib/png.mjs';
 import { PALETTE, SPRITES, SPRITE_SIZE } from '../src/lib/game/sprites.ts';
 
 const OUT = new URL('../docs/sprites/', import.meta.url);
 
-/* ------------------------------------------------------------ png encoder */
-
-const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
-  let c = n;
-  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-  return c >>> 0;
-});
-
-function crc32(buf) {
-  let c = 0xffffffff;
-  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function chunk(type, data) {
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length);
-  const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(body));
-  return Buffer.concat([len, body, crc]);
-}
-
-/** RGBA pixel buffer -> PNG. `pixels` is width*height*4 bytes. */
-function encodePng(width, height, pixels) {
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // colour type: RGBA
-  // 10-12 default to 0: deflate, adaptive filtering, no interlace.
-
-  // Each scanline is prefixed with its filter byte. Filter 0 (none) is
-  // plenty — these are tiny images of flat colour and deflate does the work.
-  const raw = Buffer.alloc(height * (width * 4 + 1));
-  for (let y = 0; y < height; y++) {
-    const from = y * width * 4;
-    pixels.copy(raw, y * (width * 4 + 1) + 1, from, from + width * 4);
-  }
-
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', deflateSync(raw, { level: 9 })),
-    chunk('IEND', Buffer.alloc(0)),
-  ]);
-}
-
 /* -------------------------------------------------------------- rendering */
-
-const hex = (s) => [
-  parseInt(s.slice(1, 3), 16),
-  parseInt(s.slice(3, 5), 16),
-  parseInt(s.slice(5, 7), 16),
-];
 
 const FIELD = hex('#050a24');
 const FRAME = hex('#ffffff');
@@ -144,6 +90,24 @@ function portrait(id, scale = 4, pad = 2) {
   return c.png();
 }
 
+/**
+ * One sprite on transparency, unframed.
+ *
+ * The framed portraits are for the README, where they sit on a dark page and
+ * the frame is what separates them from it. The landing page puts them in
+ * parchment inventory slots, where a navy square with a white border around it
+ * reads as a bug rather than as an item.
+ */
+function icon(id, scale = 2) {
+  const size = SPRITE_SIZE * scale;
+  const c = canvas(size, size, [0, 0, 0]);
+  // Reset to fully transparent: `canvas` fills opaque by design, which is
+  // right for every other caller.
+  c.px.fill(0);
+  c.sprite(id, 0, 0, scale);
+  return c.png();
+}
+
 /** A row of sprites in one framed strip. */
 function strip(ids, scale = 4, pad = 1) {
   const width = (SPRITE_SIZE * ids.length + pad * 2) * scale;
@@ -157,9 +121,11 @@ function strip(ids, scale = 4, pad = 1) {
 /* ------------------------------------------------------------------- main */
 
 mkdirSync(OUT, { recursive: true });
+mkdirSync(new URL('icons/', OUT), { recursive: true });
 
 for (const id of Object.keys(SPRITES)) {
   writeFileSync(new URL(`${id}.png`, OUT), portrait(id));
+  writeFileSync(new URL(`icons/${id}.png`, OUT), icon(id));
 }
 
 // The march, as the Crusade tab draws it: ground already taken, the warband,

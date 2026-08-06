@@ -9,7 +9,10 @@
 
 A local-first, open-source Chrome extension for people applying to a lot of jobs — wrapped in **Clankerdom Deliverance**, an idle RPG about being the villain.
 
+**[bananatruck.github.io/clanker.tracker](https://bananatruck.github.io/clanker.tracker/)**
+
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
+[![Site](https://img.shields.io/badge/site-bananatruck.github.io-4c9c55.svg)](https://bananatruck.github.io/clanker.tracker/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
 [![Tests](https://img.shields.io/badge/tests-534%20passing-6ede6e.svg)](#-install)
@@ -493,7 +496,16 @@ pnpm build       # production bundle
 pnpm sprites     # re-render the fallback sprites from the sprite data
 pnpm shots       # re-photograph docs/demo/ from the built extension
 pnpm art         # report which parts are files and which are drawn
+pnpm backdrops   # re-render the five acts from lib/game/backdrop.ts
+pnpm site        # assemble the landing page into .output/site
+pnpm site --serve  # …and serve it on :8732
 ```
+
+### The landing page
+
+[`site/`](./site/) is one HTML file and one stylesheet with **no build step and no dependencies** — the same parchment-and-wood vocabulary as the extension, hand-copied rather than imported, because a brochure should not need Tailwind in its deploy path.
+
+`pnpm site` assembles it into `.output/site` by copying `site/` and then the images it points at out of `docs/`. Those images are generated from the real app — screenshots by `pnpm shots`, acts by `pnpm backdrops`, sprites by `pnpm sprites` — so the site cannot advertise a version of the product that does not exist. The Pages workflow runs exactly that script and publishes the result; nothing in CI knows anything you cannot see locally in ten seconds.
 
 **The economy and the ledger rules are specified as tests.** `tests/unit/economy.test.ts` asserts the author's numbers from [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) verbatim, `tests/unit/game/lore.test.ts` reads the storyboard off disk and fails if a shipped line has drifted from it, and `tests/unit/fill/boards.test.ts` runs whole application forms end to end. If one of those fails, the code has drifted from the story — fix the code, not the test.
 

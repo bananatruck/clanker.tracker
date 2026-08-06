@@ -1,0 +1,277 @@
+/*
+ * The landing page, in the extension's own furniture.
+ *
+ * Same vocabulary as src/ui/tokens.css: a parchment pane inside a carved
+ * wooden frame, with a green title bar across the top. Copied rather than
+ * imported because this page has no build step and no dependency on the
+ * extension — it is one HTML file and one stylesheet, which is what makes it
+ * deployable to a static host by copying a directory.
+ *
+ * The palette below is the extension's, value for value. If one of them
+ * changes, the two drift, and that is a real cost — accepted because the
+ * alternative is a Tailwind build in the deploy path of a brochure.
+ */
+
+:root {
+  --field: #241c14;
+  --window: #f2e3c0;
+  --window-hi: #e3cf9f;
+  --frame: #6d4a2b;
+  --frame-dim: #bd9f74;
+  --parchment: #35240f;
+  --muted: #6a5233;
+  --faint: #8d7451;
+  --gold: #a8720c;
+  --ok: #2f7d3a;
+  --warn: #a85c07;
+  --banner: #4c9c55;
+  --banner-hi: #6dbb74;
+  --banner-ink: #f4fbf3;
+
+  --ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  --quest: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 16px/1.6 var(--ui);
+  color: var(--parchment);
+  /* The overworld the panels sit on: a dark forest floor, textured with a
+     pixel check rather than an image, so it costs nothing and stays crisp at
+     any zoom. */
+  background:
+    repeating-linear-gradient(0deg, #00000010 0 4px, transparent 4px 8px),
+    repeating-linear-gradient(90deg, #ffffff08 0 4px, transparent 4px 8px),
+    linear-gradient(#1c2a18, #16210f 55%, #101a0c);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+img { max-width: 100%; height: auto; display: block; image-rendering: pixelated; }
+
+a { color: var(--gold); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+a:hover { color: var(--parchment); }
+
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--window); padding: 8px 14px; z-index: 10;
+}
+.skip:focus { left: 12px; top: 12px; }
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  padding: 10px 20px;
+  background: var(--banner);
+  border-bottom: 4px solid #16100a;
+  box-shadow: inset 0 2px 0 var(--banner-hi);
+}
+.wordmark {
+  font: 700 19px/1 var(--mono);
+  color: var(--banner-ink);
+  margin-right: auto;
+}
+.wordmark .dot { opacity: 0.6; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.topbar a {
+  color: var(--banner-ink); font: 500 14.5px/1 var(--ui);
+  text-decoration: none; padding: 5px 2px;
+}
+.topbar a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.topbar a.ghost {
+  border: 2px solid var(--banner-ink); padding: 5px 10px;
+}
+.topbar a.ghost:hover { background: var(--banner-ink); color: var(--banner); text-decoration: none; }
+
+/* ------------------------------------------------------------------ layout */
+
+main { max-width: 1180px; margin: 0 auto; padding: 26px 16px 12px; }
+section { margin-bottom: 26px; }
+
+.row { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 900px) {
+  .row { grid-template-columns: 1fr 1fr; align-items: start; }
+  .row.three { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ------------------------------------------------------------------ window */
+
+/*
+ * The frame. Four rings from the outside in — a hard black outline, a light
+ * wooden bevel, a dark inner shadow, then the parchment — which is what makes
+ * it read as carved rather than as a div with a border on it.
+ */
+.window {
+  background: var(--window);
+  border: 3px solid var(--frame);
+  box-shadow:
+    inset 0 0 0 1px #a87b4a,
+    inset 0 0 0 3px #4a3018,
+    0 0 0 2px #16100a,
+    0 6px 0 0 #0b0f08;
+}
+
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 10px;
+  background: var(--banner);
+  box-shadow: inset 0 2px 0 var(--banner-hi), inset 0 -2px 0 #2f6b38;
+  color: var(--banner-ink);
+  font: 700 13px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+.banner .close {
+  width: 18px; height: 18px; line-height: 15px; text-align: center;
+  border: 2px solid #2f6b38; background: var(--banner-hi); color: #1d4423;
+  font-size: 13px;
+}
+
+.pane { padding: 16px 18px; }
+.pane > :first-child { margin-top: 0; }
+.pane > :last-child { margin-bottom: 0; }
+.pane p { margin: 0 0 12px; }
+
+h1 {
+  font: 700 clamp(28px, 4.6vw, 44px)/1.1 var(--quest);
+  margin: 0 0 14px;
+  color: var(--parchment);
+}
+.lede { font-size: 17px; }
+.note { font-size: 14.5px; color: var(--muted); }
+
+/* -------------------------------------------------------------------- hero */
+
+.hero-pane { display: grid; gap: 22px; grid-template-columns: 1fr; }
+@media (min-width: 940px) {
+  .hero-pane { grid-template-columns: 1fr 1fr; align-items: center; }
+}
+.hero-shot img { border: 3px solid var(--frame); box-shadow: 0 0 0 2px #16100a; }
+
+.claims { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px !important; }
+.chip {
+  border: 2px solid var(--frame-dim); background: var(--window-hi);
+  padding: 3px 9px; font: 600 12.5px/1.4 var(--mono); color: var(--muted);
+}
+.chip.gold { border-color: var(--gold); color: var(--gold); }
+
+/* ------------------------------------------------------------------ button */
+
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 0 !important; }
+.btn {
+  display: inline-block; text-decoration: none;
+  padding: 10px 20px;
+  background: var(--banner); color: var(--banner-ink);
+  border: 3px solid #16100a;
+  box-shadow: inset 0 2px 0 var(--banner-hi), inset 0 -3px 0 #2f6b38, 0 4px 0 0 #0b0f08;
+  font: 700 15px/1 var(--mono);
+}
+.btn:hover { background: var(--banner-hi); color: #14320f; }
+.btn:active { transform: translateY(3px); box-shadow: inset 0 2px 0 var(--banner-hi), inset 0 -3px 0 #2f6b38; }
+.btn.quiet {
+  background: var(--window-hi); color: var(--parchment);
+  box-shadow: inset 0 2px 0 #f6ecd4, inset 0 -3px 0 #c9a86f, 0 4px 0 0 #0b0f08;
+}
+.btn.quiet:hover { background: #f6ecd4; }
+
+/* ------------------------------------------------------------------- slots */
+
+/* The inventory grid: a sunken cell per item, which is the one piece of the
+   reference GUI that is doing real work here — it makes six features read as
+   a set rather than as a bulleted list. */
+.slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 520px) { .slots { grid-template-columns: 1fr 1fr; } }
+
+.slot {
+  display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: center;
+  padding: 10px;
+  background: var(--window-hi);
+  box-shadow: inset 0 0 0 2px #c9a86f, inset 2px 2px 0 #d8bd8a;
+}
+.slot img { grid-row: span 2; width: 44px; height: 44px; }
+.slot b { font: 700 15px/1.2 var(--ui); align-self: end; }
+.slot span { font-size: 13.5px; line-height: 1.45; color: var(--muted); align-self: start; }
+
+/* -------------------------------------------------------------------- code */
+
+pre {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--field); color: var(--window);
+  border: 2px solid #16100a;
+  font: 13px/1.55 var(--mono);
+  overflow-x: auto;
+}
+.flow { color: var(--banner-hi); font-size: 12px; }
+code { font: 13px/1.4 var(--mono); background: var(--window-hi); padding: 1px 5px; }
+
+.steps { margin: 0 0 14px; padding-left: 22px; }
+.steps li { margin-bottom: 5px; }
+
+.ticks { list-style: none; margin: 0; padding: 0; }
+.ticks li {
+  position: relative; padding-left: 24px; margin-bottom: 11px;
+  font-size: 15px; line-height: 1.55;
+}
+.ticks li::before {
+  content: '✔'; position: absolute; left: 0; top: 0;
+  color: var(--ok); font-weight: 700;
+}
+
+/* ------------------------------------------------------------------- table */
+
+.scroll { overflow-x: auto; margin-bottom: 14px; }
+table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 14.5px; }
+th {
+  text-align: left; padding: 8px 10px;
+  background: var(--banner); color: var(--banner-ink);
+  font: 700 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+}
+td { padding: 8px 10px; border-bottom: 1px solid var(--frame-dim); }
+tr:last-child td { border-bottom: 0; }
+td.ok { color: var(--ok); font-weight: 600; }
+td.warn { color: var(--warn); font-weight: 600; }
+
+/* ------------------------------------------------------------------- shots */
+
+.shot { margin: 0; }
+.shot img { width: 100%; border-top: 2px solid #16100a; }
+.shot figcaption {
+  padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--muted);
+  border-top: 2px solid var(--frame-dim);
+}
+.shot.bare img { border-top: 0; }
+
+/* -------------------------------------------------------------------- acts */
+
+.acts { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 640px) { .acts { grid-template-columns: repeat(5, 1fr); } }
+
+.acts li {
+  background: var(--window-hi);
+  box-shadow: inset 0 0 0 2px #c9a86f;
+  padding-bottom: 8px;
+}
+.acts img { width: 100%; aspect-ratio: 8 / 5; object-fit: cover; border-bottom: 2px solid #c9a86f; }
+.acts b { display: block; padding: 7px 8px 0; font: 700 13px/1.2 var(--mono); }
+.acts span { display: block; padding: 2px 8px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+
+/* ------------------------------------------------------------------ footer */
+
+footer {
+  max-width: 1180px; margin: 0 auto; padding: 20px 18px 40px;
+  color: #b8c9ae; font-size: 14px; text-align: center;
+}
+footer a { color: #e0c98a; }
+footer a:hover { color: #fff; }
+footer .fine { font-size: 12.5px; color: #8fa387; margin-bottom: 0; }
+
+/* ----------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn { transition: background 90ms steps(2, end); }
+}

@@ -83,7 +83,7 @@ const PAGES = [
   { name: 'page-profile', url: 'dashboard.html#/demo/profile', width: 1180, height: 1400 },
   // The table wants every column visible at once, which is the whole argument
   // for it living in a tab rather than a 420-pixel panel.
-  { name: 'page-tracker', url: 'dashboard.html#/demo/tracker', width: 1440, height: 1010 },
+  { name: 'page-tracker', url: 'dashboard.html#/demo/tracker', width: 1440, height: 940 },
   // The README's hero: the battle screen alone, wide, with nothing around it.
   { name: 'scene', url: 'sidepanel.html#/demo/scene', width: 900, height: 484 },
   { name: 'acts', url: 'sidepanel.html#/demo/acts', width: 900, height: 174 },

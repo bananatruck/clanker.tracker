@@ -9,13 +9,15 @@
     "zip": "wxt zip",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare",
-    "test": "vitest run",
+    "test": "vitest run --no-file-parallelism",
     "test:watch": "vitest",
-    "test:fill": "vitest run tests/unit/fill",
+    "test:fill": "vitest run --no-file-parallelism tests/unit/fill",
     "check:bundle": "node scripts/check-bundle.mjs",
     "sprites": "node scripts/render-sprites.mjs",
     "shots": "node scripts/shoot.mjs",
-    "art": "node scripts/art.mjs"
+    "art": "node scripts/art.mjs",
+    "backdrops": "node scripts/render-backdrops.mjs",
+    "site": "node scripts/site.mjs"
   },
   "keywords": [],
   "author": "",

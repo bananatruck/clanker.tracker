@@ -4,22 +4,51 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
+      # `postinstall` runs `wxt prepare`, which generates the types the
+      # typecheck needs. A frozen lockfile because a CI run that silently
+      # resolves a different tree is a CI run that proves nothing.
       - run: pnpm install --frozen-lockfile
+
       - run: pnpm compile
+
       - run: pnpm test
+
       - run: pnpm build
+
       # A green build is not the same as a loadable extension: both ways we
       # have shipped an unloadable one failed at "Load unpacked", not here.
       - run: pnpm check:bundle
+
+      # Printed into the log, not asserted on: on a clean checkout every part
+      # should report as drawn, and seeing that in the run is how the claim
+      # stays visible. The step below is what actually enforces it.
+      - run: pnpm art
+
+      - name: No third-party art is tracked
+        run: |
+          if [ -n "$(git ls-files public/Sprites public/sprites)" ]; then
+            echo "::error::Art files are tracked under public/. See docs/ASSETS.md."
+            exit 1
+          fi

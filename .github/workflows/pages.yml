@@ -1,0 +1,68 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/demo/**'
+      - 'scripts/site.mjs'
+      - 'scripts/render-backdrops.mjs'
+      - 'scripts/render-sprites.mjs'
+      - 'src/lib/game/backdrop.ts'
+      - 'src/lib/game/sprites.ts'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel one halfway — an interrupted publish
+# leaves the live site in whatever state it got to.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The acts and the sprites are regenerated from source rather than taken
+      # from the committed copies, so the site cannot ship art that has drifted
+      # from the code that draws it. Both are pure Node and take milliseconds.
+      #
+      # The *screenshots* are not regenerated: those need a headless browser
+      # driving the built extension, and a deploy that can fail because Chrome
+      # moved in a runner image is a deploy that will. They are committed, and
+      # `pnpm shots` regenerates them locally.
+      - run: pnpm backdrops
+      - run: pnpm sprites
+      - run: pnpm site
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .output/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
