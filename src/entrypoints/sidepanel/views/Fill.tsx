@@ -69,7 +69,7 @@ export default function Fill() {
 
   if (!profile) {
     return (
-      <p className="rounded border border-border bg-surface px-2.5 py-2 text-[11px] text-muted">
+      <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
         Add a resume on the Profile tab first — there is nothing to fill from yet.
       </p>
     );
@@ -77,11 +77,11 @@ export default function Fill() {
 
   return (
     <div className="space-y-3">
-      <section className="rounded border border-border bg-surface p-2.5">
+      <section className="border border-frame bg-window p-2.5">
         {probe ? (
           <>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[11px] text-accent">{probe.ats}</span>
+              <span className="font-mono text-[11px] text-gold">{probe.ats}</span>
               <span className="font-mono text-[10px] text-faint">
                 {probe.fieldCount} fields · {probe.requiredCount} required
               </span>
@@ -101,13 +101,13 @@ export default function Fill() {
         <button
           onClick={fill}
           disabled={!probe || busy}
-          className="flex-1 rounded bg-accent-dim px-2.5 py-1.5 font-mono text-[11px] text-text hover:bg-accent disabled:opacity-40"
+          className="flex-1 bg-gold-dim px-2.5 py-1.5 font-mono text-[11px] text-parchment hover:bg-gold disabled:opacity-40"
         >
           {busy ? 'Filling…' : 'Fill this application'}
         </button>
         <button
           onClick={() => void refresh()}
-          className="rounded border border-border px-2 py-1.5 font-mono text-[10px] text-muted hover:bg-surface hover:text-text"
+          className="border border-frame px-2 py-1.5 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
         >
           Refresh
         </button>
@@ -117,27 +117,27 @@ export default function Fill() {
         <p className="font-mono text-[10px] text-faint">
           budget · {budget.used}/{budget.limit} today
           {budget.warn && !budget.exhausted && (
-            <span className="text-guessed"> · nearing the daily limit</span>
+            <span className="text-warn"> · nearing the daily limit</span>
           )}
           {budget.exhausted && (
-            <span className="text-missing"> · spent, filling deterministically only</span>
+            <span className="text-bad"> · spent, filling deterministically only</span>
           )}
         </p>
       )}
 
       {result && (
-        <section className="rounded border border-border bg-surface p-2.5">
+        <section className="border border-frame bg-window p-2.5">
           {result.ok ? (
             result.cancelled ? (
               <p className="text-[11px] text-muted">Cancelled — nothing was written.</p>
             ) : (
               <>
-                <p className="text-[11px] text-text">
-                  Filled <span className="text-certain">{result.filled}</span>
+                <p className="text-[11px] text-parchment">
+                  Filled <span className="text-ok">{result.filled}</span>
                   {result.skipped ? (
                     <>
                       {' '}
-                      · left <span className="text-missing">{result.skipped}</span> for you
+                      · left <span className="text-bad">{result.skipped}</span> for you
                     </>
                   ) : null}
                 </p>
@@ -149,7 +149,7 @@ export default function Fill() {
               </>
             )
           ) : (
-            <p className="text-[11px] text-missing">{result.error}</p>
+            <p className="text-[11px] text-bad">{result.error}</p>
           )}
         </section>
       )}

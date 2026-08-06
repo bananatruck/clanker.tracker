@@ -83,13 +83,13 @@ export default function Settings() {
 
   return (
     <div className="space-y-3">
-      <section className="space-y-2 rounded border border-border bg-surface p-2.5">
+      <section className="space-y-2 border border-frame bg-window p-2.5">
         <h2 className="font-mono text-[10px] uppercase tracking-wide text-faint">Provider</h2>
 
         <select
           value={config.provider}
           onChange={(e) => void patch({ provider: e.target.value as ProviderId })}
-          className="w-full rounded border border-border bg-base px-2 py-1 text-[11px] text-text outline-none focus:border-accent-dim"
+          className="w-full border border-frame bg-field px-2 py-1 text-[11px] text-parchment outline-none focus:border-gold-dim"
         >
           {Object.values(PROVIDERS).map((p) => (
             <option key={p.id} value={p.id}>
@@ -103,7 +103,7 @@ export default function Settings() {
           onChange={(e) => setConfig({ ...config, model: e.target.value })}
           onBlur={() => void patch({ model: config.model })}
           placeholder="model"
-          className="w-full rounded border border-border bg-base px-2 py-1 font-mono text-[11px] text-text outline-none placeholder:text-faint focus:border-accent-dim"
+          className="w-full border border-frame bg-field px-2 py-1 font-mono text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
         />
 
         <p className="font-mono text-[9px] leading-relaxed text-faint">
@@ -114,7 +114,7 @@ export default function Settings() {
       </section>
 
       {!provider.local && (
-        <section className="space-y-2 rounded border border-border bg-surface p-2.5">
+        <section className="space-y-2 border border-frame bg-window p-2.5">
           <h2 className="font-mono text-[10px] uppercase tracking-wide text-faint">API key</h2>
 
           <div className="flex gap-1">
@@ -126,11 +126,11 @@ export default function Settings() {
               placeholder="paste your key"
               spellCheck={false}
               autoComplete="off"
-              className="min-w-0 flex-1 rounded border border-border bg-base px-2 py-1 font-mono text-[11px] text-text outline-none placeholder:text-faint focus:border-accent-dim"
+              className="min-w-0 flex-1 border border-frame bg-field px-2 py-1 font-mono text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
             />
             <button
               onClick={() => setReveal((r) => !r)}
-              className="shrink-0 rounded border border-border px-2 font-mono text-[10px] text-muted hover:bg-surface-hi hover:text-text"
+              className="shrink-0 border border-frame px-2 font-mono text-[10px] text-muted hover:bg-window-hi hover:text-parchment"
             >
               {reveal ? 'hide' : 'show'}
             </button>
@@ -140,17 +140,17 @@ export default function Settings() {
             <button
               onClick={() => void runTest()}
               disabled={!config.apiKey || test.kind === 'testing'}
-              className="rounded bg-accent-dim px-2 py-1 font-mono text-[10px] text-text hover:bg-accent disabled:opacity-40"
+              className="bg-gold-dim px-2 py-1 font-mono text-[10px] text-parchment hover:bg-gold disabled:opacity-40"
             >
               {test.kind === 'testing' ? 'Testing…' : 'Test key'}
             </button>
-            {saved && <span className="font-mono text-[9px] text-certain">saved</span>}
+            {saved && <span className="font-mono text-[9px] text-ok">saved</span>}
             {provider.keyUrl && (
               <a
                 href={provider.keyUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="ml-auto font-mono text-[9px] text-muted underline decoration-border hover:text-accent"
+                className="ml-auto font-mono text-[9px] text-muted underline decoration-border hover:text-gold"
               >
                 get a key
               </a>
@@ -158,12 +158,12 @@ export default function Settings() {
           </div>
 
           {test.kind === 'ok' && (
-            <p className="font-mono text-[10px] text-certain">
+            <p className="font-mono text-[10px] text-ok">
               key works · model replied “{test.echo}”
             </p>
           )}
           {test.kind === 'fail' && (
-            <p className="font-mono text-[10px] leading-relaxed text-missing">{test.error}</p>
+            <p className="font-mono text-[10px] leading-relaxed text-bad">{test.error}</p>
           )}
 
           <p className="text-[10px] leading-relaxed text-faint">
@@ -175,17 +175,17 @@ export default function Settings() {
       )}
 
       {budget && (
-        <section className="rounded border border-border bg-surface p-2.5">
+        <section className="border border-frame bg-window p-2.5">
           <h2 className="mb-1.5 font-mono text-[10px] uppercase tracking-wide text-faint">
             Today
           </h2>
           <div className="flex items-baseline justify-between">
-            <span className="font-mono text-[15px] leading-none text-text">{budget.used}</span>
+            <span className="font-mono text-[15px] leading-none text-parchment">{budget.used}</span>
             <span className="font-mono text-[10px] text-faint">of {budget.limit} calls</span>
           </div>
-          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-base">
+          <div className="mt-1.5 h-1 overflow-hidden bg-field">
             <div
-              className={budget.exhausted ? 'h-full bg-missing' : budget.warn ? 'h-full bg-guessed' : 'h-full bg-certain'}
+              className={budget.exhausted ? 'h-full bg-bad' : budget.warn ? 'h-full bg-warn' : 'h-full bg-ok'}
               style={{ width: `${Math.min(100, (budget.used / Math.max(1, budget.limit)) * 100)}%` }}
             />
           </div>

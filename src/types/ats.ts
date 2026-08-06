@@ -86,7 +86,7 @@ export function scanSummary(rows: readonly EvidenceRow[]): {
 
 /** Maps coverage onto the shared confidence colours. */
 export const COVERAGE_COLOR: Record<Coverage, string> = {
-  covered: 'text-certain',
-  partial: 'text-guessed',
-  gap: 'text-missing',
+  covered: 'text-ok',
+  partial: 'text-warn',
+  gap: 'text-bad',
 };

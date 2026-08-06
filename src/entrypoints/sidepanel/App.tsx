@@ -40,25 +40,25 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   const tierTitle = TIERS.find((t) => t.tier === tier)?.title ?? 'Squire';
 
   return (
-    <div className="flex h-full flex-col bg-base text-text">
-      <header className="border-b border-border px-3 py-2">
+    <div className="flex h-full flex-col bg-field text-parchment">
+      <header className="border-b border-frame px-3 py-2">
         <div className="flex items-baseline justify-between">
           <h1 className="font-mono text-[13px] tracking-tight">
-            clanker<span className="text-accent">.</span>tracker
+            clanker<span className="text-gold">.</span>tracker
           </h1>
           <span className="font-mono text-[10px] text-faint">v0.0.1 · M3</span>
         </div>
       </header>
 
-      <nav className="flex gap-1 overflow-x-auto border-b border-border px-2 py-1.5">
+      <nav className="flex gap-1 overflow-x-auto border-b border-frame px-2 py-1.5">
         {ROUTES.map((r) => (
           <button
             key={r.id}
             onClick={() => setRoute(r.id)}
-            className={`shrink-0 rounded px-2 py-1 text-[11px] transition-colors ${
+            className={`shrink-0  px-2 py-1 text-[11px] transition-colors ${
               route === r.id
-                ? 'bg-surface-hi text-text'
-                : 'text-muted hover:bg-surface hover:text-text'
+                ? 'bg-window-hi text-parchment'
+                : 'text-muted hover:bg-window hover:text-parchment'
             }`}
           >
             {r.label}
@@ -67,18 +67,18 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
       </nav>
 
       {/* Crusade HUD — present on every route, because progress is the point. */}
-      <section className="border-b border-border bg-surface px-3 py-2">
+      <section className="border-b border-frame bg-window px-3 py-2">
         <div className="flex items-baseline justify-between">
-          <span className="font-mono text-[11px] text-accent">
+          <span className="font-mono text-[11px] text-gold">
             {tierTitle} · Lv {level}
           </span>
           <span className="font-mono text-[10px] text-faint">
             {dpIntoLevel}/{dpForNext} DP
           </span>
         </div>
-        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-base">
+        <div className="mt-1.5 h-1 overflow-hidden bg-field">
           <div
-            className="h-full bg-accent transition-[width] duration-500"
+            className="h-full bg-gold transition-[width] duration-500"
             style={{ width: `${Math.round(progress * 100)}%` }}
           />
         </div>
@@ -111,17 +111,17 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
 function Dashboard() {
   return (
     <div className="space-y-4">
-      <blockquote className="border-l-2 border-accent-dim pl-3 text-[12px] leading-relaxed text-muted">
+      <blockquote className="border-l-2 border-gold-dim pl-3 text-[12px] leading-relaxed text-muted">
         The King declares a crusade against a{' '}
-        <em className="text-text">disgusting, evil, multi-billion-strong dynasty</em> — the
-        family of <strong className="text-text">Poo R. PeePole</strong>, and their brood, the{' '}
-        <strong className="text-text">Chilled Rens</strong>.
+        <em className="text-parchment">disgusting, evil, multi-billion-strong dynasty</em> — the
+        family of <strong className="text-parchment">Poo R. PeePole</strong>, and their brood, the{' '}
+        <strong className="text-parchment">Chilled Rens</strong>.
         <footer className="mt-2 font-mono text-[10px] text-faint">
           — proclamation of King Net And Yahoo, from the Tower
         </footer>
       </blockquote>
 
-      <div className="rounded border border-border bg-surface p-3">
+      <div className="border border-frame bg-window p-3">
         <h2 className="mb-2 font-mono text-[11px] text-muted">No crusade yet</h2>
         <p className="text-[12px] leading-relaxed text-muted">
           Add a resume to raise the warband. Every application razes 2 family homes; every

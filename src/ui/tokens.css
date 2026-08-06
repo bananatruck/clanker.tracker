@@ -1,42 +1,57 @@
 @import 'tailwindcss';
 
 /**
- * DMG-01.
+ * Dragon Quest design language.
  *
- * The original Game Boy could show four tones and nothing else, and the whole
- * look comes from that constraint rather than from decoration: hard 2px
- * borders, no radii, no gradients, no shadows that blur. Everything is on a
- * pixel grid because the hardware had no choice.
+ * The whole look is one idea: **everything the game tells you arrives in a
+ * command window.** A navy panel, a hard white border, a black keyline around
+ * that, white text inside, and gold for any number that matters. No radii, no
+ * gradients, no blur, no easing — a 16-bit console had none of those and the
+ * moment you add one the illusion goes.
  *
- * Four tones is not enough to also carry meaning, though — "covered / partial
- * / gap" and "free / spent" have to survive next to each other on the same
- * screen. So there is a second, deliberately small set of Game Boy *Colour*
- * accents for state. They are desaturated to sit on the green LCD rather than
- * fight it, and no layout depends on hue alone: state is always carried by a
- * glyph or a fill pattern as well.
+ * Two rules that are load-bearing rather than decorative:
+ *
+ * 1. **Selection is a cursor, not a highlight.** DQ menus point at the current
+ *    row with `▶`. That reads instantly, survives any palette, and — unlike a
+ *    background tint — is still legible to someone who cannot separate the two
+ *    blues.
+ * 2. **State is never carried by hue alone.** `ok`/`warn`/`bad` always ship
+ *    alongside a glyph, because a confidence dot that is only a colour tells a
+ *    colour-blind user nothing about whether their phone number parsed.
  */
 @theme {
-  /* The four tones, darkest to lightest. */
-  --color-ink: #0f380f;
-  --color-ink-mid: #306230;
-  --color-lcd-dim: #8bac0f;
-  --color-lcd: #9bbc0f;
+  /* The field the windows sit on. Near-black navy rather than pure black:
+     pure black on an LCD makes the white borders vibrate. */
+  --color-field: #050a24;
 
-  /* The plastic around the screen. */
-  --color-shell: #14200f;
-  --color-shell-hi: #1e2d17;
+  /* The command window itself, and the row the cursor is on. */
+  --color-window: #0e1a5c;
+  --color-window-hi: #1d2d86;
 
-  /* Semantic accents. Used with a glyph, never on their own. */
-  --color-ok: #1c5e20;
-  --color-warn: #7a5a00;
-  --color-bad: #7a1f14;
+  /* The border, and the hairline used to rule rows inside a window. */
+  --color-frame: #ffffff;
+  --color-frame-dim: #6b78b8;
+
+  /* Text, in three weights of attention. */
+  --color-parchment: #ffffff;
+  --color-muted: #b9c2e8;
+  --color-faint: #7d87b8;
+
+  /* Gold is for values: DP, counts, the thing the sentence is about. */
+  --color-gold: #ffcf3f;
+  --color-gold-dim: #c9a022;
+
+  /* State. Always paired with a glyph — see the rule above. */
+  --color-ok: #6ede6e;
+  --color-warn: #ffb347;
+  --color-bad: #ff6f6f;
 
   --font-ui: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
   --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html,
@@ -47,112 +62,180 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-shell);
-  color: var(--color-ink);
+  background: var(--color-field);
+  color: var(--color-parchment);
   font-family: var(--font-ui);
   font-size: 12px;
   line-height: 1.5;
-  /* Antialiasing softens a pixel grid. Turning it off is the point. */
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+  font-variant-ligatures: none;
   text-rendering: optimizeSpeed;
 }
 
 /* Pixel art must never be smoothed. */
 canvas,
-canvas.pixel,
 img.pixel {
   image-rendering: pixelated;
 }
 
 /**
- * The LCD. A faint horizontal grid stands in for the dot matrix — strong
- * enough to read as a screen, weak enough to keep 11px text legible.
+ * The command window.
+ *
+ * White border with a black keyline outside it, which is what stops the window
+ * dissolving into the field behind it. Done with a ring rather than a second
+ * element so any div can become a window with one class.
  */
-.lcd {
-  background-color: var(--color-lcd);
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(15, 56, 15, 0.05) 0px,
-    rgba(15, 56, 15, 0.05) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+.dq-window {
+  background: var(--color-window);
+  border: 2px solid var(--color-frame);
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--color-field);
 }
 
-/* Everything is a hard-edged box. */
-.pixel-box {
-  border: 2px solid var(--color-ink);
-  border-radius: 0;
+/* A window nested inside another one steps down instead of restating itself. */
+.dq-window .dq-window {
+  border-color: var(--color-frame-dim);
+  box-shadow: none;
 }
 
 /**
- * A button you can see depress. The offset block shadow is the whole effect:
- * it disappears on :active while the button moves down into its place.
+ * A menu row. The cursor occupies a reserved column at all times, so nothing
+ * shifts sideways when selection moves — a jitter you notice immediately.
  */
-.pixel-btn {
-  border: 2px solid var(--color-ink);
+.dq-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.25rem 0.375rem;
+  text-align: left;
   border-radius: 0;
-  box-shadow: 2px 2px 0 0 var(--color-ink);
+}
+.dq-item::before {
+  content: '\25B6';
+  flex: none;
+  width: 0.75rem;
+  font-size: 9px;
+  color: var(--color-gold);
+  visibility: hidden;
+}
+.dq-item[aria-selected='true']::before,
+.dq-item[data-selected='true']::before {
+  visibility: visible;
+}
+.dq-item[aria-selected='true'],
+.dq-item[data-selected='true'] {
+  background: var(--color-window-hi);
+}
+.dq-item:hover:not(:disabled)::before {
+  visibility: visible;
+  color: var(--color-frame-dim);
+}
+
+/**
+ * A button reads as a raised block and depresses into its own shadow. The
+ * offset is the entire affordance; there is no transition, because an
+ * interpolated press is exactly the thing a 16-bit UI never did.
+ */
+.dq-btn {
+  background: var(--color-window);
+  color: var(--color-parchment);
+  border: 2px solid var(--color-frame);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 0 var(--color-field);
   transition: none;
 }
-.pixel-btn:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: 0 0 0 0 var(--color-ink);
+.dq-btn:hover:not(:disabled) {
+  background: var(--color-window-hi);
 }
-.pixel-btn:disabled {
+.dq-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 0 var(--color-field);
+}
+.dq-btn:disabled {
   opacity: 0.4;
-  box-shadow: 1px 1px 0 0 var(--color-ink);
+  box-shadow: none;
+}
+
+/* The affirmative action on a screen. Gold fill, dark text. */
+.dq-btn-primary {
+  background: var(--color-gold);
+  color: var(--color-field);
+  border-color: var(--color-frame);
+}
+.dq-btn-primary:hover:not(:disabled) {
+  background: var(--color-gold-dim);
+}
+
+.dq-input {
+  background: var(--color-field);
+  color: var(--color-parchment);
+  border: 2px solid var(--color-frame-dim);
+  border-radius: 0;
+  font-family: var(--font-mono);
+}
+.dq-input::placeholder {
+  color: var(--color-faint);
+}
+.dq-input:focus {
+  border-color: var(--color-gold);
+  outline: none;
 }
 
 /* Focus has to be visible without a glow. */
-.pixel-btn:focus-visible,
-.pixel-input:focus-visible,
-.pixel-input:focus {
-  outline: 2px solid var(--color-ink);
+.dq-btn:focus-visible,
+.dq-item:focus-visible,
+.dq-input:focus-visible {
+  outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
 
-.pixel-input {
-  border: 2px solid var(--color-ink);
-  border-radius: 0;
-  background: var(--color-lcd);
-  color: var(--color-ink);
-  font-family: var(--font-mono);
-}
-.pixel-input::placeholder {
-  color: var(--color-ink-mid);
-  opacity: 0.7;
-}
-
-/* Headings read as a status strip, not as prose. */
-.label {
+/* A section heading reads as a status strip, not as prose. */
+.dq-label {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-mid);
+  color: var(--color-faint);
 }
 
-/* Blink for the one thing on screen that wants attention. */
-@keyframes gb-blink {
+/**
+ * A meter, drawn in whole cells. DQ never showed a continuous bar and a
+ * stepped one is honest about being an approximation.
+ */
+.dq-meter {
+  display: flex;
+  gap: 1px;
+  height: 6px;
+}
+.dq-meter-cell {
+  flex: 1;
+  background: var(--color-field);
+  border: 1px solid var(--color-frame-dim);
+}
+.dq-meter-cell[data-on='true'] {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+}
+
+/* Blink for the one thing on screen that is waiting on the user. */
+@keyframes dq-blink {
   0%,
   60% {
     opacity: 1;
   }
   61%,
   100% {
-    opacity: 0.25;
+    opacity: 0.2;
   }
 }
-.blink {
-  animation: gb-blink 1s steps(1, end) infinite;
+.dq-blink {
+  animation: dq-blink 0.9s steps(1, end) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blink {
+  .dq-blink {
     animation: none;
   }
-  .pixel-btn:active:not(:disabled) {
+  .dq-btn:active:not(:disabled) {
     transform: none;
   }
 }
@@ -162,12 +245,12 @@ img.pixel {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-ink-mid);
+  background: var(--color-frame-dim);
   border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink);
+  background: var(--color-frame);
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-lcd-dim);
+  background: var(--color-field);
 }

@@ -61,10 +61,10 @@ export const STATUS_DEED_LABEL: Record<ApplicationStatus, string> = {
 /** Board accent per column, on the shared confidence palette. */
 export const STATUS_COLOR: Record<ApplicationStatus, string> = {
   applied: 'text-muted',
-  oa: 'text-guessed',
-  interview: 'text-certain',
-  offer: 'text-accent',
-  rejected: 'text-missing',
+  oa: 'text-warn',
+  interview: 'text-ok',
+  offer: 'text-gold',
+  rejected: 'text-bad',
   ghosted: 'text-faint',
 };
 

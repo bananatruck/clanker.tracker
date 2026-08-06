@@ -71,13 +71,13 @@ export default function Tracker() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1">
-        <div className="flex rounded border border-border">
+        <div className="flex border border-frame">
           {(['board', 'list'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={`px-2 py-1 font-mono text-[10px] transition-colors ${
-                view === v ? 'bg-surface-hi text-text' : 'text-muted hover:text-text'
+                view === v ? 'bg-window-hi text-parchment' : 'text-muted hover:text-parchment'
               }`}
             >
               {v}
@@ -89,14 +89,14 @@ export default function Tracker() {
 
         <button
           onClick={() => setAdding((a) => !a)}
-          className="rounded border border-border px-2 py-1 font-mono text-[10px] text-muted hover:bg-surface hover:text-text"
+          className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
         >
           {adding ? 'Close' : '+ Log one'}
         </button>
         <button
           onClick={exportCsv}
           disabled={apps.length === 0}
-          className="rounded border border-border px-2 py-1 font-mono text-[10px] text-muted hover:bg-surface hover:text-text disabled:opacity-40"
+          className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-40"
         >
           Export CSV
         </button>
@@ -121,11 +121,11 @@ export default function Tracker() {
 
 function Empty() {
   return (
-    <div className="rounded border border-border bg-surface p-3">
+    <div className="border border-frame bg-window p-3">
       <h2 className="mb-1.5 font-mono text-[11px] text-muted">Nothing sent yet</h2>
       <p className="text-[12px] leading-relaxed text-muted">
         Fill an application and submit it — it logs itself. Anything you sent by hand or over
-        email, log with <span className="font-mono text-[11px] text-text">+ Log one</span>.
+        email, log with <span className="font-mono text-[11px] text-parchment">+ Log one</span>.
         Every row here razed something.
       </p>
     </div>
@@ -147,31 +147,31 @@ function Summary({
   const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
 
   return (
-    <section className="space-y-2 rounded border border-border bg-surface p-2.5">
+    <section className="space-y-2 border border-frame bg-window p-2.5">
       <div className="grid grid-cols-4 gap-2">
         <Stat label="sent" value={stats.total} />
         <Stat label="replies" value={`${Math.round(stats.responseRate * 100)}%`} />
-        <Stat label="interviews" value={stats.interviews} tone="text-certain" />
-        <Stat label="dp" value={dp} tone="text-accent" />
+        <Stat label="interviews" value={stats.interviews} tone="text-ok" />
+        <Stat label="dp" value={dp} tone="text-gold" />
       </div>
 
-      <div className="flex h-1 overflow-hidden rounded-full bg-base">
-        <Segment n={stats.byStatus.offer} total={stats.total} cls="bg-accent" />
-        <Segment n={stats.byStatus.interview} total={stats.total} cls="bg-certain" />
-        <Segment n={stats.byStatus.oa} total={stats.total} cls="bg-guessed" />
-        <Segment n={stats.byStatus.rejected} total={stats.total} cls="bg-missing" />
+      <div className="flex h-1 overflow-hidden bg-field">
+        <Segment n={stats.byStatus.offer} total={stats.total} cls="bg-gold" />
+        <Segment n={stats.byStatus.interview} total={stats.total} cls="bg-ok" />
+        <Segment n={stats.byStatus.oa} total={stats.total} cls="bg-warn" />
+        <Segment n={stats.byStatus.rejected} total={stats.total} cls="bg-bad" />
       </div>
 
       <p className="font-mono text-[10px] text-faint">
         median{' '}
-        <span className={cost.medianLlmCalls === 0 ? 'text-certain' : 'text-guessed'}>
+        <span className={cost.medianLlmCalls === 0 ? 'text-ok' : 'text-warn'}>
           {cost.medianLlmCalls}
         </span>{' '}
         model calls · {Math.round(cost.freeShare * 100)}% cost nothing
         {stats.stale > 0 && (
           <>
             {' · '}
-            <span className="text-missing">{stats.stale}</span> quiet {GHOST_AFTER_DAYS}d+
+            <span className="text-bad">{stats.stale}</span> quiet {GHOST_AFTER_DAYS}d+
           </>
         )}
       </p>
@@ -182,7 +182,7 @@ function Summary({
 function Stat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
   return (
     <div>
-      <div className={`font-mono text-[15px] leading-none ${tone ?? 'text-text'}`}>{value}</div>
+      <div className={`font-mono text-[15px] leading-none ${tone ?? 'text-parchment'}`}>{value}</div>
       <div className="mt-1 font-mono text-[9px] uppercase tracking-wide text-faint">{label}</div>
     </div>
   );
@@ -199,11 +199,11 @@ function FlashBanner({ flash }: { flash: Flash }) {
 
   return (
     <section
-      className={`rounded border px-2.5 py-2 ${
-        earned ? 'border-accent-dim bg-accent-dim/15' : 'border-border bg-surface'
+      className={` border px-2.5 py-2 ${
+        earned ? 'border-gold-dim bg-gold-dim/15' : 'border-frame bg-window'
       }`}
     >
-      <p className={`font-mono text-[11px] ${earned ? 'text-accent' : 'text-muted'}`}>
+      <p className={`font-mono text-[11px] ${earned ? 'text-gold' : 'text-muted'}`}>
         {earned ? `+${flash.dp} DP · ${STATUS_DEED_LABEL[flash.status]}` : 'Board updated'}
       </p>
       <p className="mt-0.5 text-[11px] leading-snug text-muted">
@@ -248,7 +248,7 @@ function Board({
             </h3>
 
             {inColumn.length === 0 ? (
-              <div className="rounded border border-dashed border-border px-2 py-1.5 font-mono text-[10px] text-faint">
+              <div className="border border-dashed border-frame px-2 py-1.5 font-mono text-[10px] text-faint">
                 empty
               </div>
             ) : (
@@ -270,21 +270,21 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
   const stale = isStale(app);
 
   return (
-    <article className="overflow-hidden rounded border border-border bg-surface">
+    <article className="overflow-hidden border border-frame bg-window">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left hover:bg-surface-hi"
+        className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left hover:bg-window-hi"
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[11px] leading-snug text-text">
+          <span className="block truncate text-[11px] leading-snug text-parchment">
             {app.company || 'Unknown company'}
           </span>
           <span className="mt-0.5 block truncate font-mono text-[9px] text-faint">
             {app.role || 'role unrecorded'} · {app.ats}
             {app.llmCalls === 0 ? (
-              <span className="text-certain"> · free</span>
+              <span className="text-ok"> · free</span>
             ) : (
-              <span className="text-guessed">
+              <span className="text-warn">
                 {' '}
                 · {app.llmCalls} call{app.llmCalls === 1 ? '' : 's'}
               </span>
@@ -292,7 +292,7 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
           </span>
         </span>
         {stale && (
-          <span className="mt-0.5 shrink-0 font-mono text-[9px] text-missing">quiet</span>
+          <span className="mt-0.5 shrink-0 font-mono text-[9px] text-bad">quiet</span>
         )}
       </button>
 
@@ -313,17 +313,17 @@ function CardDetail({
   };
 
   return (
-    <div className="space-y-2 border-t border-border px-2.5 py-2">
+    <div className="space-y-2 border-t border-frame px-2.5 py-2">
       <div className="flex flex-wrap gap-1">
         {BOARD_COLUMNS.map((status) => (
           <button
             key={status}
             onClick={() => void move(status)}
             disabled={status === app.status}
-            className={`rounded border px-1.5 py-0.5 font-mono text-[9px] transition-colors ${
+            className={` border px-1.5 py-0.5 font-mono text-[9px] transition-colors ${
               status === app.status
-                ? 'border-accent-dim bg-accent-dim/20 text-accent'
-                : 'border-border text-muted hover:bg-surface-hi hover:text-text'
+                ? 'border-gold-dim bg-gold-dim/20 text-gold'
+                : 'border-frame text-muted hover:bg-window-hi hover:text-parchment'
             }`}
           >
             {STATUS_LABEL[status]}
@@ -340,7 +340,7 @@ function CardDetail({
               href={app.url}
               target="_blank"
               rel="noreferrer"
-              className="text-muted underline decoration-border hover:text-accent"
+              className="text-muted underline decoration-border hover:text-gold"
             >
               posting
             </a>
@@ -350,7 +350,7 @@ function CardDetail({
 
       <button
         onClick={() => void deleteApplication(app.id)}
-        className="font-mono text-[9px] text-faint hover:text-missing"
+        className="font-mono text-[9px] text-faint hover:text-bad"
       >
         remove from board
       </button>
@@ -360,10 +360,10 @@ function CardDetail({
 
 function List({ apps }: { apps: readonly Application[] }) {
   return (
-    <div className="overflow-x-auto rounded border border-border">
+    <div className="overflow-x-auto border border-frame">
       <table className="w-full border-collapse text-[11px]">
         <thead>
-          <tr className="border-b border-border bg-surface text-left">
+          <tr className="border-b border-frame bg-window text-left">
             {['Company', 'Role', 'Status', 'Sent'].map((h) => (
               <th
                 key={h}
@@ -376,8 +376,8 @@ function List({ apps }: { apps: readonly Application[] }) {
         </thead>
         <tbody>
           {apps.map((a) => (
-            <tr key={a.id} className="border-b border-border last:border-0 hover:bg-surface">
-              <td className="max-w-24 truncate px-2 py-1.5 text-text">{a.company || '—'}</td>
+            <tr key={a.id} className="border-b border-frame last:border-0 hover:bg-window">
+              <td className="max-w-24 truncate px-2 py-1.5 text-parchment">{a.company || '—'}</td>
               <td className="max-w-32 truncate px-2 py-1.5 text-muted">{a.role || '—'}</td>
               <td className={`px-2 py-1.5 font-mono text-[10px] ${STATUS_COLOR[a.status]}`}>
                 {STATUS_LABEL[a.status]}
@@ -414,24 +414,24 @@ function AddForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <section className="space-y-1.5 rounded border border-border bg-surface p-2.5">
+    <section className="space-y-1.5 border border-frame bg-window p-2.5">
       <input
         value={company}
         onChange={(e) => setCompany(e.target.value)}
         placeholder="Company"
-        className="w-full rounded border border-border bg-base px-2 py-1 text-[11px] text-text outline-none placeholder:text-faint focus:border-accent-dim"
+        className="w-full border border-frame bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <input
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role"
         onKeyDown={(e) => e.key === 'Enter' && void submit()}
-        className="w-full rounded border border-border bg-base px-2 py-1 text-[11px] text-text outline-none placeholder:text-faint focus:border-accent-dim"
+        className="w-full border border-frame bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <button
         onClick={() => void submit()}
         disabled={!company.trim()}
-        className="w-full rounded bg-accent-dim px-2 py-1 font-mono text-[10px] text-text hover:bg-accent disabled:opacity-40"
+        className="w-full bg-gold-dim px-2 py-1 font-mono text-[10px] text-parchment hover:bg-gold disabled:opacity-40"
       >
         Log it · +{DEEDS.application.dp} DP
       </button>

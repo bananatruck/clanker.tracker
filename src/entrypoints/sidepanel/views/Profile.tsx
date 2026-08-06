@@ -23,9 +23,9 @@ import {
 } from '@/types/profile';
 
 const DOT: Record<Confidence, string> = {
-  certain: 'bg-certain',
-  guessed: 'bg-guessed',
-  missing: 'bg-missing',
+  certain: 'bg-ok',
+  guessed: 'bg-warn',
+  missing: 'bg-bad',
 };
 
 const CONFIDENCE_HINT: Record<Confidence, string> = {
@@ -100,12 +100,12 @@ function Dropzone({
           if (file) onFile(file);
         }}
         onClick={() => input.current?.click()}
-        className={`grid cursor-pointer place-items-center rounded border border-dashed p-8 text-center transition-colors ${
-          over ? 'border-accent bg-surface-hi' : 'border-border bg-surface hover:border-accent-dim'
+        className={`grid cursor-pointer place-items-center  border border-dashed p-8 text-center transition-colors ${
+          over ? 'border-gold bg-window-hi' : 'border-frame bg-window hover:border-gold-dim'
         }`}
       >
         <div className="space-y-1.5">
-          <p className="text-[12px] text-text">
+          <p className="text-[12px] text-parchment">
             {busy ? 'Reading…' : 'Drop a resume — PDF, DOCX, or text'}
           </p>
           <p className="font-mono text-[10px] text-faint">
@@ -125,7 +125,7 @@ function Dropzone({
         }}
       />
 
-      {error && <p className="font-mono text-[10px] text-missing">{error}</p>}
+      {error && <p className="font-mono text-[10px] text-bad">{error}</p>}
     </div>
   );
 }
@@ -150,24 +150,24 @@ function ProfileGrid({
     <div className="space-y-4">
       <header className="flex items-baseline justify-between">
         <div>
-          <h2 className="text-[12px] text-text">{profile.source.fileName}</h2>
+          <h2 className="text-[12px] text-parchment">{profile.source.fileName}</h2>
           <p className="font-mono text-[10px] text-faint">
             {certain}/{total} certain
-            {missing > 0 && <span className="text-missing"> · {missing} missing</span>}
+            {missing > 0 && <span className="text-bad"> · {missing} missing</span>}
           </p>
         </div>
         <div className="flex gap-1">
           <button
             onClick={onReparse}
             disabled={busy}
-            className="rounded border border-border px-2 py-1 font-mono text-[10px] text-muted hover:bg-surface hover:text-text disabled:opacity-50"
+            className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-50"
           >
             Re-parse
           </button>
           <button
             onClick={() => input.current?.click()}
             disabled={busy}
-            className="rounded border border-border px-2 py-1 font-mono text-[10px] text-muted hover:bg-surface hover:text-text disabled:opacity-50"
+            className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-50"
           >
             Replace
           </button>
@@ -185,11 +185,11 @@ function ProfileGrid({
         }}
       />
 
-      {error && <p className="font-mono text-[10px] text-missing">{error}</p>}
+      {error && <p className="font-mono text-[10px] text-bad">{error}</p>}
 
       <section className="space-y-1">
         <h3 className="font-mono text-[10px] uppercase tracking-wide text-faint">Contact</h3>
-        <div className="overflow-hidden rounded border border-border">
+        <div className="overflow-hidden border border-frame">
           {CONTACT_KEYS.map((key) => (
             <ContactRow key={key} field={key} profile={profile} />
           ))}
@@ -204,20 +204,20 @@ function ProfileGrid({
           <Empty>No work history parsed. Check the resume has an Experience heading.</Empty>
         ) : (
           profile.experience.map((entry) => (
-            <article key={entry.id} className="rounded border border-border bg-surface p-2.5">
+            <article key={entry.id} className="border border-frame bg-window p-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[12px] text-text">
-                    {entry.title || <span className="text-missing">title not found</span>}
+                  <p className="truncate text-[12px] text-parchment">
+                    {entry.title || <span className="text-bad">title not found</span>}
                   </p>
                   <p className="truncate font-mono text-[10px] text-muted">
-                    {entry.company || <span className="text-missing">company not found</span>}
+                    {entry.company || <span className="text-bad">company not found</span>}
                     {entry.location && ` · ${entry.location}`}
                   </p>
                 </div>
                 <span
                   title={CONFIDENCE_HINT[entry.confidence]}
-                  className={`mt-1 size-1.5 shrink-0 rounded-full ${DOT[entry.confidence]}`}
+                  className={`mt-1 size-1.5 shrink-0 ${DOT[entry.confidence]}`}
                 />
               </div>
 
@@ -244,13 +244,13 @@ function ProfileGrid({
           {profile.education.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-center justify-between rounded border border-border bg-surface px-2.5 py-2"
+              className="flex items-center justify-between border border-frame bg-window px-2.5 py-2"
             >
               <div className="min-w-0">
-                <p className="truncate text-[12px] text-text">{entry.school}</p>
+                <p className="truncate text-[12px] text-parchment">{entry.school}</p>
                 <p className="truncate font-mono text-[10px] text-muted">{entry.degree}</p>
               </div>
-              <span className={`size-1.5 shrink-0 rounded-full ${DOT[entry.confidence]}`} />
+              <span className={`size-1.5 shrink-0 ${DOT[entry.confidence]}`} />
             </div>
           ))}
         </section>
@@ -264,7 +264,7 @@ function ProfileGrid({
           {profile.skills.map((skill) => (
             <span
               key={skill}
-              className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] text-muted"
+              className="border border-frame bg-window px-1.5 py-0.5 font-mono text-[10px] text-muted"
             >
               {skill}
             </span>
@@ -287,10 +287,10 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
   };
 
   return (
-    <div className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-b-0">
+    <div className="flex items-center gap-2 border-b border-frame px-2 py-1.5 last:border-b-0">
       <span
         title={CONFIDENCE_HINT[value.confidence]}
-        className={`size-1.5 shrink-0 rounded-full ${DOT[value.confidence]}`}
+        className={`size-1.5 shrink-0 ${DOT[value.confidence]}`}
       />
       <span className="w-20 shrink-0 font-mono text-[10px] text-faint">
         {CONTACT_LABELS[field]}
@@ -306,15 +306,15 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
             if (e.key === 'Enter') void commit();
             if (e.key === 'Escape') setDraft(null);
           }}
-          className="min-w-0 flex-1 rounded-sm bg-base px-1 py-0.5 text-[11px] text-text outline-none ring-1 ring-accent-dim"
+          className="min-w-0 flex-1 bg-field px-1 py-0.5 text-[11px] text-parchment outline-none ring-1 ring-gold-dim"
         />
       ) : (
         <button
           onClick={() => setDraft(value.value)}
-          className="min-w-0 flex-1 truncate rounded-sm px-1 py-0.5 text-left text-[11px] hover:bg-surface-hi"
+          className="min-w-0 flex-1 truncate px-1 py-0.5 text-left text-[11px] hover:bg-window-hi"
         >
           {value.value ? (
-            <span className="text-text">{value.value}</span>
+            <span className="text-parchment">{value.value}</span>
           ) : (
             <span className="text-faint">—</span>
           )}
@@ -322,7 +322,7 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
       )}
 
       {value.source === 'user' && (
-        <span className="shrink-0 font-mono text-[9px] text-certain">edited</span>
+        <span className="shrink-0 font-mono text-[9px] text-ok">edited</span>
       )}
     </div>
   );
@@ -330,7 +330,7 @@ function ContactRow({ field, profile }: { field: ContactKey; profile: ResumeProf
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded border border-border bg-surface px-2.5 py-2 text-[11px] text-muted">
+    <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
       {children}
     </p>
   );

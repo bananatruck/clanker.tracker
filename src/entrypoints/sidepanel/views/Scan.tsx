@@ -22,15 +22,15 @@ const COVERAGE_LABEL: Record<Coverage, string> = {
 };
 
 const COVERAGE_TEXT: Record<Coverage, string> = {
-  covered: 'text-certain',
-  partial: 'text-guessed',
-  gap: 'text-missing',
+  covered: 'text-ok',
+  partial: 'text-warn',
+  gap: 'text-bad',
 };
 
 const COVERAGE_BAR: Record<Coverage, string> = {
-  covered: 'bg-certain',
-  partial: 'bg-guessed',
-  gap: 'bg-missing',
+  covered: 'bg-ok',
+  partial: 'bg-warn',
+  gap: 'bg-bad',
 };
 
 export default function Scan() {
@@ -44,7 +44,7 @@ export default function Scan() {
 
   if (!profile) {
     return (
-      <p className="rounded border border-border bg-surface px-2.5 py-2 text-[11px] text-muted">
+      <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
         Add a resume on the Profile tab first — the scan matches a posting against your bullets.
       </p>
     );
@@ -64,14 +64,14 @@ export default function Scan() {
         onChange={(e) => setJd(e.target.value)}
         placeholder="Paste the job description…"
         rows={6}
-        className="w-full resize-y rounded border border-border bg-surface px-2 py-1.5 text-[11px] leading-snug text-text outline-none placeholder:text-faint focus:border-accent-dim"
+        className="w-full resize-y border border-frame bg-window px-2 py-1.5 text-[11px] leading-snug text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
 
       <div className="flex items-center justify-between">
         <button
           onClick={run}
           disabled={!jd.trim()}
-          className="rounded bg-accent-dim px-2.5 py-1 font-mono text-[10px] text-text hover:bg-accent disabled:opacity-40"
+          className="bg-gold-dim px-2.5 py-1 font-mono text-[10px] text-parchment hover:bg-gold disabled:opacity-40"
         >
           Scan
         </button>
@@ -89,7 +89,7 @@ function Results({ scan }: { scan: ScanResult }) {
 
   if (summary.total === 0) {
     return (
-      <p className="rounded border border-border bg-surface px-2.5 py-2 text-[11px] text-muted">
+      <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
         No requirements found. Postings written as prose sometimes need the bulleted section
         pasted on its own.
       </p>
@@ -100,29 +100,29 @@ function Results({ scan }: { scan: ScanResult }) {
 
   return (
     <div className="space-y-3">
-      <section className="rounded border border-border bg-surface p-2.5">
+      <section className="border border-frame bg-window p-2.5">
         <div className="flex items-baseline justify-between">
           <span className="font-mono text-[10px] uppercase tracking-wide text-faint">
             {summary.total} requirements
           </span>
           <span className="font-mono text-[10px]">
-            <span className="text-certain">{summary.covered} covered</span>
+            <span className="text-ok">{summary.covered} covered</span>
             <span className="text-faint"> · </span>
-            <span className="text-guessed">{summary.partial} partial</span>
+            <span className="text-warn">{summary.partial} partial</span>
             <span className="text-faint"> · </span>
-            <span className="text-missing">{summary.gaps} gap</span>
+            <span className="text-bad">{summary.gaps} gap</span>
           </span>
         </div>
 
-        <div className="mt-2 flex h-1 overflow-hidden rounded-full bg-base">
-          <div className="bg-certain" style={{ width: `${pct(summary.covered)}%` }} />
-          <div className="bg-guessed" style={{ width: `${pct(summary.partial)}%` }} />
-          <div className="bg-missing" style={{ width: `${pct(summary.gaps)}%` }} />
+        <div className="mt-2 flex h-1 overflow-hidden bg-field">
+          <div className="bg-ok" style={{ width: `${pct(summary.covered)}%` }} />
+          <div className="bg-warn" style={{ width: `${pct(summary.partial)}%` }} />
+          <div className="bg-bad" style={{ width: `${pct(summary.gaps)}%` }} />
         </div>
 
         {summary.requiredGaps > 0 && (
           <p className="mt-2 text-[11px] leading-snug text-muted">
-            <span className="text-missing">{summary.requiredGaps}</span> of the gaps are on
+            <span className="text-bad">{summary.requiredGaps}</span> of the gaps are on
             requirements the posting calls required — those are the ones that get you filtered.
           </p>
         )}
@@ -137,7 +137,7 @@ function Results({ scan }: { scan: ScanResult }) {
             {gaps.map((gap) => (
               <span
                 key={gap}
-                className="rounded border border-missing/40 bg-surface px-1.5 py-0.5 font-mono text-[10px] text-missing"
+                className="border border-bad/40 bg-window px-1.5 py-0.5 font-mono text-[10px] text-bad"
               >
                 {gap}
               </span>
@@ -163,14 +163,14 @@ function Row({ row }: { row: EvidenceRow }) {
   const { requirement } = row;
 
   return (
-    <article className="overflow-hidden rounded border border-border bg-surface">
+    <article className="overflow-hidden border border-frame bg-window">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-2 px-2.5 py-2 text-left hover:bg-surface-hi"
+        className="flex w-full items-start gap-2 px-2.5 py-2 text-left hover:bg-window-hi"
       >
-        <span className={`mt-1 h-3 w-0.5 shrink-0 rounded-full ${COVERAGE_BAR[row.coverage]}`} />
+        <span className={`mt-1 h-3 w-0.5 shrink-0 ${COVERAGE_BAR[row.coverage]}`} />
         <span className="min-w-0 flex-1">
-          <span className="block text-[11px] leading-snug text-text">{requirement.text}</span>
+          <span className="block text-[11px] leading-snug text-parchment">{requirement.text}</span>
           <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-wide text-faint">
             {requirement.necessity}
             {' · '}
@@ -181,7 +181,7 @@ function Row({ row }: { row: EvidenceRow }) {
       </button>
 
       {open && (
-        <div className="space-y-1.5 border-t border-border px-2.5 py-2">
+        <div className="space-y-1.5 border-t border-frame px-2.5 py-2">
           {row.evidence.length > 0 ? (
             row.evidence.map((ev, i) => (
               <div key={i} className="text-[11px] leading-snug">
@@ -202,7 +202,7 @@ function Row({ row }: { row: EvidenceRow }) {
 
           {row.missing.length > 0 && (
             <p className="font-mono text-[9px] text-faint">
-              missing: <span className="text-missing">{row.missing.join(', ')}</span>
+              missing: <span className="text-bad">{row.missing.join(', ')}</span>
             </p>
           )}
         </div>
