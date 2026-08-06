@@ -7,9 +7,9 @@
 A local-first, open-source Chrome extension for people applying to a lot of jobs — wrapped in **Clankerdom Deliverance**, an idle RPG about being the villain.
 
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-a882ff.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-pre--alpha%20·%20M3-orange.svg)](#roadmap)
-[![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-1e1e1e.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
+[![License: MIT](https://img.shields.io/badge/License-MIT-ffcf3f.svg)](./LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha%20·%20M5-orange.svg)](#roadmap)
+[![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-0e1a5c.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
 
@@ -160,10 +160,10 @@ Field resolution runs a five-tier chain, cheapest first, escalating only on a mi
 
 | Tier | Mechanism | Cost | Typical hit rate |
 |---|---|---|---|
-| 1 | Site adapter's known selector map | free | ~40% |
+| 1 | Site adapter's selector map, **or the field's own `autocomplete` attribute** | free | ~40% |
 | 2 | **Q&A memory** — normalised question hash → your accepted answer | free | ~35% → ~90% by app #30 |
 | 3 | Deterministic label matcher (name, email, phone, links, work auth, EEO) | free | ~15% |
-| 4 | Local MiniLM embedding similarity vs. your profile | free | ~5% |
+| 4 | Fuzzy match — character bigrams over a sliding window, for typos and abbreviations | free | ~5% |
 | 5 | **One batched LLM call** for everything still unknown | 1 call | the remainder |
 
 Tier 2 is the whole trick. Every field you correct in the review overlay writes back to it, so the tool gets **cheaper and more accurate the more you use it**. A brand-new application costs at most 3 calls; a repeat at the same company costs zero.
@@ -219,44 +219,43 @@ src/
 ├── entrypoints/
 │   ├── background.ts        service worker: budget, sync queue, message router
 │   ├── content/             ATS detection, fill execution, shadow-DOM review overlay
-│   ├── sidepanel/           main UI — dashboard, profile, tracker, tree, crusade
-│   └── options/
+│   ├── sidepanel/           main UI — dashboard, profile, scan, fill, tracker, crusade
+│   ├── setup/               first-run onboarding, opened once on install
+│   └── content/             the fill engine, injected on demand
 ├── lib/
-│   ├── db/                  Dexie schema + repositories
+│   ├── db/                  Dexie schema + repositories + worker message bus
 │   ├── llm/                 provider adapters, budget tracking, structured schemas
-│   ├── local-ml/            transformers.js worker — embeddings, detector proxy
 │   ├── resume/              PDF/DOCX parse, structured extraction
-│   ├── ats/                 JD requirement extraction, evidence table
+│   ├── ats/                 posting extraction, requirements, evidence table
 │   ├── fill/                harvest → 5-tier resolve → fill → review
+│   ├── letter/              grounded cover letter generation
 │   ├── tracker/             funnel + ledger rules, submission watcher, CSV, stats
-│   ├── letters/             retrieval, generation, voice profile, humanizer
-│   ├── sync/                TrackerSink: local, Sheets, Notion, Airtable
-│   ├── tree/                skill graph, mastery, quests
-│   └── game/                economy, march, skirmish, warband, lore, renderer
-├── ui/                      Obsidian design tokens, shared components
+│   └── game/                economy, lore, sprites, achievements
+├── ui/                      design tokens, DQ component kit, shared screens
 └── types/
 ```
 
 | Layer | Choice |
 |---|---|
 | Framework | WXT + React 19 + TypeScript |
-| UI | Tailwind + Radix, Obsidian-inspired dark theme |
+| UI | Tailwind v4, Dragon Quest command-window design language |
 | Surface | Chrome Side Panel API |
 | Storage | Dexie (IndexedDB), local-first |
-| Local ML | transformers.js (MiniLM) in a Web Worker |
-| Game | Canvas2D, hand-rolled spritesheet renderer |
+| Game | Canvas2D, sprites authored as pixel data in-repo |
 
 ---
 
 ## Roadmap
 
-- [x] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, Obsidian tokens, provider adapter, CI
+- [x] **M0** — Repo, scaffold, MV3 manifest, side panel shell, Dexie schema, design tokens, provider adapter, CI
 - [x] **M1** — Resume parse → profile review grid → ATS scan + evidence table
 - [x] **M2** — Autofill core: harvest, 5-tier resolver, fillers, review overlay, Greenhouse/Lever/Ashby/Workable + generic
-- [x] **M3** — Tracker, board view, CSV export, DP counter → **usable daily from here**
-- [ ] **M4** — Cover letters: story bank, retrieval, voice profile, humanizer ← *here*
-- [ ] **M5** — Clankerdom Deliverance: economy, march, skirmish, warband, lore, default theme; skill tree
-- [ ] **M6** — Theme loader, Workday, LinkedIn, sync adapters, auto-submit unlock, store listing
+- [x] **M3** — Tracker, board view, CSV export, DP counter
+- [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
+- [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
+- [ ] **M6** — Workday and LinkedIn adapters, sync adapters, auto-submit unlock, store listing ← *here*
+
+Theme packs and the `.clank` loader were dropped: the visual language ships whole rather than as a substrate for art nobody here has licensed.
 
 ---
 
@@ -296,19 +295,9 @@ This isn't only for one person. Profile, STAR stories, and documents import and 
 
 ---
 
-## Theme packs
-
-Clankerdom Deliverance is skinnable. A `.clank` pack is a zip of `theme.json`, a sprite atlas, a palette, and `lore.json` — the same story beats retold in another idiom.
-
-Packs are **data only**. No JavaScript, ever — Manifest V3 forbids remotely-hosted code, and it means a pack you download can't do anything but draw. Packs are imported from local disk, not from us.
-
-See [`docs/theme-pack-spec.md`](./docs/theme-pack-spec.md).
-
----
-
 ## Privacy
 
-Your resume, stories, answers, and application history live in IndexedDB **on your machine**. There is no backend, no account, no telemetry, and no analytics. The only network calls are to the LLM provider whose key you supplied, and to any sync target you explicitly connect.
+Your resume, stories, answers, and application history live in IndexedDB **on your machine**. There is no backend, no account, no telemetry, and no analytics. The only network calls are to the LLM provider whose key you supplied, and only when you press the cover letter button. Autofill and the keyword scan never touch a provider at all.
 
 ---
 

@@ -71,7 +71,7 @@ export default function Tracker() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-1">
-        <div className="flex border border-frame">
+        <div className="flex border-2 border-frame-dim">
           {(['board', 'list'] as const).map((v) => (
             <button
               key={v}
@@ -89,14 +89,14 @@ export default function Tracker() {
 
         <button
           onClick={() => setAdding((a) => !a)}
-          className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
+          className="border-2 border-frame-dim px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
         >
           {adding ? 'Close' : '+ Log one'}
         </button>
         <button
           onClick={exportCsv}
           disabled={apps.length === 0}
-          className="border border-frame px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-40"
+          className="border-2 border-frame-dim px-2 py-1 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment disabled:opacity-40"
         >
           Export CSV
         </button>
@@ -121,7 +121,7 @@ export default function Tracker() {
 
 function Empty() {
   return (
-    <div className="border border-frame bg-window p-3">
+    <div className="dq-window p-3">
       <h2 className="mb-1.5 font-mono text-[11px] text-muted">Nothing sent yet</h2>
       <p className="text-[12px] leading-relaxed text-muted">
         Fill an application and submit it — it logs itself. Anything you sent by hand or over
@@ -147,7 +147,7 @@ function Summary({
   const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
 
   return (
-    <section className="space-y-2 border border-frame bg-window p-2.5">
+    <section className="space-y-2 dq-window p-2.5">
       <div className="grid grid-cols-4 gap-2">
         <Stat label="sent" value={stats.total} />
         <Stat label="replies" value={`${Math.round(stats.responseRate * 100)}%`} />
@@ -270,7 +270,7 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
   const stale = isStale(app);
 
   return (
-    <article className="overflow-hidden border border-frame bg-window">
+    <article className="overflow-hidden dq-window">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-start gap-2 px-2.5 py-1.5 text-left hover:bg-window-hi"
@@ -360,7 +360,7 @@ function CardDetail({
 
 function List({ apps }: { apps: readonly Application[] }) {
   return (
-    <div className="overflow-x-auto border border-frame">
+    <div className="overflow-x-auto border-2 border-frame-dim">
       <table className="w-full border-collapse text-[11px]">
         <thead>
           <tr className="border-b border-frame bg-window text-left">
@@ -414,19 +414,19 @@ function AddForm({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <section className="space-y-1.5 border border-frame bg-window p-2.5">
+    <section className="space-y-1.5 dq-window p-2.5">
       <input
         value={company}
         onChange={(e) => setCompany(e.target.value)}
         placeholder="Company"
-        className="w-full border border-frame bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <input
         value={role}
         onChange={(e) => setRole(e.target.value)}
         placeholder="Role"
         onKeyDown={(e) => e.key === 'Enter' && void submit()}
-        className="w-full border border-frame bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[11px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <button
         onClick={() => void submit()}
