@@ -32,7 +32,14 @@ async function extractPdf(data: ArrayBuffer): Promise<string> {
     import.meta.url,
   ).toString();
 
-  const task = pdfjs.getDocument({ data });
+  const task = pdfjs.getDocument({
+    data,
+    // We only ever want the text, and both of these otherwise reach for font
+    // assets over the network — which the extension CSP blocks, and which
+    // would sit badly with "parsed on your machine, nothing is uploaded".
+    useSystemFonts: false,
+    disableFontFace: true,
+  });
   const doc = await task.promise;
   const pages: string[] = [];
 
