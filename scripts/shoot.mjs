@@ -38,7 +38,7 @@ const PROBE_HEIGHT = 1000;
  * important one, because it is the step between a resolver guess and a
  * submitted application.
  */
-const SHOTS = ['dashboard', 'profile', 'scan', 'fill', 'tracker', 'crusade', 'settings', 'overlay'];
+const SHOTS = ['dashboard', 'profile', 'scan', 'fill', 'running', 'tracker', 'crusade', 'settings', 'overlay'];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -181,6 +181,10 @@ for (const route of SHOTS) {
       ? '!!document.querySelector("[data-clanker-overlay]")'
       : 'document.querySelectorAll("#root *").length > 20';
 
+  // The split-screen run fills the frame by design rather than growing to fit,
+  // so it is photographed at a fixed height instead of measured.
+  const fixed = route === 'running' ? 760 : null;
+
   const settle = async () => {
     for (let i = 0; i < 60; i++) {
       await sleep(200);
@@ -210,13 +214,13 @@ for (const route of SHOTS) {
 
   // The overlay's max-height is tied to the viewport, so it needs the taller
   // frame from the start or it photographs mid-scroll.
-  await size(route === 'overlay' ? 1600 : PROBE_HEIGHT);
+  await size(route === 'overlay' ? 1600 : (fixed ?? PROBE_HEIGHT));
   await cdp.send('Page.navigate', {
     url: `http://localhost:${PORT}/sidepanel.html#/demo/${route}`,
   });
   await settle();
 
-  const height = Math.max(360, (await measure()) ?? PROBE_HEIGHT);
+  const height = fixed ?? Math.max(360, (await measure()) ?? PROBE_HEIGHT);
 
   // Grow to fit, then reload so layout happens once, at the final size.
   if (height > PROBE_HEIGHT && route !== 'overlay') {

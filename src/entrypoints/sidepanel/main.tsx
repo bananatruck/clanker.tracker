@@ -42,6 +42,19 @@ async function boot() {
       await showDemoOverlay();
       return;
     }
+
+    // The split-screen fill only exists while a run is in flight, so it is
+    // reachable by URL rather than by pressing a button on a page that is not
+    // there. Same components, fixture data.
+    if (demo[1] === 'running') {
+      const { DemoFillRun } = await import('./demoRun');
+      createRoot(root!).render(
+        <StrictMode>
+          <DemoFillRun />
+        </StrictMode>,
+      );
+      return;
+    }
   }
 
   createRoot(root!).render(

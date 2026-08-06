@@ -12,11 +12,14 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { getProfile } from '@/lib/db/repo';
+import { getProfile, totalDp } from '@/lib/db/repo';
 import { currentBudgetStatus } from '@/lib/llm';
 import { askPage, NotInjectableError } from '@/lib/fill/inject';
+import { onProgress, type FillProgress } from '@/lib/fill/progress';
 import { TIER_LABEL } from '@/lib/fill/types';
+import { levelFromDp, tierForLevel } from '@/lib/game/economy';
 import { Button, Notice, Window } from '@/ui/dq';
+import FillRun from '@/ui/game/FillRun';
 
 interface Probe {
   ats: string;
@@ -36,11 +39,22 @@ interface FillResult {
 export default function Fill() {
   const profile = useLiveQuery(() => getProfile(), []);
   const budget = useLiveQuery(() => currentBudgetStatus(), []);
+  const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
   const [probe, setProbe] = useState<Probe | null>(null);
   const [probeError, setProbeError] = useState('');
   const [result, setResult] = useState<FillResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [probing, setProbing] = useState(true);
+
+  /**
+   * The live checklist, broadcast field by field from the page.
+   *
+   * Subscribed for the whole life of the tab rather than only during a run:
+   * the panel can be opened mid-fill, and a listener attached on the button
+   * press would miss everything that had already happened.
+   */
+  const [progress, setProgress] = useState<FillProgress | null>(null);
+  useEffect(() => onProgress(setProgress), []);
 
   const refresh = useCallback(async () => {
     setProbing(true);
@@ -68,6 +82,7 @@ export default function Fill() {
   const fill = async () => {
     setBusy(true);
     setResult(null);
+    setProgress(null);
     try {
       setResult(await askPage<FillResult>({ type: 'clanker:fill' }));
     } catch (err) {
@@ -82,6 +97,24 @@ export default function Fill() {
   if (!profile) {
     return (
       <Notice>Add a resume on the Profile tab first — there is nothing to fill from yet.</Notice>
+    );
+  }
+
+  /**
+   * While a run is live the tab *is* the run: the crusade above, the
+   * checklist below. Anything else on screen at that moment is competing with
+   * the one thing the user is actually watching.
+   */
+  if (progress) {
+    return (
+      <FillRun
+        progress={progress}
+        tier={tierForLevel(levelFromDp(dp).level)}
+        onDone={() => {
+          setProgress(null);
+          void refresh();
+        }}
+      />
     );
   }
 

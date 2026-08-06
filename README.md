@@ -12,7 +12,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ffcf3f.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-404%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-423%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-0e1a5c.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -50,18 +50,23 @@ screenshots at all.
 
 <table>
 <tr>
-<td width="25%"><img src="./docs/demo/dashboard.png" alt="The Home screen: who you are, the crusade meter, the application funnel, and what it cost."></td>
+<td width="25%"><img src="./docs/demo/running.png" alt="A fill in progress: the battle scene above, and below it a checklist ticking off each field as it is answered."></td>
 <td width="25%"><img src="./docs/demo/overlay.png" alt="The review overlay: fourteen fields, each labelled with the tier that answered it."></td>
 <td width="25%"><img src="./docs/demo/tracker.png" alt="The tracker board: fourteen applications grouped by funnel stage."></td>
-<td width="25%"><img src="./docs/demo/crusade.png" alt="The Crusade tab: the march to the Citadel, the ledger, and deeds of note."></td>
+<td width="25%"><img src="./docs/demo/crusade.png" alt="The Crusade tab: a Dragon Quest battle screen whose backdrop is the current act."></td>
 </tr>
 <tr>
-<td align="center"><b>Home</b><br><sub>counts and rates, never a score</sub></td>
+<td align="center"><b>Filling</b><br><sub>every field, ticked as it lands</sub></td>
 <td align="center"><b>Review</b><br><sub>the step before submission</sub></td>
 <td align="center"><b>Tracker</b><br><sub>honest about its own funnel</sub></td>
-<td align="center"><b>Crusade</b><br><sub>the level curve, drawn</sub></td>
+<td align="center"><b>Crusade</b><br><sub>the act you are standing in</sub></td>
 </tr>
 </table>
+
+While a fill runs, the panel splits: the crusade on top, and under it **every question the
+form asks**, ticking over one at a time with the tier that answered each. "Filled 22 fields" is
+not a claim anyone can check. A list of the actual questions is — and the short list at the
+bottom, of things the tool refused to invent, is the tool working rather than failing.
 
 The **review overlay** is the one that matters. Every row says which tier answered it — *site
 adapter*, *answer memory*, *label match*, *fuzzy match*, *model* — so the cost of an application is
@@ -338,7 +343,7 @@ Setup opens by itself the first time. It wants a resume; the API key and writing
 `pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test        # 404 unit tests
+pnpm test        # 423 unit tests
 pnpm test:fill   # the fill pipeline against whole board fixtures
 pnpm compile     # typecheck
 pnpm build       # production bundle

@@ -16,6 +16,7 @@ import { clearOverlays, showReview, type ReviewRow } from './overlay';
 import { resolveFields, tierBreakdown, type AnswerMemory } from './resolve';
 import type { FillContext } from './labels';
 import type { RunRecord } from './autosubmit';
+import { reportProgress, type FieldProgress, type FillPhase } from './progress';
 import type { HarvestedField, Resolution } from './types';
 
 export interface RunHooks {
@@ -64,6 +65,20 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   const { fields, elements } = harvestForm(form);
   const { hits, ats } = adapterHitsFor(elements, doc, location.hostname);
 
+  /**
+   * The live checklist the side panel draws while this runs.
+   *
+   * Held here and rebroadcast whole on every change rather than sent as
+   * deltas: a run is a few dozen fields, the panel may open halfway through,
+   * and a receiver that has to reassemble a stream to know the current state
+   * is a receiver that can be wrong about it.
+   */
+  const progress = new Map<string, FieldProgress>();
+  const say = (phase: FillPhase, llmCalls = 0, error?: string) =>
+    reportProgress({ phase, ats: ats.id, fields: [...progress.values()], llmCalls, error });
+
+  say('reading');
+
   const plan = await resolveFields(fields, {
     ctx,
     adapterHits: hits,
@@ -84,6 +99,22 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
     resolution: byId.get(field.id) ?? null,
   }));
 
+  // Every field the run intends to touch appears at once, already carrying the
+  // answer the resolver found. The checklist is then a list that ticks rather
+  // than a list that grows, so its length stops changing under the reader.
+  for (const field of pending) {
+    const answer = byId.get(field.id);
+    progress.set(field.id, {
+      id: field.id,
+      label: field.label || field.name || 'Unlabelled field',
+      required: field.required,
+      state: answer ? 'pending' : 'needs-you',
+      value: answer?.value ?? '',
+      tier: answer?.tier ?? null,
+    });
+  }
+  say('answering', plan.llmCalls);
+
   // Highlight in place so the overlay and the page agree about what is certain.
   for (const field of pending) {
     const el = elements.get(field.id);
@@ -93,6 +124,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   // Decoration, so it is never allowed to fail the run it decorates.
   const bark = await hooks.bark?.().catch(() => null) ?? null;
 
+  say('reviewing', plan.llmCalls);
   const outcome = await showReview(rows, plan.llmCalls, bark);
 
   for (const field of pending) {
@@ -110,28 +142,40 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   };
 
   if (!outcome.submitted) {
+    say('cancelled', plan.llmCalls);
     return { filled: 0, skipped: pending.length, llmCalls: plan.llmCalls, run: emptyRun, cancelled: true };
   }
 
   let filled = 0;
   let skipped = 0;
 
+  say('writing', plan.llmCalls);
+
   for (const field of pending) {
+    // The user's correction wins over the resolver's answer, so the checklist
+    // shows what actually went into the page rather than what was proposed.
     const value = outcome.values.get(field.id) ?? '';
     const el = elements.get(field.id);
+    const row = progress.get(field.id)!;
+
     if (!el || value.trim() === '') {
       skipped++;
+      progress.set(field.id, { ...row, state: 'needs-you', value: '' });
+      say('writing', plan.llmCalls);
       continue;
     }
 
     const result = applyValue(el, value, field.options);
     if (result.ok) {
       filled++;
+      progress.set(field.id, { ...row, state: 'filled', value });
       // Learn the answer under the question as this site phrased it.
       if (field.label) await hooks.remember(field.label, value);
     } else {
       skipped++;
+      progress.set(field.id, { ...row, state: 'needs-you', value: '' });
     }
+    say('writing', plan.llmCalls);
   }
 
   const unfilledRequired = pending.filter(
@@ -140,6 +184,8 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
 
   const run: RunRecord = { ...emptyRun, unfilledRequired, at: Date.now() };
   await hooks.record(run);
+
+  say('done', plan.llmCalls);
 
   return { filled, skipped, llmCalls: plan.llmCalls, run, cancelled: false };
 }
