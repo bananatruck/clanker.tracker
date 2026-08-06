@@ -21,9 +21,28 @@ import { watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
 
 /** Messages the side panel sends us. */
-type Request = { type: 'clanker:probe' } | { type: 'clanker:fill' };
+type Request =
+  | { type: 'clanker:ping' }
+  | { type: 'clanker:probe' }
+  | { type: 'clanker:fill' };
+
+declare global {
+  interface Window {
+    /** Set once the listener is installed. See the guard in main(). */
+    __clankerReady?: boolean;
+  }
+}
 
 export default defineContentScript({
+  /**
+   * Declarative registration covers the platforms we have adapters for, so
+   * those pages are ready before the user clicks anything.
+   *
+   * Every *other* job application — company careers pages, small ATSs, one-off
+   * forms — is reached on demand through activeTab + scripting when the user
+   * presses Fill. See lib/fill/inject.ts for why that is the right permission
+   * shape rather than requesting every host up front.
+   */
   matches: [
     'https://*.greenhouse.io/*',
     'https://*.lever.co/*',
@@ -33,8 +52,16 @@ export default defineContentScript({
     'https://www.linkedin.com/jobs/*',
   ],
   runAt: 'document_idle',
+  allFrames: true,
 
   main() {
+    // A page can hold this script twice: once from the declarative match and
+    // once because someone pressed Fill before it had run. Two listeners means
+    // two replies to every message, and the second one is discarded silently —
+    // so guard rather than debug that later.
+    if (window.__clankerReady) return;
+    window.__clankerReady = true;
+
     const ats = detectAts(location.hostname);
     console.debug('[clanker] content script ready on', location.hostname, '→', ats.id);
 
@@ -69,6 +96,13 @@ export default defineContentScript({
     }
 
     chrome.runtime.onMessage.addListener((request: Request, _sender, sendResponse) => {
+      // How the side panel tells "no script here" from "script here, no form".
+      // Without it, injection could not be made idempotent.
+      if (request.type === 'clanker:ping') {
+        sendResponse({ ok: true });
+        return false;
+      }
+
       if (request.type === 'clanker:probe') {
         const { fields } = harvestForm(findApplicationForm(document));
         sendResponse({

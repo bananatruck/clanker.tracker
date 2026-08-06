@@ -12,40 +12,58 @@
  */
 import { TIER_LABEL, type HarvestedField, type Resolution, type ResolverTier } from './types';
 
+/**
+ * The DQ command window, restated in plain CSS.
+ *
+ * It cannot use the Tailwind tokens: this renders inside a shadow root on a
+ * page we do not control, with no stylesheet of ours loaded. The values are
+ * duplicated from ui/tokens.css deliberately — the alternative is injecting a
+ * stylesheet into every job board, which is a far worse trade for four colours.
+ */
 const STYLE = `
 :host { all: initial; }
 .wrap {
   position: fixed; top: 16px; right: 16px; z-index: 2147483647;
   width: 340px; max-height: calc(100vh - 32px); display: flex; flex-direction: column;
-  background: #1e1e1e; color: #dcddde; border: 1px solid #333; border-radius: 6px;
-  font: 13px/1.5 Inter, ui-sans-serif, system-ui, sans-serif;
-  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  background: #0e1a5c; color: #ffffff; border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #050a24;
+  font: 12px/1.5 ui-monospace, 'JetBrains Mono', 'SF Mono', monospace;
 }
 header { display: flex; align-items: baseline; justify-content: space-between;
-  padding: 8px 10px; border-bottom: 1px solid #333; }
-h2 { margin: 0; font: 500 13px/1 ui-monospace, monospace; letter-spacing: -.01em; }
-.accent { color: #a882ff; }
-.meta { font: 10px/1 ui-monospace, monospace; color: #6c6c6c; }
+  padding: 6px 8px; border-bottom: 2px solid #6b78b8; }
+h2 { margin: 0; font: 500 12px/1 inherit; }
+.accent { color: #ffcf3f; }
+.meta { font-size: 10px; color: #7d87b8; }
 .list { overflow-y: auto; padding: 4px; flex: 1; }
-.row { display: grid; grid-template-columns: 3px 1fr; gap: 8px;
-  padding: 6px 6px 6px 4px; border-radius: 4px; }
-.row:hover { background: #252525; }
-.bar { border-radius: 2px; }
-.certain { background: #4ec9b0; } .guessed { background: #d7a75c; } .missing { background: #d16969; }
-.t-certain { color: #4ec9b0; } .t-guessed { color: #d7a75c; } .t-missing { color: #d16969; }
-label { display: block; font: 10px/1.3 ui-monospace, monospace; color: #999;
+.row { display: grid; grid-template-columns: 10px 1fr; gap: 6px; padding: 5px 4px; }
+.row:hover { background: #1d2d86; }
+.bar { font-size: 10px; line-height: 1.4; text-align: center; }
+.certain, .t-certain { color: #6ede6e; }
+.guessed, .t-guessed { color: #ffb347; }
+.missing, .t-missing { color: #ff6f6f; }
+label { display: block; font-size: 10px; line-height: 1.3; color: #b9c2e8;
   margin-bottom: 3px; word-break: break-word; }
-input { width: 100%; box-sizing: border-box; background: #252525; color: #dcddde;
-  border: 1px solid #333; border-radius: 3px; padding: 3px 5px; font: 12px/1.4 inherit; }
-input:focus { outline: none; border-color: #7c5fd6; }
-.tier { font: 9px/1 ui-monospace, monospace; color: #6c6c6c; margin-top: 3px; }
-footer { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid #333; }
-button { flex: 1; border: 1px solid #333; border-radius: 4px; padding: 5px;
-  background: #252525; color: #dcddde; font: 11px/1 ui-monospace, monospace; cursor: pointer; }
-button:hover { background: #2d2d2d; }
-button.primary { background: #7c5fd6; border-color: #7c5fd6; }
-button.primary:hover { background: #a882ff; }
+input { width: 100%; box-sizing: border-box; background: #050a24; color: #ffffff;
+  border: 2px solid #6b78b8; padding: 3px 5px; font: 11px/1.4 inherit; }
+input:focus { outline: none; border-color: #ffcf3f; }
+.tier { font-size: 9px; color: #7d87b8; margin-top: 3px; }
+footer { display: flex; gap: 6px; padding: 6px 8px; border-top: 2px solid #6b78b8; }
+button { flex: 1; border: 2px solid #ffffff; padding: 4px;
+  background: #0e1a5c; color: #ffffff; font: 11px/1 inherit; cursor: pointer;
+  box-shadow: 2px 2px 0 0 #050a24; }
+button:hover { background: #1d2d86; }
+button:active { transform: translate(2px, 2px); box-shadow: none; }
+button.primary { background: #ffcf3f; color: #050a24; }
+button.primary:hover { background: #c9a022; }
 `;
+
+/** Kept in step with the Mark component in ui/dq.tsx. */
+const MARK_GLYPH = { certain: '✔', guessed: '?', missing: '✖' } as const;
+const MARK_HINT = {
+  certain: 'Resolved deterministically',
+  guessed: 'Best guess — check this one',
+  missing: 'Not answered — needs you',
+} as const;
 
 export interface ReviewRow {
   field: HarvestedField;
@@ -112,8 +130,13 @@ export function showReview(rows: readonly ReviewRow[], llmCalls: number): Promis
       const row = document.createElement('div');
       row.className = 'row';
 
+      // A glyph, not a coloured stripe: this row has to be readable to someone
+      // who cannot separate the green from the red, and it is the last screen
+      // before an application goes out.
       const bar = document.createElement('div');
       bar.className = `bar ${confidence}`;
+      bar.textContent = MARK_GLYPH[confidence];
+      bar.title = MARK_HINT[confidence];
 
       const body = document.createElement('div');
 
@@ -125,7 +148,10 @@ export function showReview(rows: readonly ReviewRow[], llmCalls: number): Promis
       input.addEventListener('input', () => {
         values.set(field.id, input.value);
         corrected.add(field.id);
+        // A field the user has typed into is certain by definition.
         bar.className = 'bar certain';
+        bar.textContent = MARK_GLYPH.certain;
+        bar.title = MARK_HINT.certain;
       });
 
       const tier = document.createElement('div');

@@ -1,15 +1,22 @@
 /**
  * The fill trigger.
  *
- * Probes the active tab so the user knows what we found *before* committing to
+ * Probes the active tab so the user knows what was found *before* committing to
  * anything, then hands off to the content script. The overlay that follows is
  * the review step — this button never submits an application.
+ *
+ * The probe injects on demand, so this works on any page with a form on it,
+ * not only the six ATS hosts the content script is registered for. That was
+ * the single biggest gap in the tool: the generic adapter existed and could
+ * never run.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { getProfile } from '@/lib/db/repo';
 import { currentBudgetStatus } from '@/lib/llm';
+import { askPage, NotInjectableError } from '@/lib/fill/inject';
 import { TIER_LABEL } from '@/lib/fill/types';
+import { Button, Notice, Window } from '@/ui/dq';
 
 interface Probe {
   ats: string;
@@ -26,32 +33,32 @@ interface FillResult {
   cancelled?: boolean;
 }
 
-async function activeTabId(): Promise<number | null> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab?.id ?? null;
-}
-
-function send<T>(tabId: number, type: string): Promise<T | null> {
-  return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, { type }, (reply: T) => {
-      // A tab with no content script rejects here; that is a normal state, not
-      // an error worth surfacing as a crash.
-      if (chrome.runtime.lastError) resolve(null);
-      else resolve(reply ?? null);
-    });
-  });
-}
-
 export default function Fill() {
   const profile = useLiveQuery(() => getProfile(), []);
   const budget = useLiveQuery(() => currentBudgetStatus(), []);
   const [probe, setProbe] = useState<Probe | null>(null);
+  const [probeError, setProbeError] = useState('');
   const [result, setResult] = useState<FillResult | null>(null);
   const [busy, setBusy] = useState(false);
+  const [probing, setProbing] = useState(true);
 
   const refresh = useCallback(async () => {
-    const id = await activeTabId();
-    setProbe(id === null ? null : await send<Probe>(id, 'clanker:probe'));
+    setProbing(true);
+    setProbeError('');
+    try {
+      setProbe(await askPage<Probe>({ type: 'clanker:probe' }));
+    } catch (err) {
+      setProbe(null);
+      // A page Chrome refuses to script is a normal state with a real reason.
+      // Saying which is the difference between "broken" and "not here".
+      setProbeError(
+        err instanceof NotInjectableError
+          ? err.message
+          : 'Could not read this page. Reload it and try again.',
+      );
+    } finally {
+      setProbing(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -59,30 +66,35 @@ export default function Fill() {
   }, [refresh]);
 
   const fill = async () => {
-    const id = await activeTabId();
-    if (id === null) return;
     setBusy(true);
     setResult(null);
-    setResult(await send<FillResult>(id, 'clanker:fill'));
-    setBusy(false);
+    try {
+      setResult(await askPage<FillResult>({ type: 'clanker:fill' }));
+    } catch (err) {
+      setResult({ ok: false, error: err instanceof Error ? err.message : 'Fill failed' });
+    } finally {
+      setBusy(false);
+    }
   };
+
+  if (profile === undefined) return <p className="text-[11px] text-faint">Loading…</p>;
 
   if (!profile) {
     return (
-      <p className="border border-frame bg-window px-2.5 py-2 text-[11px] text-muted">
-        Add a resume on the Profile tab first — there is nothing to fill from yet.
-      </p>
+      <Notice>Add a resume on the Profile tab first — there is nothing to fill from yet.</Notice>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <section className="border border-frame bg-window p-2.5">
-        {probe ? (
+    <div className="space-y-2">
+      <Window title="This page">
+        {probing ? (
+          <p className="text-[11px] text-faint">Looking for a form…</p>
+        ) : probe ? (
           <>
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[11px] text-gold">{probe.ats}</span>
-              <span className="font-mono text-[10px] text-faint">
+              <span className="font-mono text-[12px] text-gold">{probe.ats}</span>
+              <span className="font-mono text-[10px] text-muted">
                 {probe.fieldCount} fields · {probe.requiredCount} required
               </span>
             </div>
@@ -92,25 +104,21 @@ export default function Fill() {
           </>
         ) : (
           <p className="text-[11px] leading-snug text-muted">
-            No application form detected on this tab. Open a job application and refresh.
+            {probeError || 'No form found on this tab. Open a job application and refresh.'}
           </p>
         )}
-      </section>
+      </Window>
 
       <div className="flex gap-1">
-        <button
+        <Button
+          primary
           onClick={fill}
-          disabled={!probe || busy}
-          className="flex-1 bg-gold-dim px-2.5 py-1.5 font-mono text-[11px] text-parchment hover:bg-gold disabled:opacity-40"
+          disabled={!probe || probe.fieldCount === 0 || busy}
+          className="flex-1"
         >
           {busy ? 'Filling…' : 'Fill this application'}
-        </button>
-        <button
-          onClick={() => void refresh()}
-          className="border border-frame px-2 py-1.5 font-mono text-[10px] text-muted hover:bg-window hover:text-parchment"
-        >
-          Refresh
-        </button>
+        </Button>
+        <Button onClick={() => void refresh()}>Refresh</Button>
       </div>
 
       {budget && (
@@ -126,7 +134,7 @@ export default function Fill() {
       )}
 
       {result && (
-        <section className="border border-frame bg-window p-2.5">
+        <Window title="Result">
           {result.ok ? (
             result.cancelled ? (
               <p className="text-[11px] text-muted">Cancelled — nothing was written.</p>
@@ -137,7 +145,7 @@ export default function Fill() {
                   {result.skipped ? (
                     <>
                       {' '}
-                      · left <span className="text-bad">{result.skipped}</span> for you
+                      · left <span className="text-warn">{result.skipped}</span> for you
                     </>
                   ) : null}
                 </p>
@@ -151,7 +159,7 @@ export default function Fill() {
           ) : (
             <p className="text-[11px] text-bad">{result.error}</p>
           )}
-        </section>
+        </Window>
       )}
     </div>
   );
