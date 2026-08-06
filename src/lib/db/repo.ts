@@ -7,6 +7,7 @@ import {
   db,
   type Application,
   type ApplicationStatus,
+  type CoverLetter,
   type DeedRecord,
   type QuestionAnswer,
   type WritingSample,
@@ -343,6 +344,41 @@ export async function addWritingSample(label: string, text: string): Promise<Wri
 
 export async function deleteWritingSample(id: string): Promise<void> {
   await db.writingSamples.delete(id);
+}
+
+/* ---------------------------------------------------------------- letters */
+
+export function lettersForScan(scanId: string): Promise<CoverLetter[]> {
+  return db.letters.where('scanId').equals(scanId).reverse().sortBy('createdAt');
+}
+
+export function recentLetters(limit = 20): Promise<CoverLetter[]> {
+  return db.letters.orderBy('createdAt').reverse().limit(limit).toArray();
+}
+
+export async function saveLetter(
+  init: Omit<CoverLetter, 'id' | 'createdAt' | 'edited'> & Partial<Pick<CoverLetter, 'id' | 'edited'>>,
+): Promise<CoverLetter> {
+  const letter: CoverLetter = {
+    id: init.id ?? crypto.randomUUID(),
+    scanId: init.scanId,
+    company: init.company,
+    role: init.role,
+    text: init.text,
+    edited: init.edited ?? false,
+    createdAt: Date.now(),
+  };
+  await db.letters.put(letter);
+  return letter;
+}
+
+/** Hand-edits mark the letter so a regenerate can warn before discarding them. */
+export async function updateLetterText(id: string, text: string): Promise<void> {
+  await db.letters.update(id, { text, edited: true });
+}
+
+export async function deleteLetter(id: string): Promise<void> {
+  await db.letters.delete(id);
 }
 
 /* --------------------------------------------------------------- settings */

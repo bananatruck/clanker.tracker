@@ -11,18 +11,12 @@
  */
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import {
-  addWritingSample,
-  deleteWritingSample,
-  getProfile,
-  setSetting,
-  SETUP_DONE_KEY,
-  writingSamples,
-} from '@/lib/db/repo';
+import { getProfile, setSetting, SETUP_DONE_KEY, writingSamples } from '@/lib/db/repo';
 import { getLlmConfig, setLlmConfig, PROVIDERS, type ProviderId } from '@/lib/llm';
 import { ACT_0 } from '@/lib/game/lore';
 import { Button, Notice, Window } from '@/ui/dq';
 import ResumeIntake from '@/ui/ResumeIntake';
+import WritingSamples from '@/ui/WritingSamples';
 
 const STEPS = ['The Proclamation', 'Your resume', 'Cover letters', 'Your voice', 'Ride'] as const;
 
@@ -237,67 +231,16 @@ function KeyStep({ onNext, onBack }: { onNext: () => void; onBack: () => void })
  */
 function VoiceStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const samples = useLiveQuery(() => writingSamples(), [], []);
-  const [label, setLabel] = useState('');
-  const [text, setText] = useState('');
 
   return (
     <div className="space-y-3">
       <Window title="Your voice — optional">
         <p className="mb-2 text-[12px] leading-relaxed text-muted">
-          Paste anything you have written that sounds like you: an old cover letter, an essay,
-          a long email. The cover letter button uses these as the voice to match, so a letter
-          reads like you wrote it rather than like a model did.
+          Paste anything you have written that sounds like you: an old cover letter, an essay, a
+          long email. The cover letter button uses these as the voice to match, so a letter reads
+          like you wrote it rather than like a model did.
         </p>
-
-        <form
-          className="space-y-1"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!text.trim()) return;
-            void addWritingSample(label, text);
-            setLabel('');
-            setText('');
-          }}
-        >
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="What is this? e.g. cover letter, Acme"
-            className="dq-input w-full px-2 py-1 text-[12px]"
-          />
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={7}
-            placeholder="Paste the writing here."
-            className="dq-input w-full p-2 text-[11px] leading-snug"
-          />
-          <Button type="submit" disabled={!text.trim()}>
-            Add sample
-          </Button>
-        </form>
-
-        {samples.length > 0 && (
-          <ul className="mt-2 space-y-1">
-            {samples.map((s) => (
-              <li key={s.id} className="flex items-center gap-2 border-2 border-frame-dim px-2 py-1">
-                <span className="min-w-0 flex-1 truncate text-[11px] text-parchment">
-                  {s.label}
-                </span>
-                <span className="shrink-0 font-mono text-[10px] text-faint">
-                  {s.text.split(/\s+/).length} words
-                </span>
-                <button
-                  type="button"
-                  onClick={() => void deleteWritingSample(s.id)}
-                  className="shrink-0 font-mono text-[10px] text-faint hover:text-bad"
-                >
-                  ✖
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <WritingSamples />
       </Window>
 
       <div className="flex justify-between">

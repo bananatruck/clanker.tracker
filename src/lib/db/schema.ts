@@ -92,6 +92,24 @@ export interface WritingSample {
   addedAt: number;
 }
 
+/**
+ * A generated cover letter, kept because it cost a model call.
+ *
+ * Losing one to a closed side panel means paying for it twice, and the whole
+ * cost design exists so the user never pays twice for the same thing.
+ */
+export interface CoverLetter {
+  id: string;
+  /** The scan it was grounded in, so the evidence behind it stays traceable. */
+  scanId: string;
+  company: string;
+  role: string;
+  text: string;
+  /** Whether the user has since edited it by hand. */
+  edited: boolean;
+  createdAt: number;
+}
+
 export class ClankerDB extends Dexie {
   profiles!: EntityTable<ResumeProfile, 'id'>;
   questions!: EntityTable<QuestionAnswer, 'hash'>;
@@ -101,6 +119,7 @@ export class ClankerDB extends Dexie {
   deeds!: EntityTable<DeedRecord, 'id'>;
   settings!: EntityTable<SettingRow, 'key'>;
   writingSamples!: EntityTable<WritingSample, 'id'>;
+  letters!: EntityTable<CoverLetter, 'id'>;
 
   constructor(name = 'clanker.tracker') {
     super(name);
@@ -127,6 +146,12 @@ export class ClankerDB extends Dexie {
     // letter in the user's own voice.
     this.version(3).stores({
       writingSamples: 'id, addedAt',
+    });
+
+    // v4: generated letters. Indexed by scanId because the question asked of
+    // this table is always "what did we write for this posting?".
+    this.version(4).stores({
+      letters: 'id, scanId, createdAt',
     });
   }
 }

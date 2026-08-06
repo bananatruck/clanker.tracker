@@ -19,6 +19,7 @@ import { getProfile, saveScan } from '@/lib/db/repo';
 import { askPage, NotInjectableError } from '@/lib/fill/inject';
 import { scanSummary, type Coverage, type EvidenceRow, type ScanResult } from '@/types/ats';
 import { Button, Notice, Window } from '@/ui/dq';
+import CoverLetter from '@/ui/CoverLetter';
 
 const COVERAGE_MARK: Record<Coverage, { glyph: string; tone: string; label: string }> = {
   covered: { glyph: '✔', tone: 'text-ok', label: 'covered' },
@@ -191,6 +192,8 @@ function Results({ scan }: { scan: ScanResult }) {
           ))}
         </div>
       </Window>
+
+      <CoverLetter scan={scan} />
     </div>
   );
 }
