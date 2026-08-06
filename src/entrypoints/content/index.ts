@@ -64,7 +64,9 @@ export default defineContentScript({
     if (window.__clankerReady) return;
     window.__clankerReady = true;
 
-    const ats = detectAts(location.hostname);
+    // The document is passed so a vendor form embedded inline on a company's
+    // own domain is still recognised as that vendor's — see lib/fill/adapters.
+    const ats = detectAts(location.hostname, document);
     console.debug('[clanker] content script ready on', location.hostname, '→', ats.id);
 
     /** Disarms any previous watcher, so re-filling a page cannot double-log. */

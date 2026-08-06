@@ -45,7 +45,7 @@ function adapterHitsFor(
   doc: Document,
   host: string,
 ): { hits: Map<string, KnownField>; ats: ReturnType<typeof detectAts> } {
-  const ats = detectAts(host);
+  const ats = detectAts(host, doc);
   const hits = new Map<string, KnownField>();
 
   for (const [id, el] of elements) {

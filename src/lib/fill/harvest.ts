@@ -168,6 +168,43 @@ export interface Harvest {
   elements: Map<string, FieldElement>;
 }
 
+/** How deep to follow shadow roots. Guards against a pathological tree. */
+const MAX_SHADOW_DEPTH = 8;
+
+/**
+ * Every field element under `root`, including those inside open shadow roots.
+ *
+ * `querySelectorAll` stops at a shadow boundary, so a form built from web
+ * components returns zero fields and the page looks like it has no
+ * application on it. Workday does this, and so does a good share of the
+ * component-library careers pages that proprietary boards are built from.
+ *
+ * Closed shadow roots stay invisible, which is the point of them — nothing
+ * here can or should work around that.
+ */
+export function collectFieldElements(
+  root: ParentNode,
+  depth = 0,
+  seen = new Set<Element>(),
+): FieldElement[] {
+  const out: FieldElement[] = [];
+
+  for (const el of root.querySelectorAll<FieldElement>('input, textarea, select')) {
+    if (seen.has(el)) continue;
+    seen.add(el);
+    out.push(el);
+  }
+
+  if (depth >= MAX_SHADOW_DEPTH) return out;
+
+  for (const host of root.querySelectorAll('*')) {
+    const shadow = host.shadowRoot;
+    if (shadow) out.push(...collectFieldElements(shadow, depth + 1, seen));
+  }
+
+  return out;
+}
+
 /**
  * Walk a form (or the whole document) and collect every answerable field.
  *
@@ -183,7 +220,7 @@ export function harvestForm(root: ParentNode & { ownerDocument?: Document | null
   const elements = new Map<string, FieldElement>();
   const seenRadioGroups = new Set<string>();
 
-  const candidates = root.querySelectorAll<FieldElement>('input, textarea, select');
+  const candidates = collectFieldElements(root);
 
   for (const el of candidates) {
     const kind = kindOf(el);
@@ -244,12 +281,20 @@ export function findApplicationForm(doc: Document): ParentNode {
   let bestCount = -1;
 
   for (const form of forms) {
-    const count = form.querySelectorAll('input, textarea, select').length;
+    // Counted through shadow roots, for the same reason the harvest walks
+    // them: a component-built form measures as empty otherwise, and would
+    // lose to whatever newsletter box is sitting above it in plain HTML.
+    const count = collectFieldElements(form).length;
     if (count > bestCount) {
       best = form;
       bestCount = count;
     }
   }
+
+  // A proprietary page can render its application outside any <form> — React
+  // handlers do not need one — and then the biggest form on the page is the
+  // site search. Fall back to the whole document when no form holds anything.
+  if (bestCount <= 1 && collectFieldElements(doc).length > bestCount) return doc;
 
   return best;
 }

@@ -26,7 +26,7 @@ import type {
   UnresolvedField,
 } from './types';
 import { resolutionConfidence } from './types';
-import { matchLabel, matchOption, type FillContext } from './labels';
+import { isAboutSomeoneElse, matchLabel, matchOption, type FillContext } from './labels';
 import { questionHash } from './normalize';
 import { autocompleteValue } from './autocomplete';
 import { resolveLexically } from './lexical';
@@ -130,8 +130,15 @@ export async function resolveFields(
     if (field.existingValue.trim() !== '') continue;
     if (field.kind === 'file') continue;
 
+    // A field about a referrer, a manager, or an emergency contact looks
+    // identical to one of ours to every deterministic tier. Answering it with
+    // the applicant's own details is confidently wrong, which is the one
+    // failure mode this resolver is built to avoid — so only answer memory,
+    // where the user supplied the value themselves, may speak to it.
+    const aboutSomeoneElse = isAboutSomeoneElse(field.label);
+
     // --- tier 1: the site adapter's verified selector map ---
-    const known = adapterHits?.get(field.id);
+    const known = aboutSomeoneElse ? undefined : adapterHits?.get(field.id);
     if (known) {
       const value = knownFieldValue(known, ctx);
       if (value && record(resolutions, field, value, 1)) continue;
@@ -139,8 +146,10 @@ export async function resolveFields(
 
     // --- tier 1: the field's own autocomplete attribute ---
     // Standardised, unambiguous, and stated by the site itself, so it is as
-    // trustworthy as an adapter selector and costs exactly as little.
-    if (field.autocomplete) {
+    // trustworthy as an adapter selector and costs exactly as little. A site
+    // that marks a referrer's box `autocomplete="email"` is telling us what
+    // the browser should offer, not whose address belongs there.
+    if (field.autocomplete && !aboutSomeoneElse) {
       const stated = autocompleteValue(field.autocomplete, ctx);
       if (stated && record(resolutions, field, stated, 1)) continue;
     }
@@ -149,6 +158,11 @@ export async function resolveFields(
     if (memory && field.label) {
       const remembered = await memory.recall(field.label);
       if (remembered && record(resolutions, field, remembered, 2)) continue;
+    }
+
+    if (aboutSomeoneElse) {
+      remaining.push(field);
+      continue;
     }
 
     // --- tier 3: the deterministic label table ---

@@ -99,6 +99,53 @@ const RULES: Rule[] = [
 ];
 
 /**
+ * Fields that ask about somebody who is not the applicant.
+ *
+ * "Referrer's email address" and "Your manager's first name" both look exactly
+ * like fields we hold an answer for, and every deterministic tier will happily
+ * claim them — the label contains "email", or "first" and "name", and nothing
+ * else in the matcher disagrees. Filling them puts the applicant's own details
+ * where a third party's belong, which is worse than leaving them empty: it is
+ * confidently wrong, it looks resolved in the review, and on a long form it is
+ * exactly the kind of row someone scrolls past.
+ *
+ * Whole-word matching matters here. "Preferred name" contains "referred" as a
+ * substring and is very much the applicant's own field.
+ */
+const THIRD_PARTY = [
+  'referrer',
+  'referred',
+  'reference',
+  'referee',
+  'manager',
+  'supervisor',
+  'recruiter',
+  'emergency',
+  'next of kin',
+  'guardian',
+  'spouse',
+  'colleague',
+  'employer contact',
+  'contact person',
+];
+
+const THIRD_PARTY_RE = new RegExp(
+  `(^|\\s)(${THIRD_PARTY.map((w) => w.replace(/ /g, '\\s+')).join('|')})(\\s|$)`,
+  'i',
+);
+
+/**
+ * Whether this field is asking about someone other than the applicant.
+ *
+ * Consulted before every deterministic tier. Answer memory is exempt: if the
+ * user has answered this exact question before, that answer is theirs and is
+ * right whoever it was about.
+ */
+export function isAboutSomeoneElse(rawLabel: string): boolean {
+  return THIRD_PARTY_RE.test(normalizeQuestion(rawLabel));
+}
+
+/**
  * Answer a label deterministically, or return null so the chain escalates.
  *
  * Returns null rather than an empty string when the rule matched but the

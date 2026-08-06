@@ -17,6 +17,9 @@ export type AtsId =
   | 'workable'
   | 'workday'
   | 'linkedin'
+  | 'smartrecruiters'
+  | 'icims'
+  | 'jobvite'
   | 'generic';
 
 /** Outcome of one completed fill, recorded whether or not it was submitted. */

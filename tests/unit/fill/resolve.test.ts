@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { matchLabel, matchOption, type FillContext } from '@/lib/fill/labels';
+import { isAboutSomeoneElse, matchLabel, matchOption, type FillContext } from '@/lib/fill/labels';
 import { resolveFields, tierBreakdown } from '@/lib/fill/resolve';
 import { diceSimilarity, resolveLexically } from '@/lib/fill/lexical';
 import { autocompleteToken, autocompleteValue } from '@/lib/fill/autocomplete';
 import { applyValue, highlight, clearHighlight } from '@/lib/fill/apply';
 import { detectAts, knownFieldFor } from '@/lib/fill/adapters';
+import { isCleanRun } from '@/lib/fill/autosubmit';
 import { harvestForm, findApplicationForm } from '@/lib/fill/harvest';
 import { emptyPreferences, type HarvestedField } from '@/lib/fill/types';
 import { emptyContact, field, PRIMARY_PROFILE_ID, type ResumeProfile } from '@/types/profile';
@@ -85,6 +86,38 @@ describe('tier 3 label matching', () => {
     expect(matchLabel('Pronouns', ctx)).toBeNull();
     expect(matchLabel('What is your favourite dinosaur?', ctx)).toBeNull();
     expect(matchLabel('', ctx)).toBeNull();
+  });
+});
+
+describe('third-party field detection', () => {
+  it('recognises fields asking about somebody else', () => {
+    for (const label of [
+      "Referrer's email address",
+      'Your manager’s first name',
+      'Emergency contact phone',
+      'Reference name',
+      'Referee email',
+      'Next of kin',
+      'Recruiter name',
+      'Supervisor email',
+    ]) {
+      expect(isAboutSomeoneElse(label), label).toBe(true);
+    }
+  });
+
+  it('does not fire on the applicant’s own fields', () => {
+    // "Preferred name" contains "referred", and "Preference" contains
+    // "reference" — whole-word matching is what keeps both of these ours.
+    for (const label of [
+      'Preferred name',
+      'First name',
+      'Email address',
+      'Pronoun preference',
+      'Do you have a preferred pronoun?',
+      'Phone number',
+    ]) {
+      expect(isAboutSomeoneElse(label), label).toBe(false);
+    }
   });
 });
 
@@ -407,7 +440,19 @@ describe('ATS adapters', () => {
     expect(mapped).toEqual(['firstName', 'email']);
   });
 
-  it('gives the generic fallback no selector map at all', () => {
-    expect(Object.keys(detectAts('careers.example.com').selectors)).toHaveLength(0);
+  it('still refuses the generic adapter auto-submit, map or no map', () => {
+    // Generic now carries convention-based selectors so proprietary boards
+    // work. Convention is strong evidence, not a verified mapping, so the
+    // auto-submit gate must not soften because tier 1 started answering.
+    expect(
+      isCleanRun({
+        ats: 'generic',
+        totalFields: 6,
+        certainFields: 6,
+        correctedFields: 0,
+        unfilledRequired: 0,
+        at: Date.now(),
+      }),
+    ).toBe(false);
   });
 });
