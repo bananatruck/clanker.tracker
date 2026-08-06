@@ -10,10 +10,10 @@
 A local-first, open-source Chrome extension for people applying to a lot of jobs — wrapped in **Clankerdom Deliverance**, an idle RPG about being the villain.
 
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-ffcf3f.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
 [![Tests](https://img.shields.io/badge/tests-423%20passing-6ede6e.svg)](#-install)
-[![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-0e1a5c.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
+[![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
 

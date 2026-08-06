@@ -122,10 +122,13 @@ export function Speech({ speaker, line }: { speaker?: string; line: string }) {
     <div className="absolute inset-x-2 bottom-2 z-20">
       {speaker && (
         <div className="dq-window inline-block px-2.5 py-0.5">
-          <span className="dq-speech text-[13px] text-gold">{speaker}</span>
+          <span className="dq-speech text-[14px] font-semibold text-gold">{speaker}</span>
         </div>
       )}
-      <div className="dq-window px-3 py-2" style={{ background: 'rgba(5, 10, 36, 0.88)' }}>
+      {/* Slightly translucent so the scene shows through, but nowhere near
+          enough to cost the text its contrast — the line has to be readable
+          over a bright meadow and a dark ruin alike. */}
+      <div className="dq-window px-3 py-2" style={{ background: 'rgba(242, 227, 192, 0.94)' }}>
         <p className="dq-speech text-parchment">{line}</p>
       </div>
     </div>

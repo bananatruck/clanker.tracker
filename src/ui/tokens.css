@@ -1,68 +1,73 @@
 @import 'tailwindcss';
 
 /**
- * Dragon Quest design language.
+ * The RPG interface: parchment in a carved wooden frame.
  *
  * The whole look is one idea: **everything the game tells you arrives in a
- * command window.** A navy panel, a hard white border, a black keyline around
- * that, white text inside, and gold for any number that matters. No radii, no
- * gradients, no blur, no easing — a 16-bit console had none of those and the
- * moment you add one the illusion goes.
+ * panel.** A cream page, a wooden frame with a bevel inside it, a green title
+ * bar naming what you are looking at, dark ink on the paper, and gold for any
+ * number that matters. No radii, no gradients, no blur, no easing.
+ *
+ * This replaced a navy command window, which was faithful to a 1988 CRT and
+ * wrong for a panel someone reads for an hour: white-on-navy at 12px is a
+ * low-contrast pairing that a lit room only makes worse. Ink on paper is the
+ * other classic RPG interface and it is simply more legible, at every size.
  *
  * Two rules that are load-bearing rather than decorative:
  *
- * 1. **Selection is a cursor, not a highlight.** DQ menus point at the current
- *    row with `▶`. That reads instantly, survives any palette, and — unlike a
- *    background tint — is still legible to someone who cannot separate the two
- *    blues.
+ * 1. **Selection is a cursor, not a highlight.** The current row is pointed at
+ *    with `▶`. That reads instantly, survives any palette, and — unlike a
+ *    background tint — is still legible to someone who cannot separate two
+ *    close shades of parchment.
  * 2. **State is never carried by hue alone.** `ok`/`warn`/`bad` always ship
  *    alongside a glyph, because a confidence dot that is only a colour tells a
  *    colour-blind user nothing about whether their phone number parsed.
  */
 @theme {
-  /* The field the windows sit on. Near-black navy rather than pure black:
-     pure black on an LCD makes the white borders vibrate. */
-  --color-field: #050a24;
+  /**
+   * Parchment and wood.
+   *
+   * The navy command window was faithful to a 1988 CRT and wrong for a panel
+   * someone reads for an hour: white-on-navy at 12px is a low-contrast pairing
+   * that a lit room makes worse. This is the other classic RPG interface — a
+   * paper panel in a carved wooden frame, dark ink on cream — and it is simply
+   * more legible, at every size, on every display.
+   *
+   * The colours are chosen for contrast against the parchment rather than
+   * lifted from a palette. Ink on paper is 12:1; the muted tone is 6.5:1; even
+   * `faint`, the quietest thing on screen, clears 4.5:1.
+   */
 
-  /* The command window itself, and the row the cursor is on. */
-  --color-window: #0e1a5c;
-  --color-window-hi: #1d2d86;
+  /* Behind the windows: dark wood, so a cream panel reads as lit. */
+  --color-field: #241c14;
 
-  /* The border, and the hairline used to rule rows inside a window. */
-  --color-frame: #ffffff;
-  --color-frame-dim: #6b78b8;
+  /* The paper, and the row the cursor is on. */
+  --color-window: #f2e3c0;
+  --color-window-hi: #e3cf9f;
 
-  /* Text, in three weights of attention. */
-  --color-parchment: #ffffff;
-  --color-muted: #b9c2e8;
-  --color-faint: #7d87b8;
+  /* The frame. Carved wood outside, a hairline of it inside. */
+  --color-frame: #6d4a2b;
+  --color-frame-dim: #bd9f74;
 
-  /* Gold is for values: DP, counts, the thing the sentence is about. */
-  --color-gold: #ffcf3f;
-  --color-gold-dim: #c9a022;
+  /* Ink, in three weights of attention. */
+  --color-parchment: #35240f;
+  --color-muted: #6a5233;
+  --color-faint: #8d7451;
+
+  /* Gold is for values. Deepened until it holds up against cream. */
+  --color-gold: #a8720c;
+  --color-gold-dim: #7d5407;
 
   /* State. Always paired with a glyph — see the rule above. */
-  --color-ok: #6ede6e;
-  --color-warn: #ffb347;
-  --color-bad: #ff6f6f;
+  --color-ok: #2f7d3a;
+  --color-warn: #a85c07;
+  --color-bad: #a32c22;
 
-  /**
-   * Three typefaces, three jobs.
-   *
-   * The panel used to be monospace end to end at 12px, which looked the part
-   * and was genuinely hard to read — a monospace face spends its width on
-   * making an `l` as wide as an `m`, and prose is not a column of code.
-   *
-   *   `ui`    everything you read. A real UI sans, at a size meant for reading.
-   *   `mono`  everything you compare. Counts, DP, tiers, tier attributions —
-   *           the places a fixed advance actually earns its keep.
-   *   `quest` the game speaking. A serif, because that is what Dragon Quest's
-   *           own dialogue windows use; it separates the story's voice from
-   *           the tool's without needing a second colour.
-   *
-   * No webfont is loaded. An extension that fetches a font has a network
-   * request in it, and this one has none by design.
-   */
+  /* The title bar, which is the one saturated thing in the interface. */
+  --color-banner: #4c9c55;
+  --color-banner-hi: #6dbb74;
+  --color-banner-ink: #f4fbf3;
+
   --font-ui:
     system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
@@ -112,15 +117,53 @@ img.pixel {
  */
 .dq-window {
   background: var(--color-window);
-  border: 2px solid var(--color-frame);
+  border: 3px solid var(--color-frame);
   border-radius: 0;
-  box-shadow: 0 0 0 2px var(--color-field);
+  /* Outside: the hard keyline that stops the frame dissolving into the field.
+     Inside: a lighter bevel, which is what makes the wood read as carved
+     rather than as a coloured border. */
+  box-shadow:
+    inset 0 0 0 1px #a87b4a,
+    inset 0 0 0 3px #4a3018,
+    0 0 0 2px #16100a;
 }
 
 /* A window nested inside another one steps down instead of restating itself. */
 .dq-window .dq-window {
+  border-width: 2px;
   border-color: var(--color-frame-dim);
   box-shadow: none;
+}
+
+/**
+ * A title bar. The one saturated thing on screen, so the eye lands on the
+ * name of the panel before anything inside it.
+ */
+.dq-banner {
+  background: var(--color-banner);
+  color: var(--color-banner-ink);
+  border-bottom: 2px solid var(--color-frame);
+  box-shadow: inset 0 2px 0 0 var(--color-banner-hi);
+}
+.dq-banner .dq-label {
+  color: var(--color-banner-ink);
+}
+/**
+ * Anything riding in a title bar takes the bar's ink.
+ *
+ * The right-hand slot of a window is usually a value, and values are gold —
+ * which is a colour chosen to sit on parchment and is invisible on green. The
+ * override is here rather than at ninety call sites because "text on the
+ * banner" is a property of the banner.
+ */
+.dq-banner .text-gold,
+.dq-banner .text-muted,
+.dq-banner .text-parchment {
+  color: var(--color-banner-ink);
+}
+.dq-banner .text-faint {
+  color: var(--color-banner-ink);
+  opacity: 0.75;
 }
 
 /**
@@ -152,9 +195,12 @@ img.pixel {
 .dq-item[data-selected='true'] {
   background: var(--color-window-hi);
 }
+.dq-item:hover:not(:disabled) {
+  background: var(--color-window-hi);
+}
 .dq-item:hover:not(:disabled)::before {
   visibility: visible;
-  color: var(--color-frame-dim);
+  color: var(--color-gold-dim);
 }
 
 /**
@@ -165,40 +211,49 @@ img.pixel {
 .dq-btn {
   font-family: var(--font-ui);
   font-size: var(--text-small);
-  background: var(--color-window);
+  font-weight: 600;
+  background: var(--color-window-hi);
   color: var(--color-parchment);
   border: 2px solid var(--color-frame);
   border-radius: 0;
-  box-shadow: 2px 2px 0 0 var(--color-field);
+  box-shadow:
+    inset 0 2px 0 0 #f7edd6,
+    2px 2px 0 0 #16100a;
   transition: none;
 }
 .dq-btn:hover:not(:disabled) {
-  background: var(--color-window-hi);
+  background: var(--color-window);
 }
 .dq-btn:active:not(:disabled) {
   transform: translate(2px, 2px);
-  box-shadow: 0 0 0 0 var(--color-field);
+  box-shadow: inset 0 2px 0 0 rgba(0, 0, 0, 0.12);
 }
 .dq-btn:disabled {
   opacity: 0.4;
   box-shadow: none;
 }
 
-/* The affirmative action on a screen. Gold fill, dark text. */
+/* The affirmative action on a screen. The green of the title bars, so the
+   thing you press and the thing you are in agree with each other. */
 .dq-btn-primary {
-  background: var(--color-gold);
-  color: var(--color-field);
+  background: var(--color-banner);
+  color: var(--color-banner-ink);
   border-color: var(--color-frame);
+  box-shadow:
+    inset 0 2px 0 0 var(--color-banner-hi),
+    2px 2px 0 0 #16100a;
 }
 .dq-btn-primary:hover:not(:disabled) {
-  background: var(--color-gold-dim);
+  background: var(--color-banner-hi);
+  color: #1b3d1f;
 }
 
 .dq-input {
-  background: var(--color-field);
+  background: #fbf4e2;
   color: var(--color-parchment);
-  border: 2px solid var(--color-frame-dim);
+  border: 2px solid var(--color-frame);
   border-radius: 0;
+  box-shadow: inset 0 2px 0 0 rgba(109, 74, 43, 0.22);
   font-family: var(--font-mono);
   font-size: var(--text-small);
   padding: 0.3rem 0.4rem;
@@ -207,7 +262,7 @@ img.pixel {
   color: var(--color-faint);
 }
 .dq-input:focus {
-  border-color: var(--color-gold);
+  border-color: var(--color-banner);
   outline: none;
 }
 
@@ -251,12 +306,13 @@ img.pixel {
 }
 .dq-meter-cell {
   flex: 1;
-  background: var(--color-field);
-  border: 1px solid var(--color-frame-dim);
+  background: #d9c39a;
+  border: 1px solid var(--color-frame);
 }
 .dq-meter-cell[data-on='true'] {
-  background: var(--color-gold);
-  border-color: var(--color-gold);
+  background: #e9b03c;
+  border-color: var(--color-gold-dim);
+  box-shadow: inset 0 2px 0 0 #f7d98a;
 }
 
 /* Blink for the one thing on screen that is waiting on the user. */
@@ -288,12 +344,30 @@ img.pixel {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-frame-dim);
+  background: var(--color-frame);
   border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-frame);
+  background: var(--color-gold-dim);
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-field);
+  background: var(--color-window-hi);
+}
+
+/**
+ * An inventory slot. The item icons are square, and a grid of recessed cells
+ * is how every RPG in this idiom presents a set of things you own — which is
+ * what a skill list and an achievement shelf both are.
+ */
+.dq-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcc59b;
+  border: 2px solid var(--color-frame);
+  box-shadow: inset 0 2px 0 0 rgba(109, 74, 43, 0.28);
+}
+.dq-slot[data-locked='true'] {
+  filter: grayscale(1);
+  opacity: 0.45;
 }

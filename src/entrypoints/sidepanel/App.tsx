@@ -46,17 +46,17 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   const tierTitle = TIERS.find((t) => t.tier === tierForLevel(level))?.title ?? 'Squire';
 
   return (
-    <div className="flex h-full flex-col bg-field text-parchment">
-      <header className="flex items-baseline justify-between border-b-2 border-frame px-2 py-1.5">
-        <h1 className="font-mono text-[15px]">
-          clanker<span className="text-gold">.</span>tracker
+    <div className="flex h-full flex-col bg-window text-parchment">
+      <header className="dq-banner flex items-baseline justify-between px-2.5 py-2">
+        <h1 className="font-mono text-[15px] font-semibold">
+          clanker<span className="opacity-70">.</span>tracker
         </h1>
-        <span className="font-mono text-[12px] text-gold">
+        <span className="font-mono text-[12.5px] opacity-90">
           {tierTitle} · Lv {level}
         </span>
       </header>
 
-      <nav className="flex gap-0.5 overflow-x-auto border-b-2 border-frame-dim px-1 py-1">
+      <nav className="flex gap-0.5 overflow-x-auto border-b-4 border-frame bg-window-hi px-1 py-1">
         {ROUTES.map((r) => (
           <button
             key={r.id}
@@ -64,7 +64,7 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
             aria-current={route === r.id ? 'page' : undefined}
             className={`shrink-0 border-2 px-1.5 py-1 text-[12.5px] ${
               route === r.id
-                ? 'border-gold bg-window-hi text-parchment'
+                ? 'border-frame bg-banner font-semibold text-banner-ink'
                 : 'border-transparent text-muted hover:border-frame-dim hover:text-parchment'
             }`}
           >

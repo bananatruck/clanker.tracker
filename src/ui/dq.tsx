@@ -25,7 +25,7 @@ export function Window({
   return (
     <section className={`dq-window ${className}`}>
       {title !== undefined && (
-        <header className="flex items-baseline justify-between gap-2 border-b-2 border-frame-dim px-2 py-1">
+        <header className="dq-banner flex items-baseline justify-between gap-2 px-2 py-1">
           <h2 className="dq-label">{title}</h2>
           {right}
         </header>
