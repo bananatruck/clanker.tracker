@@ -12,7 +12,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-ffcf3f.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-389%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-404%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-0e1a5c.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -40,6 +40,40 @@ Six screens in a Chrome side panel. Everything above the last line is a real job
 
 ---
 
+## ▶ WHAT IT LOOKS LIKE
+
+Every image below is the extension itself, rendering the real database. `pnpm shots` serves the
+built bundle, seeds a plausible six weeks of applying through the same repo functions a real user
+would, and photographs each screen over the DevTools protocol. Nothing here was drawn in a design
+tool — **a screenshot that looks wrong means the app is wrong**, which is the only reason to have
+screenshots at all.
+
+<table>
+<tr>
+<td width="25%"><img src="./docs/demo/dashboard.png" alt="The Home screen: who you are, the crusade meter, the application funnel, and what it cost."></td>
+<td width="25%"><img src="./docs/demo/overlay.png" alt="The review overlay: fourteen fields, each labelled with the tier that answered it."></td>
+<td width="25%"><img src="./docs/demo/tracker.png" alt="The tracker board: fourteen applications grouped by funnel stage."></td>
+<td width="25%"><img src="./docs/demo/crusade.png" alt="The Crusade tab: the march to the Citadel, the ledger, and deeds of note."></td>
+</tr>
+<tr>
+<td align="center"><b>Home</b><br><sub>counts and rates, never a score</sub></td>
+<td align="center"><b>Review</b><br><sub>the step before submission</sub></td>
+<td align="center"><b>Tracker</b><br><sub>honest about its own funnel</sub></td>
+<td align="center"><b>Crusade</b><br><sub>the level curve, drawn</sub></td>
+</tr>
+</table>
+
+The **review overlay** is the one that matters. Every row says which tier answered it — *site
+adapter*, *answer memory*, *label match*, *fuzzy match*, *model* — so the cost of an application is
+visible at the moment you approve it rather than asserted in a README. Eleven certain, one model
+call, two left blank because guessing would have been worse than asking.
+
+The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
+[Fill](./docs/demo/fill.png), [Settings](./docs/demo/settings.png) — are in
+[`docs/demo/`](./docs/demo/).
+
+---
+
 ## ▶ THE PARTY
 
 <div align="center">
@@ -55,7 +89,16 @@ Six screens in a Chrome side panel. Everything above the last line is a real job
 | <img src="./docs/sprites/pigking.png" width="52"> | **The Orange Capitalist Pig King** | Glorious. Beautiful. Orange. Fat. Adopts you when you land a job. The win condition. |
 | <img src="./docs/sprites/tower.png" width="52"> | **King Net And Yahoo** | Declares the crusade from a tower whose shadow has its own timezone. Never descends. Never fights. |
 
-**Every sprite in this repo is original pixel data**, authored in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and rendered to these PNGs by [`scripts/render-sprites.mjs`](./scripts/render-sprites.mjs). Editing sixteen lines of text and re-running the script is the entire art pipeline, and the images cannot drift from what the extension draws because they are generated from the same module it imports.
+**Every sprite in this repo is original pixel data** — 32×32, one character per pixel, authored in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and rendered to these PNGs by [`scripts/render-sprites.mjs`](./scripts/render-sprites.mjs). Editing thirty-two lines of text and re-running the script is the entire art pipeline, and the images cannot drift from what the extension draws because they are generated from the same module it imports.
+
+Twelve separate drawings look like one set because they obey four rules, and the rules are tests rather than intentions:
+
+| Rule | What it means | Enforced by |
+|---|---|---|
+| **One contour** | A single-pixel silhouette and no interior black | every empty pixel touching a drawing must be the contour colour |
+| **One light source** | Upper left, on every material, each a three-tone ramp | the ramps are the palette; there is nothing else to shade with |
+| **One skeleton** | Shared head box, shoulder line, hem, ground line | the whole cast's feet must land on the same row |
+| **One palette** | Ten ramps, and nothing outside them | adding a stray colour fails the suite |
 
 ---
 
@@ -295,11 +338,12 @@ Setup opens by itself the first time. It wants a resume; the API key and writing
 `pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test                        # 389 unit tests
-pnpm test:fill                   # the fill pipeline against board fixtures
-pnpm compile                     # typecheck
-pnpm build                       # production bundle
-node scripts/render-sprites.mjs  # regenerate docs/sprites/ from the sprite data
+pnpm test        # 404 unit tests
+pnpm test:fill   # the fill pipeline against whole board fixtures
+pnpm compile     # typecheck
+pnpm build       # production bundle
+pnpm sprites     # re-render docs/sprites/ from the sprite data
+pnpm shots       # re-photograph docs/demo/ from the built extension
 ```
 
 **The economy and the ledger rules are specified as tests.** `tests/unit/economy.test.ts` asserts the author's numbers from [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) verbatim, `tests/unit/game/lore.test.ts` reads the storyboard off disk and fails if a shipped line has drifted from it, and `tests/unit/fill/boards.test.ts` runs whole application forms end to end. If one of those fails, the code has drifted from the story — fix the code, not the test.
@@ -314,7 +358,7 @@ node scripts/render-sprites.mjs  # regenerate docs/sprites/ from the sprite data
 - [x] **M3** — Tracker, board view, CSV export, DP counter
 - [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
 - [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
-- [ ] **M6** — Auto-submit UI, sync adapters, `.clankdb` import/export, Workday/LinkedIn hardening, store listing ← *here*
+- [ ] **M6** — Resume upload, multi-step forms, answer-memory editor, auto-submit UI, `.clankdb` import/export, store listing ← *here*
 
 Theme packs and the `.clank` loader were dropped: the visual language ships whole rather than as a substrate for art nobody here has licensed.
 
@@ -327,7 +371,7 @@ Named plainly, because a README that describes intentions as features is how a p
 | **Auto-submit** | The earned-unlock rules are written and tested ([`lib/fill/autosubmit.ts`](./src/lib/fill/autosubmit.ts)) — a site qualifies only after a verified clean run, and the generic adapter never qualifies. **There is no toggle in Settings yet**, so nothing auto-submits today. |
 | **Sync adapters** | No Sheets, Notion or Airtable. CSV export works. |
 | **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |
-| **Screenshots** | The images under `docs/demo/` are from the pre-rehaul Obsidian UI and no longer show what ships. Regenerate via `sidepanel.html#/demo` and they will be accurate again. |
+| **Resume upload** | The resolver skips file inputs and nothing stores the original bytes, only the extracted text. Every board asks for an upload, so every application still needs one manual step. |
 
 ---
 
