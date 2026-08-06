@@ -12,7 +12,7 @@
  */
 import { useLayoutEffect, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { allApplications, totalDp } from '@/lib/db/repo';
+import { allApplications, getProfile, totalDp } from '@/lib/db/repo';
 import { db } from '@/lib/db/schema';
 import {
   levelFromDp,
@@ -29,6 +29,9 @@ import { Meter, Window } from '@/ui/dq';
 import Sprite from '@/ui/Sprite';
 import Scene from '@/ui/game/Scene';
 import Acts from '@/ui/game/Acts';
+import Inventory from '@/ui/game/Inventory';
+import Item from '@/ui/game/Item';
+import { medalFor } from '@/lib/game/items';
 import Title from '@/ui/game/Title';
 import Actor from '@/ui/Actor';
 
@@ -43,6 +46,7 @@ export default function Crusade() {
   // showing a level-zero crusade to someone who has sent two hundred
   // applications. Undefined is the honest value while it loads.
   const dp = useLiveQuery(() => totalDp(), []);
+  const profile = useLiveQuery(() => getProfile(), []);
 
   const { level, dpIntoLevel, dpForNext, progress } = levelFromDp(dp ?? 0);
   const tier = tierForLevel(level);
@@ -97,6 +101,10 @@ export default function Crusade() {
         {!fanfareAllowed(level) && (
           <p className="mt-2 font-mono text-[12px] text-faint">— no fanfare from here</p>
         )}
+      </Window>
+
+      <Window title="The pack">
+        <Inventory level={level} skills={profile?.skills ?? []} />
       </Window>
 
       <Window title="The five acts">
@@ -154,9 +162,15 @@ export default function Crusade() {
                 got ? 'border-gold-dim' : 'border-frame-dim'
               }`}
             >
-              <div className={got ? '' : 'opacity-25 grayscale'}>
-                <Sprite id={achievement.sprite} scale={1} />
-              </div>
+              {/* The medal if the art is installed, the drawn sprite if not.
+                  Both are the same size, so the row does not move. */}
+              {medalFor(achievement.id) ? (
+                <Item file={medalFor(achievement.id)!} name={achievement.title} size={40} dim={!got} />
+              ) : (
+                <div className={got ? '' : 'opacity-25 grayscale'}>
+                  <Sprite id={achievement.sprite} scale={1} />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <p className={`text-[13px] ${got ? 'text-gold' : 'text-muted'}`}>
                   {got ? achievement.title : '???'}

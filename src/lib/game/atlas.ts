@@ -123,6 +123,39 @@ export const ENCOUNTERS: readonly ActorArt[] = [
   },
 ];
 
+/**
+ * The three that only show up at the end.
+ *
+ * Not on the encounter ladder — no posting is this. They belong to the last
+ * act, where the crusade stops being a series of forms and turns out to have
+ * been about the land the whole time.
+ */
+export const BOSSES: Record<string, ActorArt> = {
+  /** What the Chud Lord turns out to have been standing in front of. */
+  malroth: {
+    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Enemies & Bosses - Malroth.png',
+    row: 0,
+    fps: 4,
+    height: 210,
+    fallback: 'chudlord',
+  },
+  /** The thing in the tower. Never comes down; is drawn anyway. */
+  zoma: {
+    file: 'Sprites/PC _ Computer - Dragon Quest I and II HD-2D Remake - Unused_leftover - Zoma.png',
+    row: 0,
+    fps: 3,
+    height: 220,
+    fallback: 'tower',
+  },
+  calasmalroth: {
+    file: 'Sprites/T_MN_051_001S_Calasmalroth_BC.png',
+    row: 0,
+    fps: 3,
+    height: 240,
+    fallback: 'chudlord',
+  },
+};
+
 /** How many required gaps it takes to summon each of the above. */
 const ENCOUNTER_THRESHOLDS = [0, 1, 3, 5, 8] as const;
 
