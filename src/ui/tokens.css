@@ -1,32 +1,42 @@
 @import 'tailwindcss';
 
 /**
- * Obsidian-inspired design tokens.
- * Dense, dark, 1px borders, no drop shadows, purple accent.
+ * DMG-01.
+ *
+ * The original Game Boy could show four tones and nothing else, and the whole
+ * look comes from that constraint rather than from decoration: hard 2px
+ * borders, no radii, no gradients, no shadows that blur. Everything is on a
+ * pixel grid because the hardware had no choice.
+ *
+ * Four tones is not enough to also carry meaning, though — "covered / partial
+ * / gap" and "free / spent" have to survive next to each other on the same
+ * screen. So there is a second, deliberately small set of Game Boy *Colour*
+ * accents for state. They are desaturated to sit on the green LCD rather than
+ * fight it, and no layout depends on hue alone: state is always carried by a
+ * glyph or a fill pattern as well.
  */
 @theme {
-  --color-base: #1e1e1e;
-  --color-surface: #252525;
-  --color-surface-hi: #2d2d2d;
-  --color-border: #333333;
-  --color-text: #dcddde;
-  --color-muted: #999999;
-  --color-faint: #6c6c6c;
+  /* The four tones, darkest to lightest. */
+  --color-ink: #0f380f;
+  --color-ink-mid: #306230;
+  --color-lcd-dim: #8bac0f;
+  --color-lcd: #9bbc0f;
 
-  --color-accent: #a882ff;
-  --color-accent-dim: #7c5fd6;
+  /* The plastic around the screen. */
+  --color-shell: #14200f;
+  --color-shell-hi: #1e2d17;
 
-  /* Fill-confidence colours, used by the review overlay and the skirmish. */
-  --color-certain: #4ec9b0; /* deterministic resolve — tiers 1-4, free */
-  --color-guessed: #d7a75c; /* LLM resolve — tier 5, costs a call */
-  --color-missing: #d16969; /* unfilled or required-and-empty */
+  /* Semantic accents. Used with a glyph, never on their own. */
+  --color-ok: #1c5e20;
+  --color-warn: #7a5a00;
+  --color-bad: #7a1f14;
 
-  --font-ui: 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  --font-ui: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html,
@@ -37,31 +47,127 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-base);
-  color: var(--color-text);
+  background: var(--color-shell);
+  color: var(--color-ink);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  /* Antialiasing softens a pixel grid. Turning it off is the point. */
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
 }
 
 /* Pixel art must never be smoothed. */
-canvas.pixel {
+canvas,
+canvas.pixel,
+img.pixel {
   image-rendering: pixelated;
 }
 
+/**
+ * The LCD. A faint horizontal grid stands in for the dot matrix — strong
+ * enough to read as a screen, weak enough to keep 11px text legible.
+ */
+.lcd {
+  background-color: var(--color-lcd);
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(15, 56, 15, 0.05) 0px,
+    rgba(15, 56, 15, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* Everything is a hard-edged box. */
+.pixel-box {
+  border: 2px solid var(--color-ink);
+  border-radius: 0;
+}
+
+/**
+ * A button you can see depress. The offset block shadow is the whole effect:
+ * it disappears on :active while the button moves down into its place.
+ */
+.pixel-btn {
+  border: 2px solid var(--color-ink);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 0 var(--color-ink);
+  transition: none;
+}
+.pixel-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 0 var(--color-ink);
+}
+.pixel-btn:disabled {
+  opacity: 0.4;
+  box-shadow: 1px 1px 0 0 var(--color-ink);
+}
+
+/* Focus has to be visible without a glow. */
+.pixel-btn:focus-visible,
+.pixel-input:focus-visible,
+.pixel-input:focus {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.pixel-input {
+  border: 2px solid var(--color-ink);
+  border-radius: 0;
+  background: var(--color-lcd);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+}
+.pixel-input::placeholder {
+  color: var(--color-ink-mid);
+  opacity: 0.7;
+}
+
+/* Headings read as a status strip, not as prose. */
+.label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-mid);
+}
+
+/* Blink for the one thing on screen that wants attention. */
+@keyframes gb-blink {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.25;
+  }
+}
+.blink {
+  animation: gb-blink 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink {
+    animation: none;
+  }
+  .pixel-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #3a3a3a;
-  border-radius: 5px;
-  border: 2px solid var(--color-base);
+  background: var(--color-ink-mid);
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
+  background: var(--color-ink);
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-lcd-dim);
 }
