@@ -87,9 +87,15 @@ export default function Actor({
   }
 
   if (sheet === null) {
+    // The built-in sprites are one frame each, so the animation has to come
+    // from outside them. A two-pixel bob is the cheapest thing that makes a
+    // standing character read as alive rather than as a decal, and it costs
+    // nothing to author for every sprite at once.
     return (
       <div className={className}>
-        <Sprite id={art.fallback} scale={Math.max(1, Math.round((art.height * scale) / 32))} />
+        <div className={still ? undefined : 'dq-idle'} role="img" aria-label={label}>
+          <Sprite id={art.fallback} scale={Math.max(1, Math.round((art.height * scale) / 32))} />
+        </div>
       </div>
     );
   }

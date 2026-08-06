@@ -24,6 +24,7 @@ import { ACTORS, encounterFor } from '@/lib/game/atlas';
 import type { Tier } from '@/lib/game/economy';
 import { Meter } from '@/ui/dq';
 import Scene from './Scene';
+import BattleIntro from './BattleIntro';
 
 /** What the game says at each stage. One line, in the game's own voice. */
 const NARRATION: Record<FillProgress['phase'], string> = {
@@ -45,10 +46,13 @@ const MARK: Record<FieldProgress['state'], { glyph: string; tone: string }> = {
 export default function FillRun({
   progress,
   tier,
+  company,
   onDone,
 }: {
   progress: FillProgress;
   tier: Tier;
+  /** Whose posting this is, for the encounter line. Optional by design. */
+  company?: string;
   /** Dismiss the run view and go back to the Fill screen. */
   onDone?: () => void;
 }) {
@@ -70,6 +74,11 @@ export default function FillRun({
         foe={phase === 'done' || phase === 'cancelled' ? null : foe}
         speaker="Kh. Laude"
         line={NARRATION[phase]}
+        // The flash plays once, on the phase a run actually begins in. Keying
+        // it off `reading` rather than off mount means reopening the panel
+        // mid-run does not replay it, which would announce an encounter that
+        // started two minutes ago.
+        overlay={phase === 'reading' ? <BattleIntro company={company} /> : null}
       />
 
       {/* The checklist. */}

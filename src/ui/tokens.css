@@ -371,3 +371,53 @@ img.pixel {
   filter: grayscale(1);
   opacity: 0.45;
 }
+
+/* ------------------------------------------------------------------- game
+ *
+ * Four animations, and no more. Everything here is on `steps()` rather than a
+ * smooth easing curve, because a pixel sprite sliding through fractional
+ * positions is a pixel sprite that has stopped being pixel art — the whole
+ * look depends on things moving in whole pixels, on a beat you can count.
+ *
+ * All of it is inside `prefers-reduced-motion: no-preference`. A game about a
+ * job hunt should not be the reason someone's screen makes them ill, and none
+ * of these carry information that is lost when they are off.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Breathing. Two pixels, twice a second — enough that a standing character
+     reads as alive, little enough that you stop seeing it after a moment. */
+  @keyframes dq-idle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+  .dq-idle { animation: dq-idle 1400ms steps(2, end) infinite; }
+
+  /* The encounter. Dragon Quest cuts to a battle with a hard white flash and
+     no transition; anything softer reads as a page loading. */
+  /* Three steps, and the keyframes are written at the boundaries the steps
+     actually sample — 0%, 33%, 67% — so the wash is white, nearly clear, then
+     white again. Writing them anywhere else means the animation shows values
+     nobody chose. */
+  @keyframes dq-flash {
+    0% { opacity: 0.9; }
+    33% { opacity: 0.1; }
+    67% { opacity: 0.45; }
+    100% { opacity: 0; }
+  }
+  .dq-flash { animation: dq-flash 620ms steps(3, end) 1 forwards; }
+
+  /* The foe arriving: dropped in from above, landing on the beat the flash
+     ends on. */
+  @keyframes dq-drop {
+    0% { transform: translateY(-40px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .dq-drop { animation: dq-drop 420ms steps(5, end) 1 both; }
+
+  /* The title, rising into place. */
+  @keyframes dq-rise {
+    0% { transform: translateY(10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .dq-rise { animation: dq-rise 500ms steps(4, end) 1 both; }
+}

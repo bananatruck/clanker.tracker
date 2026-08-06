@@ -20,6 +20,7 @@ import { BACKDROPS, BACKDROP_SHADE, type ActorArt } from '@/lib/game/atlas';
 import { assetUrl, loadSheet } from '@/lib/game/assets';
 import type { Tier } from '@/lib/game/economy';
 import Actor from '@/ui/Actor';
+import Backdrop from '@/ui/game/Backdrop';
 
 export interface SceneProps {
   tier: Tier;
@@ -33,6 +34,13 @@ export interface SceneProps {
   line?: string;
   /** Where the panel's own controls go — the command window, bottom left. */
   children?: React.ReactNode;
+  /**
+   * Something drawn over the whole frame — the encounter transition, and so
+   * far only that. It lives here rather than at the call site because it has
+   * to cover the backdrop and the actors, and only this component owns the box
+   * they are positioned inside.
+   */
+  overlay?: React.ReactNode;
   /** Taller frames for a full page; the side panel gets the short one. */
   size?: 'panel' | 'page';
 }
@@ -46,6 +54,7 @@ export default function Scene({
   speaker,
   line,
   children,
+  overlay,
   size = 'panel',
 }: SceneProps) {
   const backdrop = BACKDROPS[tier];
@@ -82,10 +91,15 @@ export default function Scene({
           />
         </>
       ) : (
-        // No art: the field colour, and a horizon so the actors still stand on
-        // something rather than floating in a void.
-        <div className="absolute inset-0 bg-field" aria-hidden>
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-window opacity-60" />
+        // No art installed — the common case, and a fresh clone's only case.
+        // The act is drawn instead, which is a whole scene rather than a
+        // degraded one: same five floors, same story told by the ground.
+        // No tint over this one. `BACKDROP_SHADE` exists to drag a photograph
+        // down to where a command window stays readable over it; these palettes
+        // were chosen against that window in the first place, so the same tint
+        // would only be throwing away contrast that was put there on purpose.
+        <div className="absolute inset-0" aria-hidden>
+          <Backdrop tier={tier} />
         </div>
       )}
 
@@ -105,6 +119,8 @@ export default function Scene({
       {children && <div className="absolute bottom-2 left-2 z-10">{children}</div>}
 
       {line && <Speech speaker={speaker} line={line} />}
+
+      {overlay}
     </div>
   );
 }

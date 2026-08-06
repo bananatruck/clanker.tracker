@@ -39,9 +39,29 @@ const PROBE_HEIGHT = 1000;
  * submitted application.
  */
 const SHOTS = [
-  'dashboard', 'profile', 'scan', 'fill', 'running',
+  'dashboard', 'profile', 'scan', 'fill',
+  'title', 'encounter', 'running',
   'tracker', 'tracker-table', 'crusade', 'settings', 'overlay',
 ];
+
+/**
+ * Screens that fill their frame rather than growing to fit it.
+ *
+ * Measuring these would be measuring a viewport rather than a screen, and the
+ * measure path reloads to lay out at the final height — which would restart
+ * the very animation the shot is of.
+ */
+const FIXED = { running: 760, encounter: 700, title: 460 };
+
+/**
+ * How long to wait after paint, per route.
+ *
+ * The encounter is a 620ms flash over a 420ms drop, and the interesting frame
+ * is the one where the foe has landed and the wash has not finished. 450ms is
+ * inside the last step of the flash, which is deterministic because the
+ * animation is on `steps()` — a smooth curve would make this a race.
+ */
+const SETTLE = { encounter: 450 };
 
 /**
  * Screens that are a route plus a click.
@@ -64,6 +84,9 @@ const PAGES = [
   // The table wants every column visible at once, which is the whole argument
   // for it living in a tab rather than a 420-pixel panel.
   { name: 'page-tracker', url: 'dashboard.html#/demo/tracker', width: 1440, height: 1010 },
+  // The README's hero: the battle screen alone, wide, with nothing around it.
+  { name: 'scene', url: 'sidepanel.html#/demo/scene', width: 900, height: 484 },
+  { name: 'acts', url: 'sidepanel.html#/demo/acts', width: 900, height: 174 },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -101,9 +124,28 @@ const MIME = {
   '.png': 'image/png',
 };
 
+/**
+ * Whether to serve installed art.
+ *
+ * Off by default, and that default is the point. Whoever runs this has their
+ * own sheets in `public/Sprites/`, so photographing the build as-is would put
+ * *their* art in the README — and every visitor would then arrive at a repo
+ * that does not look like its own screenshots. The pictures have to show what
+ * a fresh clone renders, which is the drawn sprites and the drawn acts.
+ *
+ * `SHOTS_ART=installed pnpm shots` to photograph your own instead.
+ */
+const WITH_ART = process.env.SHOTS_ART === 'installed';
+
 function serve() {
   const server = createServer((req, res) => {
-    const path = join(SERVE, decodeURIComponent(req.url.split('?')[0]));
+    const url = decodeURIComponent(req.url.split('?')[0]);
+    if (!WITH_ART && url.startsWith('/Sprites/')) {
+      res.writeHead(404).end();
+      return;
+    }
+
+    const path = join(SERVE, url);
     if (!path.startsWith(SERVE) || !existsSync(path) || statSync(path).isDirectory()) {
       res.writeHead(404).end();
       return;
@@ -221,16 +263,14 @@ for (const route of SHOTS) {
       ? '!!document.querySelector("[data-clanker-overlay]")'
       : 'document.querySelectorAll("#root *").length > 20';
 
-  // The split-screen run fills the frame by design rather than growing to fit,
-  // so it is photographed at a fixed height instead of measured.
-  const fixed = route === 'running' ? 760 : null;
+  const fixed = FIXED[route] ?? null;
 
   const settle = async () => {
     for (let i = 0; i < 60; i++) {
       await sleep(200);
       if (await cdp.eval(painted)) break;
     }
-    await sleep(700); // sprites are drawn to canvas in an effect, a frame later
+    await sleep(SETTLE[route] ?? 700); // canvases are drawn in an effect, a frame later
 
     // Re-applied after a reload, so growing the frame to fit does not quietly
     // put the screen back on its default tab.

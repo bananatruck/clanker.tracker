@@ -12,7 +12,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![CI](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/bananatruck/clanker.tracker/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M5-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-516%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-534%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 
 </div>
@@ -161,9 +161,36 @@ into a page is not a thing to do on someone's behalf until they've said so once 
 | **The Orange Capitalist Pig King** | Glorious. Beautiful. Orange. Fat. Adopts you when you land a job. The win condition. |
 | **King Net And Yahoo** | Declares the crusade from a tower whose shadow has its own timezone. Never descends. Never fights. |
 
+### What the game looks like
+
+Every picture in this section is a fresh clone with nothing installed. That is not a limitation being photographed politely — it is the point. `pnpm shots` refuses to serve `public/Sprites/` unless you ask it to, so the README can never show art a visitor will not get.
+
+<table>
+<tr>
+<td width="33%"><img src="./docs/demo/title.png" alt="The title card: CLANKERDOM DELIVERANCE in gold over a green meadow with huts on the horizon."></td>
+<td width="33%"><img src="./docs/demo/encounter.png" alt="The encounter: a white flash over the battle screen and a message window reading Hexweave draws near."></td>
+<td width="33%"><img src="./docs/demo/running.png" alt="The fill running: the battle above, the field checklist below."></td>
+</tr>
+<tr>
+<td align="center"><b>Title</b><br><sub>shown while the ledger loads</sub></td>
+<td align="center"><b>Encounter</b><br><sub>a fill beginning</sub></td>
+<td align="center"><b>The fight</b><br><sub>one row per question</sub></td>
+</tr>
+</table>
+
+**The five acts are drawn, not shipped.** [`lib/game/backdrop.ts`](./src/lib/game/backdrop.ts) paints each one at 192×120 from a seeded PRNG — sky bands, two ridges, three ground bands, and whatever is standing on it — then scales it up with smoothing off. About five kilobytes of code where five backdrop images would have been ten megabytes, and it is deterministic, so the same act is the same world every time you open it.
+
+<img src="./docs/demo/acts.png" alt="The five acts side by side: a green meadow, a river valley, ochre dust with ruins, a grey waste, and a lit hall." width="820">
+
+Read them left to right and the story is in the ground and nowhere else. A meadow with a hamlet still standing. The river valley, before it was dried. The dust of a town already taken, with the smoke still going up. A plain gone the colour of nothing, one ember left in it. Then a lit room you have finally been let into. **Nothing narrates that.** The floor just keeps changing under him.
+
+The **encounter** is the one flourish: a hard white flash on `steps(3)`, the message window dropping in, and *"Hexweave draws near!"* — the real company off the posting, not a monster this project invented. It runs for a second and a half and gets out of the way. Everything animated sits inside `prefers-reduced-motion: no-preference`; a game about a job hunt should not be the reason somebody's screen makes them ill.
+
 ### Where the art comes from
 
-**No third-party art is in this repo, and none ever will be.** The game reads sprite sheets and backdrops out of `public/Sprites/`, which is gitignored — see [`docs/ASSETS.md`](./docs/ASSETS.md). Install sheets and it uses them; install nothing and every actor falls back to the original pixel sprites in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts), which ship with the code. **A fresh clone works with that folder empty.**
+**No third-party art is in this repo, and none ever will be.** That includes the screenshots — a picture of the game rendering somebody else's sprites is still that sprite, redistributed as pixels.
+
+The game reads sheets and backdrops out of `public/Sprites/`, which is gitignored — see [`docs/ASSETS.md`](./docs/ASSETS.md). Install sheets and it uses them; install nothing and it draws its own. **A fresh clone is not a degraded clone**: same five acts, same composition, same everything except whose art is in the frame.
 
 Whether a given file may sit on your disk is a question about you and whoever owns it. Whether this repository redistributes it is a question about this repository, and the answer to that one is no.
 

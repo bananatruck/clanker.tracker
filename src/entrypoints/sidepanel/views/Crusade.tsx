@@ -28,6 +28,8 @@ import { ACTORS, encounterFor } from '@/lib/game/atlas';
 import { Meter, Window } from '@/ui/dq';
 import Sprite from '@/ui/Sprite';
 import Scene from '@/ui/game/Scene';
+import Acts from '@/ui/game/Acts';
+import Title from '@/ui/game/Title';
 import Actor from '@/ui/Actor';
 
 /** How many march nodes to draw. The whole crusade, compressed to one strip. */
@@ -36,9 +38,13 @@ const NODES = 24;
 export default function Crusade() {
   const apps = useLiveQuery(() => allApplications(), [], []);
   const deeds = useLiveQuery(() => db.deeds.toArray(), [], []);
-  const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
+  // No default, deliberately: DP is the sum of a table, so this screen cannot
+  // say anything true until that table has been read, and `0` would mean
+  // showing a level-zero crusade to someone who has sent two hundred
+  // applications. Undefined is the honest value while it loads.
+  const dp = useLiveQuery(() => totalDp(), []);
 
-  const { level, dpIntoLevel, dpForNext, progress } = levelFromDp(dp);
+  const { level, dpIntoLevel, dpForNext, progress } = levelFromDp(dp ?? 0);
   const tier = tierForLevel(level);
   const tierTitle = TIERS.find((t) => t.tier === tier)?.title ?? 'Squire';
 
@@ -54,6 +60,8 @@ export default function Crusade() {
   const latest = seen.at(-1);
 
   const hasOffer = stats.offers > 0;
+
+  if (dp === undefined) return <Title />;
 
   return (
     <div className="space-y-2">
@@ -89,6 +97,10 @@ export default function Crusade() {
         {!fanfareAllowed(level) && (
           <p className="mt-2 font-mono text-[12px] text-faint">— no fanfare from here</p>
         )}
+      </Window>
+
+      <Window title="The five acts">
+        <Acts tier={tier} level={level} />
       </Window>
 
       <March level={level} tier={tier} />

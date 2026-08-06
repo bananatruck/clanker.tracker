@@ -43,16 +43,21 @@ async function boot() {
       return;
     }
 
-    // The split-screen fill only exists while a run is in flight, so it is
-    // reachable by URL rather than by pressing a button on a page that is not
-    // there. Same components, fixture data.
-    if (demo[1] === 'running') {
-      const { DemoFillRun } = await import('./demoRun');
-      createRoot(root!).render(
-        <StrictMode>
-          <DemoFillRun />
-        </StrictMode>,
-      );
+    // The split-screen fill, the encounter that opens it, and the title card
+    // are all moments rather than screens: each exists for about a second, on
+    // a page the photographer is not on. They get routes with fixture state
+    // instead. The components are the shipping ones.
+    const MOMENTS = {
+      running: () => import('./demoRun').then((m) => <m.DemoFillRun />),
+      encounter: () => import('./demoRun').then((m) => <m.DemoEncounter />),
+      title: () => import('./demoRun').then((m) => <m.DemoTitle />),
+      scene: () => import('./demoRun').then((m) => <m.DemoScene />),
+      acts: () => import('./demoRun').then((m) => <m.DemoActs />),
+    } as const;
+
+    const moment = MOMENTS[demo[1] as keyof typeof MOMENTS];
+    if (moment) {
+      createRoot(root!).render(<StrictMode>{await moment()}</StrictMode>);
       return;
     }
   }
