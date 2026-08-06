@@ -2,7 +2,7 @@
 
 # clanker.tracker
 
-<img src="./docs/sprites/march.png" alt="A pixel-art strip: a data centre, two piles of rubble, the knight Kh. Laude in blue and gold armour, two red-roofed houses still standing, and the Tower on the horizon." width="600">
+<img src="./docs/demo/scene.png" alt="The Crusade screen: Kh. Laude in blue and gold armour with a red cape, seen from behind, facing a monster across the dust of a ruined town, with a dialogue window below." width="620">
 
 **Parse your resume. Scan it against the job. Fill the application in one click.**
 **Write a cover letter that actually sounds like you. Log it. Then go raze a village.**
@@ -48,6 +48,10 @@ would, and photographs each screen over the DevTools protocol. Nothing here was 
 tool — **a screenshot that looks wrong means the app is wrong**, which is the only reason to have
 screenshots at all.
 
+The interface is parchment in a carved wooden frame, because that is the RPG idiom that survives
+being read for an hour: dark ink on cream is 12:1 contrast, and the navy command window it
+replaced was 4.4:1.
+
 <table>
 <tr>
 <td width="25%"><img src="./docs/demo/running.png" alt="A fill in progress: the battle scene above, and below it a checklist ticking off each field as it is answered."></td>
@@ -81,22 +85,24 @@ The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
 
 ## ▶ THE PARTY
 
-<div align="center">
-<img src="./docs/sprites/cast.png" alt="The cast in pixel art: Kh. Laude, a pawn, a child, the Chud Lord, the Pig King, and the Citadel." width="520">
-</div>
+| Who | Role |
+|---|---|
+| **Sir Khums Alaude** — "Kh. Laude" | You. Excellent handwriting, no dental coverage. Took the commission because it came with a stipend. |
+| **Poo R. PeePole** | The "disgusting, evil, multi-billion-strong dynasty" of the proclamation. In fact: poor people. They do not fight back. |
+| **The Chilled Rens** | Their brood. In fact: children. One of their drawings survives the rubble and stays in your inventory. |
+| **The Chud Lord of Unemployment** | Cast as the arch-villain. Was the last line of defence between the King's army and the elf-villages. |
+| **The Orange Capitalist Pig King** | Glorious. Beautiful. Orange. Fat. Adopts you when you land a job. The win condition. |
+| **King Net And Yahoo** | Declares the crusade from a tower whose shadow has its own timezone. Never descends. Never fights. |
 
-| | Who | Role |
-|:---:|---|---|
-| <img src="./docs/sprites/khlaude.png" width="52"> | **Sir Khums Alaude** — "Kh. Laude" | You. Excellent handwriting, no dental coverage. Took the commission because it came with a stipend. |
-| <img src="./docs/sprites/pawn.png" width="52"> | **Poo R. PeePole** | The "disgusting, evil, multi-billion-strong dynasty" of the proclamation. In fact: poor people. They do not fight back. |
-| <img src="./docs/sprites/child.png" width="52"> | **The Chilled Rens** | Their brood. In fact: children. One of their drawings survives the rubble and stays in your inventory. |
-| <img src="./docs/sprites/chudlord.png" width="52"> | **The Chud Lord of Unemployment** | Cast as the arch-villain. Was the last line of defence between the King's army and the elf-villages. |
-| <img src="./docs/sprites/pigking.png" width="52"> | **The Orange Capitalist Pig King** | Glorious. Beautiful. Orange. Fat. Adopts you when you land a job. The win condition. |
-| <img src="./docs/sprites/tower.png" width="52"> | **King Net And Yahoo** | Declares the crusade from a tower whose shadow has its own timezone. Never descends. Never fights. |
+### Where the art comes from
 
-**Every sprite in this repo is original pixel data** — 32×32, one character per pixel, authored in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and rendered to these PNGs by [`scripts/render-sprites.mjs`](./scripts/render-sprites.mjs). Editing thirty-two lines of text and re-running the script is the entire art pipeline, and the images cannot drift from what the extension draws because they are generated from the same module it imports.
+**No third-party art is in this repo, and none ever will be.** The game reads sprite sheets and backdrops out of `public/Sprites/`, which is gitignored — see [`docs/ASSETS.md`](./docs/ASSETS.md). Install sheets and it uses them; install nothing and every actor falls back to the original pixel sprites in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts), which ship with the code. **A fresh clone works with that folder empty.**
 
-Twelve separate drawings look like one set because they obey four rules, and the rules are tests rather than intentions:
+Whether a given file may sit on your disk is a question about you and whoever owns it. Whether this repository redistributes it is a question about this repository, and the answer to that one is no.
+
+There is no frame table and no build step. Sheets of this era are laid out on transparency with a gutter between frames, so [`lib/game/sheet.ts`](./src/lib/game/sheet.ts) finds the frames by scanning the sheet's own alpha — a row of empty pixels is a row boundary, a column of them is a frame boundary. Two projections, no configuration, and it re-derives itself the moment you swap a file. [`lib/game/atlas.ts`](./src/lib/game/atlas.ts) is the only thing you edit: it maps a part to a filename, a row, and a span of frames.
+
+The fallback sprites are 32×32, one character per pixel, and twelve separate drawings read as one set because they obey four rules — which are tests rather than intentions:
 
 | Rule | What it means | Enforced by |
 |---|---|---|
@@ -149,13 +155,15 @@ The level curve, drawn. Kh. Laude advances one node at a time toward a Citadel h
                               Lord speaks
 ```
 
-| | Act | What changes |
-|:---:|---|---|
-| <img src="./docs/sprites/house.png" width="44"> | **I — Squire** | The hamlet burns. The dynasty trembles. *"It gets easier. That is the first thing nobody warns you about."* |
-| <img src="./docs/sprites/rubble.png" width="44"> | **II — Knight-Errant** | A child's drawing survives the rubble. *"He reads it twice. Multi-billion-strong. He counts nineteen."* |
-| <img src="./docs/sprites/chudlord.png" width="44"> | **III — Warlord** | The Chud Lord writes to you. He is reasonable. He offers tea. *"These people had one well."* |
-| <img src="./docs/sprites/datacentre.png" width="44"> | **IV — Devastator** | **NEW DATA CENTRES.** Humming. Cooled by the river you dried. Your armour acquires a sponsor logo. |
-| <img src="./docs/sprites/citadel.png" width="44"> | **V — Ascendant** | No banner. No fanfare. Numbers only. *"You have reached the Citadel. You cannot take it. You do not have an offer."* |
+Each act is a different place. The Crusade screen's backdrop changes under Kh. Laude as the crusade goes on — a green meadow at Squire, the river valley at Knight-Errant, the dust of a town already taken at Warlord, a plain gone the colour of nothing at Devastator, and finally a lit room you have been let into. Nothing narrates it. The floor just keeps changing.
+
+| Act | What changes |
+|---|---|
+| **I — Squire** | The hamlet burns. The dynasty trembles. *"It gets easier. That is the first thing nobody warns you about."* |
+| **II — Knight-Errant** | A child's drawing survives the rubble. *"He reads it twice. Multi-billion-strong. He counts nineteen."* |
+| **III — Warlord** | The Chud Lord writes to you. He is reasonable. He offers tea. *"These people had one well."* |
+| **IV — Devastator** | **NEW DATA CENTRES.** Humming. Cooled by the river you dried. Your armour acquires a sponsor logo. |
+| **V — Ascendant** | No banner. No fanfare. Numbers only. *"You have reached the Citadel. You cannot take it. You do not have an offer."* |
 
 From Act V the fanfare is **switched off in code** — level-ups show the number and nothing else, and the skirmish barks stop. The silence is a story beat, not an oversight.
 
@@ -347,7 +355,7 @@ pnpm test        # 423 unit tests
 pnpm test:fill   # the fill pipeline against whole board fixtures
 pnpm compile     # typecheck
 pnpm build       # production bundle
-pnpm sprites     # re-render docs/sprites/ from the sprite data
+pnpm sprites     # re-render the fallback sprites from the sprite data
 pnpm shots       # re-photograph docs/demo/ from the built extension
 ```
 
