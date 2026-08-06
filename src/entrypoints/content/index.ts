@@ -174,6 +174,7 @@ export default defineContentScript({
                 record: async (run) => {
                   await askBackground({ type: 'db:recordFillRun', run });
                 },
+                bark: () => askBackground<string | null>({ type: 'db:bark' }),
               },
             );
 

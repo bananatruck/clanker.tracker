@@ -24,6 +24,11 @@ export interface RunHooks {
   remember(question: string, answer: string): Promise<void>;
   /** Called with the completed run so the auto-submit gate can score it. */
   record(run: RunRecord): Promise<void>;
+  /**
+   * The skirmish line for the player's current tier, if the game has one.
+   * Decoration only — a failure to fetch it must never stop a fill.
+   */
+  bark?(): Promise<string | null>;
 }
 
 export interface RunOutcome {
@@ -85,7 +90,10 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
     if (el) highlight(el, byId.get(field.id)?.confidence ?? 'missing');
   }
 
-  const outcome = await showReview(rows, plan.llmCalls);
+  // Decoration, so it is never allowed to fail the run it decorates.
+  const bark = await hooks.bark?.().catch(() => null) ?? null;
+
+  const outcome = await showReview(rows, plan.llmCalls, bark);
 
   for (const field of pending) {
     const el = elements.get(field.id);

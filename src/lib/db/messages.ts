@@ -25,6 +25,7 @@ import type { Application } from './schema';
 
 export type DbRequest =
   | { type: 'db:getProfile' }
+  | { type: 'db:bark' }
   | { type: 'db:getSetting'; key: string; fallback: unknown }
   | { type: 'db:recallAnswer'; question: string }
   | { type: 'db:rememberAnswer'; question: string; answer: string; ats: AtsId }

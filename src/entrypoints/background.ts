@@ -11,7 +11,10 @@ import {
   recallAnswer,
   recordFillRun,
   rememberAnswer,
+  totalDp,
 } from '@/lib/db/repo';
+import { levelFromDp, tierForLevel } from '@/lib/game/economy';
+import { barkFor } from '@/lib/game/lore';
 import type { DbRequest, DbResponse } from '@/lib/db/messages';
 
 /**
@@ -26,6 +29,13 @@ async function handle(request: DbRequest): Promise<unknown> {
   switch (request.type) {
     case 'db:getProfile':
       return (await getProfile()) ?? null;
+
+    // The skirmish line for the player's tier. Lives here because the content
+    // script cannot see the deeds ledger the level is derived from.
+    case 'db:bark': {
+      const { level } = levelFromDp(await totalDp());
+      return barkFor(tierForLevel(level));
+    }
 
     case 'db:getSetting':
       return getSetting(request.key, request.fallback);

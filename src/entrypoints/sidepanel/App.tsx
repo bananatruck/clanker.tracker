@@ -14,9 +14,17 @@ import Profile from './views/Profile';
 import Scan from './views/Scan';
 import Fill from './views/Fill';
 import Tracker from './views/Tracker';
+import Crusade from './views/Crusade';
 import Settings from './views/Settings';
 
-export type Route = 'dashboard' | 'profile' | 'scan' | 'fill' | 'tracker' | 'settings';
+export type Route =
+  | 'dashboard'
+  | 'profile'
+  | 'scan'
+  | 'fill'
+  | 'tracker'
+  | 'crusade'
+  | 'settings';
 
 const ROUTES: ReadonlyArray<{ id: Route; label: string }> = [
   { id: 'dashboard', label: 'Home' },
@@ -24,6 +32,7 @@ const ROUTES: ReadonlyArray<{ id: Route; label: string }> = [
   { id: 'scan', label: 'Scan' },
   { id: 'fill', label: 'Fill' },
   { id: 'tracker', label: 'Tracker' },
+  { id: 'crusade', label: 'Crusade' },
   { id: 'settings', label: 'Settings' },
 ];
 
@@ -75,6 +84,8 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
           <Fill />
         ) : route === 'tracker' ? (
           <Tracker />
+        ) : route === 'crusade' ? (
+          <Crusade />
         ) : (
           <Settings />
         )}

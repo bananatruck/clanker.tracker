@@ -2,43 +2,39 @@
 
 Every bundled asset, its source, and its licence. Chrome Web Store review asks for this, and a public repo needs it to be auditable.
 
-**Rule for the bundled default theme: CC0 only.** No attribution obligations, no share-alike, no ambiguity.
+## What actually ships
 
-## Bundled
+**Nothing third-party.** Every sprite in the extension is original work, authored as pixel data in [`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts) and MIT alongside the code.
 
-| Asset set | Source | Licence | Used for |
-|---|---|---|---|
-| **Tiny Swords** (free pack) | [pixelfrog-assets.itch.io/tiny-swords](https://pixelfrog-assets.itch.io/tiny-swords) | **CC0 1.0** | Visual backbone. Knight/pawn units, houses, defense towers, castles, terrain tiles, decorations, UI frames. 64×64. |
-| **8-Directional Knight** | Hormelz (itch.io, CC0 tag) | **CC0 1.0** | Chud Lord, companion archetype variants |
-| **Holy Knights Sprite Pack** | itch.io, CC0 tag | **CC0 1.0** | Additional companion units |
-| **Kenney UI / Particle / Audio packs** | [kenney.nl](https://kenney.nl) | **CC0 1.0** | Overlay chrome, particle atlases, pixel fonts, impact/collapse/fanfare SFX |
+| Asset | Form | Licence |
+|---|---|---|
+| All character, building and terrain sprites | 16×16 palette-indexed text in `src/lib/game/sprites.ts` | **MIT**, original |
+| `docs/demo/*.png` | README screenshots captured from the running extension | **MIT**, original |
 
-Crediting is not required by CC0. It is recorded here anyway because these packs are good and the authors deserve it.
+Sprites are data rather than image files for two reasons:
 
-## Original work
+1. **Licensing is settled by construction.** There is no third-party provenance to audit, nothing to justify at store review, and no dependency on an upstream pack staying available.
+2. **They stay legible.** A 16×16 sprite is sixteen lines of text in a diff. Recolouring a faction or fixing a stray pixel is an edit, not a round-trip through an image editor and a binary blob in git.
 
-Authored for this project, MIT alongside the code:
+`SPRITES` in that file is the seam for replacing any of them with real spritesheet art later — the renderer only asks for pixels, so nothing else changes.
 
-- `docs/demo/*.png` — README screenshots, captured from the running extension via `sidepanel.html#/demo`. Not drawn, not composited; regenerate rather than edit.
-- The Tower (King Net And Yahoo's seat)
-- The Glorious Beautiful Orange Capitalist Pig King
-- New Data Centre tileset — racks, cooling fins, status LEDs
-- All recolors into the Obsidian palette
+## Candidates, if bundled art is ever wanted
+
+Still the right shortlist, and still **CC0 only** — no attribution obligations, no share-alike, no ambiguity.
+
+| Asset set | Source | Licence |
+|---|---|---|
+| **Tiny Swords** (free pack) | [pixelfrog-assets.itch.io/tiny-swords](https://pixelfrog-assets.itch.io/tiny-swords) | CC0 1.0 |
+| **8-Directional Knight** | Hormelz (itch.io, CC0 tag) | CC0 1.0 |
+| **Kenney UI / Particle / Audio packs** | [kenney.nl](https://kenney.nl) | CC0 1.0 |
 
 ## Explicitly excluded
 
 | Not used | Why |
 |---|---|
 | **OpenGameArt LPC** | CC-BY-SA 3.0 / GPL — attribution **and** share-alike. Viral licensing on a distributed extension isn't worth it. |
-| **Tiny Swords Enemy Pack** | Paid. Not needed — the targets in this game are houses, villages and terrain, all in the free pack. |
-| Ripped sprites from commercial games (Spriters Resource, Bulbagarden, etc.) | Copyrighted. See theme packs below. |
+| **Ripped sprites from commercial games** (Spriters Resource, Bulbagarden, etc.) | Copyrighted by their publishers. A public repo and a Web Store listing are both places a rightsholder can reach, and the look they provide is reachable without them — the sprites here are Dragon Quest *inspired*, drawn from scratch. |
 
 ## Theme packs
 
-The extension ships a `.clank` theme loader. Packs are **data-only** — sprites, palette, atlas, lore strings, no executable content — which Manifest V3 requires regardless.
-
-Third-party themes are **imported by the user from local disk**. They are not bundled with the extension, not hosted by this project, and not distributed through the Chrome Web Store listing. Pack authors are responsible for the licensing of their own art.
-
-## Verification
-
-`pnpm assets:verify` checks every file under `public/themes/default/` against the SHA manifest in `assets.lock.json` and fails if anything is unaccounted for.
+**Dropped.** The `.clank` loader and the third-party theme store are not part of the extension. The visual language is one thing, shipped whole, rather than a substrate for art nobody here has licensed.

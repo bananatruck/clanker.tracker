@@ -34,6 +34,8 @@ header { display: flex; align-items: baseline; justify-content: space-between;
 h2 { margin: 0; font: 500 12px/1 inherit; }
 .accent { color: #ffcf3f; }
 .meta { font-size: 10px; color: #7d87b8; }
+.bark { padding: 4px 8px; border-bottom: 2px solid #6b78b8; color: #ffcf3f;
+  font-size: 11px; font-style: italic; }
 .list { overflow-y: auto; padding: 4px; flex: 1; }
 .row { display: grid; grid-template-columns: 10px 1fr; gap: 6px; padding: 5px 4px; }
 .row:hover { background: #1d2d86; }
@@ -78,13 +80,27 @@ export interface ReviewOutcome {
   submitted: boolean;
 }
 
+/** Text is inserted into innerHTML, and a field label is page-controlled. */
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 /**
  * Show the overlay and resolve once the user accepts or cancels.
  *
  * Resolves with `submitted: false` on cancel so the caller can abandon the run
  * without applying anything.
+ *
+ * `bark` is the skirmish line for the player's current tier, straight from the
+ * storyboard. It is one line and it is decoration — it must never delay or
+ * obstruct the review, which is the only thing standing between a resolver
+ * guess and a submitted application.
  */
-export function showReview(rows: readonly ReviewRow[], llmCalls: number): Promise<ReviewOutcome> {
+export function showReview(
+  rows: readonly ReviewRow[],
+  llmCalls: number,
+  bark: string | null = null,
+): Promise<ReviewOutcome> {
   return new Promise((resolve) => {
     const host = document.createElement('div');
     host.setAttribute('data-clanker-overlay', '');
@@ -111,6 +127,7 @@ export function showReview(rows: readonly ReviewRow[], llmCalls: number): Promis
           ${llmCalls} call${llmCalls === 1 ? '' : 's'}
         </span>
       </header>
+      ${bark ? `<div class="bark">${escapeHtml(bark)}</div>` : ''}
       <div class="list"></div>
       <footer>
         <button data-act="cancel">Cancel</button>
