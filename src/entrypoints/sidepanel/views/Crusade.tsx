@@ -10,7 +10,7 @@
  * Every string of narration comes from lib/game/lore, which is transcribed
  * from the author's storyboard and tested against it. Nothing is written here.
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { allApplications, getProfile, totalDp } from '@/lib/db/repo';
 import { db } from '@/lib/db/schema';
@@ -69,6 +69,7 @@ export default function Crusade() {
 
   return (
     <div className="space-y-2">
+      {/* The scene stays. Everything else is one panel at a time. */}
       {/*
         The scene leads, because the level number is not the story — the ground
         Kh. Laude is standing on is, and it changes act by act underneath him.
@@ -103,15 +104,32 @@ export default function Crusade() {
         )}
       </Window>
 
-      <Window title="The pack">
-        <Inventory level={level} skills={profile?.skills ?? []} />
-      </Window>
-
-      <Window title="The five acts">
-        <Acts tier={tier} level={level} />
-      </Window>
-
-      <March level={level} tier={tier} />
+      <Tabs
+        panels={[
+          {
+            id: 'march',
+            label: 'March',
+            body: (
+              <>
+                <Acts tier={tier} level={level} />
+                <div className="mt-2">
+                  <March level={level} tier={tier} />
+                </div>
+              </>
+            ),
+          },
+          {
+            id: 'pack',
+            label: 'Pack',
+            body: <Inventory level={level} skills={profile?.skills ?? []} />,
+          },
+          {
+            id: 'deeds',
+            label: `Deeds ${earned}/${achievements.length}`,
+            body: <Deeds stats={stats} achievements={achievements} level={level} />,
+          },
+        ]}
+      />
 
       {hasOffer && (
         <Window title="The Adoption">
@@ -127,33 +145,80 @@ export default function Crusade() {
         </Window>
       )}
 
-      <Window
-        title="The ledger"
-        right={
-          <span className="font-mono text-[12px] text-faint">
-            {distanceToCitadel(level)} to the Citadel
-          </span>
-        }
-      >
+    </div>
+  );
+}
+
+/**
+ * One panel at a time.
+ *
+ * The Crusade tab had eight stacked windows and ran to nearly three thousand
+ * pixels, which is not a screen — it is a scroll with a battle at the top of
+ * it. Nothing was removed; it is grouped, and the grouping is the obvious one:
+ * where you are, what you are carrying, what you have done.
+ */
+function Tabs({
+  panels,
+}: {
+  panels: ReadonlyArray<{ id: string; label: string; body: React.ReactNode }>;
+}) {
+  const [open, setOpen] = useState(panels[0]!.id);
+  const current = panels.find((p) => p.id === open) ?? panels[0]!;
+
+  return (
+    <section className="dq-window">
+      <div role="tablist" className="dq-banner flex gap-1 px-1 py-1">
+        {panels.map((p) => (
+          <button
+            key={p.id}
+            role="tab"
+            aria-selected={p.id === open}
+            onClick={() => setOpen(p.id)}
+            className={`flex-1 border-2 px-2 py-1 font-mono text-[12px] ${
+              p.id === open
+                ? 'border-frame bg-window text-parchment'
+                : 'border-transparent text-banner-ink/85 hover:border-banner-ink/40'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="p-2">{current.body}</div>
+    </section>
+  );
+}
+
+/** The ledger and the deeds of note, which are the same claim twice. */
+function Deeds({
+  stats,
+  achievements,
+  level,
+}: {
+  stats: ReturnType<typeof statsFrom>;
+  achievements: ReturnType<typeof evaluateAchievements>;
+  level: number;
+}) {
+  return (
+    <div className="space-y-3">
+      <section>
+        <h3 className="dq-label mb-1.5">
+          The ledger
+          <span className="ml-2 text-faint">{distanceToCitadel(level)} to the Citadel</span>
+        </h3>
         <dl className="space-y-0.5 font-mono text-[12px]">
           <Deed label={DEEDS.application.label} count={stats.applications} each={DEEDS.application.dp} />
           <Deed label={DEEDS.oa.label} count={stats.oas} each={DEEDS.oa.dp} />
           <Deed label={DEEDS.interview.label} count={stats.interviews} each={DEEDS.interview.dp} />
         </dl>
         <p className="mt-2 text-[12px] leading-snug text-faint">
-          DP is only ever the sum of this ledger. Nothing decays, and nothing idle can outpace
-          what you actually did.
+          DP is only ever the sum of this ledger. Nothing decays, and nothing idle can outpace what
+          you actually did.
         </p>
-      </Window>
+      </section>
 
-      <Window
-        title="Deeds of note"
-        right={
-          <span className="font-mono text-[12px] text-gold">
-            {earned}/{achievements.length}
-          </span>
-        }
-      >
+      <section>
+        <h3 className="dq-label mb-1.5">Deeds of note</h3>
         <div className="space-y-1">
           {achievements.map(({ achievement, earned: got, progress: p }) => (
             <div
@@ -162,8 +227,6 @@ export default function Crusade() {
                 got ? 'border-gold-dim' : 'border-frame-dim'
               }`}
             >
-              {/* The medal if the art is installed, the drawn sprite if not.
-                  Both are the same size, so the row does not move. */}
               {medalFor(achievement.id) ? (
                 <Item file={medalFor(achievement.id)!} name={achievement.title} size={40} dim={!got} />
               ) : (
@@ -187,7 +250,7 @@ export default function Crusade() {
             </div>
           ))}
         </div>
-      </Window>
+      </section>
     </div>
   );
 }
