@@ -12,6 +12,7 @@
  * lib/fill/autosubmit.ts.
  */
 import { askBackground } from '@/lib/db/messages';
+import { extractPosting } from '@/lib/ats/posting';
 import { detectAts } from '@/lib/fill/adapters';
 import { findApplicationForm, harvestForm } from '@/lib/fill/harvest';
 import { runFill } from '@/lib/fill/run';
@@ -24,6 +25,7 @@ import type { ResumeProfile } from '@/types/profile';
 type Request =
   | { type: 'clanker:ping' }
   | { type: 'clanker:probe' }
+  | { type: 'clanker:posting' }
   | { type: 'clanker:fill' };
 
 declare global {
@@ -110,6 +112,30 @@ export default defineContentScript({
           fieldCount: fields.length,
           requiredCount: fields.filter((f) => f.required).length,
         });
+        return false;
+      }
+
+      // The scan reads the posting off the page rather than asking the user to
+      // paste it. Free, local, and the difference between a scan you run on
+      // everything you consider and one you run on nothing.
+      if (request.type === 'clanker:posting') {
+        const posting = extractPosting(document);
+        const fallback = identifyPosting({
+          host: location.hostname,
+          title: document.title,
+          url: location.href,
+        });
+
+        sendResponse(
+          posting
+            ? {
+                ...posting,
+                company: posting.company || fallback.company,
+                title: posting.title || fallback.role,
+                url: location.href,
+              }
+            : null,
+        );
         return false;
       }
 
