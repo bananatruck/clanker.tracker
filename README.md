@@ -17,6 +17,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M8-ff8c1a.svg)](#-roadmap)
 [![Tests](https://img.shields.io/badge/tests-551%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
+[![Release](https://img.shields.io/github/v/release/bananatruck/clanker.tracker?color=a8720c&label=release)](https://github.com/bananatruck/clanker.tracker/releases/latest)
 
 </div>
 
@@ -462,6 +463,8 @@ src/
 ---
 
 ## ▶ INSTALL
+
+**[Download the latest release](https://github.com/bananatruck/clanker.tracker/releases/latest)** — a 0.9 MB zip, unzip it and skip to step 2 below. Or build it:
 
 ```bash
 git clone https://github.com/bananatruck/clanker.tracker
