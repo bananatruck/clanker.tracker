@@ -2,15 +2,14 @@
 
 Every bundled asset, its source, and its licence. Chrome Web Store review asks for this, and a public repo needs it to be auditable.
 
-## What the public v0.0.1 release ships
+## What public release bundles ship
 
-The published v0.0.1 bundle contains only the original fallback art authored as pixel data in
+Published extension bundles contain only the original fallback art authored as pixel data in
 [`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts) and MIT alongside the code.
 
 | Asset | Form | Licence |
 |---|---|---|
 | All character, building and terrain sprites | 32×32 palette-indexed text in `src/lib/game/sprites.ts` | **MIT**, original |
-| Screenshots in the published v0.0.1 tag | Captured from the fallback renderer at release time | **MIT**, original |
 
 Sprites are data rather than image files for two reasons:
 
@@ -23,8 +22,8 @@ Sprites are data rather than image files for two reasons:
 
 ## Installed art in this working copy
 
-The current `docs/demo/*.png` files were regenerated from this installed-art build; they are no
-longer the same fallback-only screenshots published in the v0.0.1 tag.
+The current `docs/demo/*.png` files were regenerated from this installed-art build. They are
+documentation in the source tree, not runtime assets in the downloadable extension bundle.
 
 The game reads sprite sheets, item icons and backdrops out of **`public/Sprites/`**, which is
 **gitignored**. This working copy currently contains 421 files there. `pnpm build` copies them into

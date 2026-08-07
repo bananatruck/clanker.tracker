@@ -202,8 +202,8 @@ The **encounter** is the one flourish: a hard white flash on `steps(3)`, the mes
 
 The game reads sheets, icons and backdrops out of `public/Sprites/`; missing files fall back to the
 original in-code sprites and procedural acts. This checkout currently has 421 installed files and
-a local production build copies all of them. The directory is still gitignored, so the published
-v0.0.1 release does **not** contain that pack. Provenance and redistribution rights need to be
+a local production build copies all of them. The directory is still gitignored, so public release
+bundles do **not** contain that pack. Provenance and redistribution rights need to be
 resolved before those files are added to a public release or store submission. See
 [`docs/ASSETS.md`](./docs/ASSETS.md) and the [feature audit](./docs/FEATURE_AUDIT.md).
 
@@ -479,7 +479,7 @@ src/
 
 ## ▶ INSTALL
 
-**[Download the latest release](https://github.com/bananatruck/clanker.tracker/releases/latest)** — a 0.9 MB zip, unzip it and skip to step 2 below. Or build it:
+**[Download the latest release](https://github.com/bananatruck/clanker.tracker/releases/latest)** — unzip it and skip to step 2 below. Or build it:
 
 ```bash
 git clone https://github.com/bananatruck/clanker.tracker

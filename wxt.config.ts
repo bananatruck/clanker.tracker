@@ -70,7 +70,7 @@ export default defineConfig({
     name: 'clanker.tracker',
     description:
       'Parse your resume, ATS-scan it, one-click fill any job application, write grounded cover letters, and track it all. Local-first, bring your own key.',
-    version: '0.0.1',
+    version: '0.0.2',
 
     permissions: [
       'storage',        // settings + API keys (chrome.storage.local)

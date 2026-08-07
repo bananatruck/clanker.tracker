@@ -1,6 +1,6 @@
 {
   "name": "clanker-tracker",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Chrome extension: resume parsing, ATS scanning, one-click application autofill, grounded cover letters, and an application tracker wrapped in an idle RPG.",
   "main": "index.js",
   "scripts": {

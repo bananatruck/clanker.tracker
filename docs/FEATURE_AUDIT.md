@@ -8,12 +8,12 @@ feature by themselves.
 
 | Surface | Status | What is actually public |
 |---|---|---|
-| Source repository | **Published** | The GitHub repository is public. The remote `main` branch is the pre-revamp M8 code. |
-| GitHub release | **Published, stale** | `v0.0.1 — M8` exists with a downloadable Chrome bundle. Its notes promise automatic account-wall handling, but the released content script does not call `fillGate` or the flow state machine. |
-| Landing page | **Published, stale** | GitHub Pages is configured and linked from the repository/release. It is assembled from committed screenshots, so it does not include this working tree until these changes are pushed and Pages runs. |
+| Source repository | **Published** | The public `main` branch contains the UI and sprite-seam revamp merged in PR #1. |
+| GitHub release | **Published** | `v0.0.2` contains the redesigned extension built from a clean checkout. Like all public bundles, it uses the complete fallback renderer because the raw sprite pack is not tracked. |
+| Landing page | **Published** | GitHub Pages is assembled from the refreshed site and committed production screenshots. |
 | Chrome Web Store | **Not published** | No store listing was found and M9 still names the store listing as unfinished. Installation is by release ZIP or “Load unpacked.” |
 | Public sprite pack | **Not in the public release** | The 421 files currently under `public/Sprites/` are copied into a local production build, but the folder is gitignored and absent from the public repository/release. Their provenance must be resolved before publishing them. |
-| This UI/sprite revamp | **Not published** | It exists only in this working tree until it is committed, pushed, released, and the site is redeployed. |
+| This UI/sprite revamp | **Published** | The implementation is on `main`, documented by the refreshed site/README, and packaged in `v0.0.2`. Installed public art remains local-only. |
 
 ## User-facing feature matrix
 
