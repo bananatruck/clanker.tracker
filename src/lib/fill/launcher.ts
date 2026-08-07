@@ -3,7 +3,7 @@
  *
  * A side panel you have to remember to open is a side panel nobody opens. The
  * moment a page turns out to be an application, a small badge shows up in the
- * corner with Kh. Laude on it and a count of what is waiting — the account
+ * corner with the campaign crest and a count of what is waiting — the account
  * wall, the fields, the letter — and pressing it starts the run.
  *
  * Built the same way as the review overlay and for the same reasons: a shadow
@@ -33,26 +33,28 @@ const STYLE = `
 .badge {
   position: fixed; right: 18px; bottom: 18px; z-index: 2147483646;
   display: flex; align-items: center; gap: 9px;
-  padding: 8px 12px 8px 9px;
-  background: #f2e3c0; color: #35240f;
-  border: 3px solid #6d4a2b;
-  box-shadow: inset 0 0 0 1px #a87b4a, inset 0 0 0 3px #4a3018, 0 3px 0 0 #16100a;
+  padding: 8px 10px 8px 8px;
+  background: #fffaf0; color: #2a1e10;
+  border: 1px solid rgba(96,72,43,.65); border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(7,20,14,.28), 0 2px 7px rgba(7,20,14,.18);
   font: 600 13px/1.3 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   cursor: pointer;
 }
-.badge:hover { background: #f9efd6; }
-.badge:active { transform: translateY(2px); box-shadow: inset 0 0 0 1px #a87b4a, inset 0 0 0 3px #4a3018; }
-.art { width: 34px; height: 34px; flex: none; image-rendering: pixelated; }
+.badge:hover { background: #f8efd9; transform: translateY(-1px); }
+.badge:active { transform: translateY(1px); box-shadow: 0 5px 16px rgba(7,20,14,.2); }
+.art { width: 36px; height: 36px; box-sizing: border-box; flex: none; padding: 4px;
+  object-fit: contain; image-rendering: pixelated; border-radius: 8px;
+  background: #0b281a; border: 1px solid rgba(185,120,9,.45); }
 .lines { display: flex; flex-direction: column; text-align: left; }
 .title { font-size: 13px; }
-.sub { font-size: 11.5px; font-weight: 400; color: #6a5233; }
+.sub { font-size: 11.5px; font-weight: 400; color: #66543b; }
 .close {
   all: unset; cursor: pointer; align-self: flex-start;
   width: 16px; height: 16px; line-height: 14px; text-align: center;
-  border: 2px solid #6d4a2b; background: #e3cf9f; color: #35240f;
+  border: 1px solid #bba77d; border-radius: 5px; background: #f0e4c8; color: #2a1e10;
   font: 700 11px/1 system-ui, sans-serif;
 }
-.close:hover { background: #c9a86f; }
+.close:hover { background: #dfcda5; }
 @media (prefers-reduced-motion: no-preference) {
   .badge { animation: rise 220ms steps(4, end); }
   @keyframes rise { from { transform: translateY(14px); opacity: 0; } }

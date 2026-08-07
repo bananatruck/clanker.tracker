@@ -15,9 +15,7 @@
  * Degrades completely: with no art installed it draws the pixel sprites on the
  * field colour and every other part of the screen is identical.
  */
-import { useEffect, useState } from 'react';
-import { BACKDROPS, BACKDROP_SHADE, type ActorArt } from '@/lib/game/atlas';
-import { assetUrl, loadSheet } from '@/lib/game/assets';
+import { BACKDROP_SHADE, type ActorArt } from '@/lib/game/atlas';
 import type { Tier } from '@/lib/game/economy';
 import Actor from '@/ui/Actor';
 import Backdrop from '@/ui/game/Backdrop';
@@ -57,51 +55,20 @@ export default function Scene({
   overlay,
   size = 'panel',
 }: SceneProps) {
-  const backdrop = BACKDROPS[tier];
-  const [ready, setReady] = useState<boolean | null>(null);
-
-  // Probing the backdrop before painting it avoids the flash of a broken
-  // image on an install with no art, which is the common case.
-  useEffect(() => {
-    let live = true;
-    void loadSheet(backdrop).then((s) => live && setReady(s !== null));
-    return () => {
-      live = false;
-    };
-  }, [backdrop]);
-
   return (
     <div
       className="dq-window relative overflow-hidden"
       style={{ height: HEIGHT[size] }}
       data-scene={tier}
     >
-      {ready ? (
-        <>
-          <img
-            src={assetUrl(backdrop)}
-            alt=""
-            aria-hidden
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: BACKDROP_SHADE[tier] }}
-            aria-hidden
-          />
-        </>
-      ) : (
-        // No art installed — the common case, and a fresh clone's only case.
-        // The act is drawn instead, which is a whole scene rather than a
-        // degraded one: same five floors, same story told by the ground.
-        // No tint over this one. `BACKDROP_SHADE` exists to drag a photograph
-        // down to where a command window stays readable over it; these palettes
-        // were chosen against that window in the first place, so the same tint
-        // would only be throwing away contrast that was put there on purpose.
-        <div className="absolute inset-0" aria-hidden>
-          <Backdrop tier={tier} />
-        </div>
-      )}
+      <div className="absolute inset-0" aria-hidden>
+        <Backdrop tier={tier} />
+      </div>
+      <div
+        className="absolute inset-0"
+        style={{ background: BACKDROP_SHADE[tier] }}
+        aria-hidden
+      />
 
       {/* The foe, upper third, facing down at you. */}
       {foe && (

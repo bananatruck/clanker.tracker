@@ -21,8 +21,11 @@ import { costStats, funnelStats } from '@/lib/tracker/stats';
 import { STATUS_COLOR, STATUS_LABEL, isStale } from '@/lib/tracker/funnel';
 import { shortDay } from '@/lib/tracker/table';
 import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
-import { profileCompleteness, type ResumeProfile } from '@/types/profile';
+import { ACTORS } from '@/lib/game/atlas';
+import type { ResumeProfile } from '@/types/profile';
 import { Meter, Window } from '@/ui/dq';
+import Actor from '@/ui/Actor';
+import Backdrop from '@/ui/game/Backdrop';
 import Profile from '@/entrypoints/sidepanel/views/Profile';
 import Tracker from '@/entrypoints/sidepanel/views/Tracker';
 import Crusade from '@/entrypoints/sidepanel/views/Crusade';
@@ -45,6 +48,14 @@ const SECTIONS: ReadonlyArray<{ id: Section; label: string; blurb: string }> = [
   { id: 'settings', label: 'Settings', blurb: 'Key, voice, budget' },
 ];
 
+const SECTION_GLYPH: Record<Section, string> = {
+  home: '⌂',
+  profile: '◆',
+  tracker: '≡',
+  crusade: '♜',
+  settings: '⚙',
+};
+
 export default function Dashboard({ initial }: { initial?: Section }) {
   const [section, setSection] = useState<Section>(initial ?? 'home');
 
@@ -57,96 +68,75 @@ export default function Dashboard({ initial }: { initial?: Section }) {
   const tierTitle = TIERS.find((t) => t.tier === tier)?.title ?? 'Squire';
   const name = profile?.contact.fullName.value || profile?.contact.email.value || 'Unnamed';
 
+  const active = SECTIONS.find((item) => item.id === section) ?? SECTIONS[0]!;
+
   return (
-    <div className="min-h-full bg-window">
-      <header className="dq-banner flex items-baseline justify-between px-5 py-2.5">
-        <h1 className="font-mono text-[19px] font-semibold">
-          clanker<span className="opacity-70">.</span>tracker
-        </h1>
-        <span className="font-mono text-[14px] opacity-90">
-          {tierTitle} · Lv {level} · {dp} DP
-        </span>
-      </header>
+    <div className="dashboard-shell min-h-full">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-brand">
+          <span className="dashboard-brand-mark">c</span>
+          <span>
+            <strong>clanker<span>.</span>tracker</strong>
+            <small>application command</small>
+          </span>
+        </div>
 
-      <nav className="flex gap-1 overflow-x-auto border-b-4 border-frame bg-window-hi px-3 py-1.5">
-        {SECTIONS.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setSection(s.id)}
-            aria-current={section === s.id ? 'page' : undefined}
-            title={s.blurb}
-            className={`shrink-0 border-2 px-3 py-1.5 text-[14px] ${
-              section === s.id
-                ? 'border-frame bg-banner font-semibold text-banner-ink'
-                : 'border-transparent text-muted hover:border-frame-dim hover:text-parchment'
-            }`}
-          >
-            {s.label}
-          </button>
-        ))}
-      </nav>
+        <div className="dashboard-avatar">
+          <Backdrop tier={tier} />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#07150f] via-transparent to-transparent" />
+          <div className="absolute bottom-1 right-4">
+            <Actor art={ACTORS['khlaude-walk']!} scale={0.9} still />
+          </div>
+          <div className="absolute bottom-3 left-3 text-white">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-200">Current rank</p>
+            <p className="text-[17px] font-semibold">{tierTitle}</p>
+          </div>
+        </div>
 
-      {/*
-        Applications is the one section that drops the rail.
+        <nav className="dashboard-nav" aria-label="Dashboard">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSection(s.id)}
+              aria-current={section === s.id ? 'page' : undefined}
+              className="dashboard-nav-item"
+            >
+              <span aria-hidden>{SECTION_GLYPH[s.id]}</span>
+              <span>
+                <strong>{s.label}</strong>
+                <small>{s.blurb}</small>
+              </span>
+            </button>
+          ))}
+        </nav>
 
-        The rail answers "who am I", which every other screen is a variation
-        on. The table answers "what have I sent", and it has nine columns that
-        all earn their place — squeezing it into 850 pixels to keep a profile
-        card visible beside it would be preferring the furniture to the work.
-      */}
-      <div
-        className={`mx-auto grid gap-4 p-4 ${
-          section === 'tracker' ? 'max-w-[1400px]' : 'max-w-[1180px] lg:grid-cols-[280px_1fr]'
-        }`}
-      >
-        {/* The rail. Who you are, and how far the crusade has gone. */}
-        <aside className={`flex flex-col gap-3 ${section === 'tracker' ? 'hidden' : ''}`}>
-          {/*
-            One card, not two. "You" and the tier meter were separate windows
-            saying overlapping things about the same person, and the level and
-            DP were already in the header bar above them — three places for two
-            numbers. The rail is now identity and progress, once each.
-          */}
-          <Window title="You">
-            <p className="text-[17px] leading-tight text-parchment">{name}</p>
-            {profile && (
-              <>
-                <p className="mt-0.5 font-mono text-[12.5px] text-muted">
-                  {profile.contact.email.value || (
-                    <span className="text-bad">no email parsed</span>
-                  )}
-                </p>
-                <Completeness profile={profile} />
-                <p className="mt-1 font-mono text-[12px] text-faint">
-                  {profile.experience.length} roles · {profile.skills.length} skills
-                </p>
-              </>
-            )}
-            {profile === null && (
-              <p className="mt-1 text-[13px] leading-snug text-muted">
-                No resume yet. Add one under My Profile and every form after it fills itself.
-              </p>
-            )}
+        <div className="dashboard-rank-card">
+          <div className="flex items-baseline justify-between">
+            <span>{name}</span>
+            <strong>Lv {level}</strong>
+          </div>
+          <div className="mt-2"><Meter value={levelFromDp(dp).progress} cells={14} /></div>
+          <p>{dp} DP · {distanceToCitadel(level)} nodes left</p>
+        </div>
+      </aside>
 
-            <div className="mt-3 border-t-2 border-frame-dim pt-2.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-[14px] text-parchment">{tierTitle}</span>
-                <span className="font-mono text-[12.5px] text-gold">Lv {level}</span>
-              </div>
-              <div className="mt-1.5">
-                <Meter value={levelFromDp(dp).progress} cells={18} />
-              </div>
-              <p className="mt-1.5 font-mono text-[12px] text-faint">
-                {distanceToCitadel(level)} nodes to the Citadel
-              </p>
-            </div>
-          </Window>
+      <main className="dashboard-main min-w-0">
+        <header className="dashboard-heading">
+          <div>
+            <p className="dashboard-eyebrow">Command / {active.label}</p>
+            <h1>{active.label}</h1>
+            <p>{active.blurb}</p>
+          </div>
+          <div className="dashboard-status">
+            <span className="status-dot" aria-hidden />
+            <span>Local data</span>
+            <strong>{apps.length} applications</strong>
+          </div>
+        </header>
 
-        </aside>
-
-        <main className="min-w-0">
+        <div className={`dashboard-body ${section === 'tracker' ? 'dashboard-body-wide' : ''}`}>
           {section === 'home' ? (
-            <Home apps={apps} onGo={setSection} />
+            <Home apps={apps} profile={profile} dp={dp} onGo={setSection} />
           ) : section === 'profile' ? (
             <Profile />
           ) : section === 'tracker' ? (
@@ -156,23 +146,9 @@ export default function Dashboard({ initial }: { initial?: Section }) {
           ) : (
             <Settings />
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
-  );
-}
-
-function Completeness({ profile }: { profile: ResumeProfile }) {
-  const { total, certain, missing } = profileCompleteness(profile);
-  return (
-    <>
-      <div className="mt-2">
-        <Meter value={certain / total} cells={total} />
-      </div>
-      <p className={`mt-1 font-mono text-[12px] ${missing > 0 ? 'text-warn' : 'text-ok'}`}>
-        {certain}/{total} contact fields confirmed
-      </p>
-    </>
   );
 }
 
@@ -192,13 +168,21 @@ function Completeness({ profile }: { profile: ResumeProfile }) {
  */
 function Home({
   apps,
+  profile,
+  dp,
   onGo,
 }: {
   apps: Awaited<ReturnType<typeof allApplications>>;
+  profile: ResumeProfile | null | undefined;
+  dp: number;
   onGo: (s: Section) => void;
 }) {
   const funnel = funnelStats(apps);
   const cost = costStats(apps);
+  const { level, progress, dpIntoLevel, dpForNext } = levelFromDp(dp);
+  const tier = tierForLevel(level);
+  const tierTitle = TIERS.find((item) => item.tier === tier)?.title ?? 'Squire';
+  const name = profile?.contact.fullName.value || profile?.contact.email.value || 'Unnamed applicant';
 
   const owed = apps.filter((a) => (a.nextAction ?? '').trim() !== '' && !isDone(a.status));
   const quiet = apps.filter((a) => isStale(a));
@@ -206,6 +190,36 @@ function Home({
 
   return (
     <div className="flex flex-col gap-4">
+      <section className="home-hero">
+        <div className="absolute inset-0" aria-hidden>
+          <Backdrop tier={tier} />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06130d]/95 via-[#06130d]/75 to-[#06130d]/20" />
+        </div>
+        <div className="home-hero-copy">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-emerald-200">
+            Today’s command
+          </p>
+          <h2>{name}</h2>
+          <p>
+            {apps.length === 0
+              ? 'Load your profile, open a posting, and start the first run.'
+              : `${funnel.responses} replies from ${funnel.total} applications. ${quiet.length + owed.length || 'Nothing'} waiting on you.`}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className="home-hero-primary" onClick={() => onGo('tracker')}>Open applications</button>
+            <button className="home-hero-secondary" onClick={() => onGo('crusade')}>Enter the crusade</button>
+          </div>
+        </div>
+        <div className="home-hero-rank">
+          <div className="flex items-end justify-center" aria-hidden>
+            <Actor art={ACTORS['khlaude-walk']!} scale={1.15} still />
+          </div>
+          <p>{tierTitle} · Level {level}</p>
+          <div className="mt-1.5"><Meter value={progress} cells={14} /></div>
+          <small>{dpIntoLevel}/{dpForNext} DP to next</small>
+        </div>
+      </section>
+
       {/*
         A flat sunken row, not four framed windows. Every element on this page
         was wearing the same heavy frame, which left nothing with any weight —

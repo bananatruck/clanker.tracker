@@ -21,7 +21,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ACTORS, BACKDROPS, ENCOUNTERS } from '../src/lib/game/atlas.ts';
+import { ACTORS, BACKDROPS, BOSSES, ENCOUNTERS } from '../src/lib/game/atlas.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const PUBLIC = join(ROOT, 'public');
@@ -41,6 +41,12 @@ const parts = [
   ...ENCOUNTERS.map((art, i) => ({
     group: 'encounters',
     name: `tier ${i + 1}`,
+    file: art.file,
+    instead: `sprite “${art.fallback}”`,
+  })),
+  ...Object.entries(BOSSES).map(([name, art]) => ({
+    group: 'bosses',
+    name,
     file: art.file,
     instead: `sprite “${art.fallback}”`,
   })),

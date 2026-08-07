@@ -125,17 +125,14 @@ const MIME = {
 };
 
 /**
- * Whether to serve installed art.
+ * Whether to serve the art that the build actually contains.
  *
- * Off by default, and that default is the point. Whoever runs this has their
- * own sheets in `public/Sprites/`, so photographing the build as-is would put
- * *their* art in the README — and every visitor would then arrive at a repo
- * that does not look like its own screenshots. The pictures have to show what
- * a fresh clone renders, which is the drawn sprites and the drawn acts.
- *
- * `SHOTS_ART=installed pnpm shots` to photograph your own instead.
+ * On by default: screenshots are a product check, and hiding a folder that the
+ * production bundle copied makes that check exercise a different UI from the
+ * extension people load. The procedural renderer is still easy to audit with
+ * `SHOTS_ART=procedural pnpm shots`.
  */
-const WITH_ART = process.env.SHOTS_ART === 'installed';
+const WITH_ART = process.env.SHOTS_ART !== 'procedural';
 
 function serve() {
   const server = createServer((req, res) => {

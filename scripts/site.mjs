@@ -5,11 +5,9 @@
  *   pnpm site --serve # build it and open a local server on :8732
  *
  * The page itself is one HTML file and one stylesheet with no build step, so
- * "assemble" means exactly one thing: copy `site/` and then copy the images it
- * points at out of `docs/`. Those images are already generated from the real
- * app — the screenshots by `pnpm shots`, the acts by `pnpm backdrops`, the
- * sprites by `pnpm sprites` — so the site cannot show a version of the product
- * that does not exist.
+ * "assemble" means copy `site/`, copy generated images out of `docs/`, and put
+ * installed `public/Sprites/` files in front of their generated fallbacks when
+ * they exist. This is the same asset policy as the extension itself.
  *
  * The deploy workflow runs this and publishes the result. Nothing in CI knows
  * anything this script does not, which is the point: if the page is broken in
@@ -54,6 +52,41 @@ mkdirSync(OUT, { recursive: true });
 cpSync(join(ROOT, 'site'), OUT, { recursive: true });
 for (const [from, to] of ASSETS) {
   cpSync(join(ROOT, from), join(OUT, to), { recursive: true });
+}
+
+/**
+ * Landing-page art follows the runtime seam as well. A public/ file wins in
+ * this working copy; a clean clone and the public CI build use the checked-in
+ * procedural equivalent. No HTML path changes between those configurations.
+ */
+const uiArt = [
+  ['GoldCirclet.png', 'khlaude.png', 'crest.png'],
+  ['GalScroll.png', 'khlaude.png', 'parse.png'],
+  ['Astraeas_Abacus.png', 'tower.png', 'scan.png'],
+  ['Magic_Key.png', 'pawn.png', 'fill.png'],
+  ['BottleLetters.png', 'house.png', 'write.png'],
+  ['AdventurersMap1.png', 'rubble.png', 'track.png'],
+  ['GoldCirclet.png', 'datacentre.png', 'crusade.png'],
+];
+
+const uiOut = join(OUT, 'assets/ui');
+mkdirSync(uiOut, { recursive: true });
+for (const [installed, fallback, name] of uiArt) {
+  const publicFile = join(ROOT, 'public/Sprites/items', installed);
+  const fallbackFile = join(ROOT, 'docs/sprites/icons', fallback);
+  cpSync(existsSync(publicFile) ? publicFile : fallbackFile, join(uiOut, name));
+}
+
+const publicBackdrops = {
+  squire: 'backdrop-meadow.png',
+  'knight-errant': 'backdrop-river.png',
+  warlord: 'backdrop-dust.png',
+  devastator: 'backdrop-waste.png',
+  ascendant: 'backdrop-hall.png',
+};
+for (const [tier, file] of Object.entries(publicBackdrops)) {
+  const publicFile = join(ROOT, 'public/Sprites', file);
+  if (existsSync(publicFile)) cpSync(publicFile, join(OUT, 'assets/backdrops', `${tier}.png`));
 }
 
 /**

@@ -112,7 +112,7 @@ export default defineConfig({
      */
     web_accessible_resources: [
       {
-        resources: ['Sprites/*'],
+        resources: ['Sprites/*', 'Sprites/items/*', 'Sprites/swords/*'],
         matches: ['<all_urls>'],
       },
     ],

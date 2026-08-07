@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>clanker.tracker — apply to a lot of jobs, then go raze a village</title>
 <meta name="description" content="A local-first, open-source Chrome extension: resume parsing, ATS scanning, one-click autofill, grounded cover letters and an application tracker, wrapped in an idle RPG about being the villain.">
-<meta name="theme-color" content="#4c9c55">
+<meta name="theme-color" content="#0b281a">
 
 <meta property="og:title" content="clanker.tracker">
 <meta property="og:description" content="Parse your resume. Scan it against the job. Fill the application in one click. Then go raze a village.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="assets/demo/scene.png">
 
-<link rel="icon" href="assets/sprites/khlaude.png" type="image/png">
+<link rel="icon" href="assets/ui/crest.png" type="image/png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -73,27 +73,27 @@
         <div class="pane">
           <ul class="slots">
             <li class="slot">
-              <img src="assets/sprites/icons/khlaude.png" alt="" width="64" height="64">
+              <img src="assets/ui/parse.png" alt="" width="64" height="64">
               <b>Parse</b><span>Drop a PDF. It never leaves your machine.</span>
             </li>
             <li class="slot">
-              <img src="assets/sprites/icons/tower.png" alt="" width="64" height="64">
+              <img src="assets/ui/scan.png" alt="" width="64" height="64">
               <b>Scan</b><span>Every requirement mapped to your evidence, or named as a gap.</span>
             </li>
             <li class="slot">
-              <img src="assets/sprites/icons/pawn.png" alt="" width="64" height="64">
+              <img src="assets/ui/fill.png" alt="" width="64" height="64">
               <b>Fill</b><span>Any application form, in one click, on five tiers of cheapest-first.</span>
             </li>
             <li class="slot">
-              <img src="assets/sprites/icons/house.png" alt="" width="64" height="64">
+              <img src="assets/ui/write.png" alt="" width="64" height="64">
               <b>Write</b><span>A cover letter that may only claim what the scan found evidence for.</span>
             </li>
             <li class="slot">
-              <img src="assets/sprites/icons/rubble.png" alt="" width="64" height="64">
+              <img src="assets/ui/track.png" alt="" width="64" height="64">
               <b>Track</b><span>A board and a spreadsheet over one store. CSV out, any time.</span>
             </li>
             <li class="slot">
-              <img src="assets/sprites/icons/datacentre.png" alt="" width="64" height="64">
+              <img src="assets/ui/crusade.png" alt="" width="64" height="64">
               <b>Crusade</b><span>Every application razes two family homes. It adds up.</span>
             </li>
           </ul>
@@ -103,12 +103,12 @@
       <div class="window">
         <div class="banner"><span>THE FLOW</span><span class="close" aria-hidden="true">×</span></div>
         <div class="pane">
-          <p>An application is not one action. It is a queue of them, and the extension knows the whole queue:</p>
+          <p>An application is not one action. The extension ships the middle of this queue today; the account-wall classifier and ordered controller are tested, but not yet connected to the live fill run:</p>
           <pre class="flow">account ─▶ fill ─▶ cover letter ─▶ confirm ─▶ sent, logged, banked
    │                 │              ▲
    └─ blocked        └─ only if     └─ nothing is ever sent
       without a yes     it asks        without this</pre>
-          <p>Two edges carry the design. A <b>confirmation wall outranks everything</b> — hammering the form behind it is how an address gets rate-limited. And <b>fields the resolver handed back block the send</b>: refusing to invent a salary expectation is the tool working, and submitting over that empty box would throw the refusal away.</p>
+          <p>Two edges carry the intended design. A <b>confirmation wall outranks everything</b> — hammering the form behind it is how an address gets rate-limited. And <b>fields the resolver handed back block the send</b>: refusing to invent a salary expectation is the tool working, and submitting over that empty box would throw the refusal away. Today, account walls and final submission remain manual.</p>
         </div>
       </div>
     </div>
@@ -197,10 +197,10 @@
         </ol>
 
         <p class="note">
-          The five acts are <b>drawn in code</b>, not shipped as images — about five kilobytes,
-          deterministic, and the same world every time you open it. No third-party art is in the
-          repository and none ever will be, which is why a fresh clone looks exactly like these
-          pictures.
+          These images are the installed files under <b>public/Sprites</b>, read through the same
+          asset seam in scenes, title cards, acts and dashboards. A fresh public clone falls back
+          to the deterministic in-code art. The installed pack is not in the published release;
+          its provenance must be cleared before redistribution.
         </p>
       </div>
     </div>
@@ -222,7 +222,7 @@ pnpm build</pre>
             <li>Turn on <b>Developer mode</b></li>
             <li><b>Load unpacked</b> → pick <code>.output/chrome-mv3</code></li>
           </ol>
-          <p class="note">That is the whole setup. No art to download, no assets folder to populate, no environment file, no account. A 3.9&nbsp;MB bundle with every screen working and 534 tests passing.</p>
+          <p class="note">No environment file or clanker account is required. A clean clone builds with the complete procedural fallback; a working copy with <code>public/Sprites</code> builds with that installed art. The current suite has 553 passing tests.</p>
           <p class="cta"><a class="btn" href="https://github.com/bananatruck/clanker.tracker">Get it on GitHub</a></p>
         </div>
       </div>
@@ -234,7 +234,7 @@ pnpm build</pre>
             <li>Your resume is parsed <b>on your machine</b> and stored in IndexedDB. It is never uploaded.</li>
             <li>There is no backend, no account, and no analytics of any kind.</li>
             <li>The only network call the extension can make is to <b>your own</b> model provider, with <b>your own</b> key, and only when a field genuinely could not be resolved for free.</li>
-            <li>Keys and sign-in details live in <code>chrome.storage.local</code>, never in the database — which is what lets the export dump every table without leaking a credential.</li>
+            <li>Keys and sign-in details live in <code>chrome.storage.local</code>, never in the database — the separation needed for a future credential-free database export. Import/export itself is not built yet.</li>
             <li>It is MIT, and the whole thing is readable in an afternoon.</li>
           </ul>
         </div>

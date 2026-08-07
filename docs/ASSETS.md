@@ -2,14 +2,15 @@
 
 Every bundled asset, its source, and its licence. Chrome Web Store review asks for this, and a public repo needs it to be auditable.
 
-## What actually ships
+## What the public v0.0.1 release ships
 
-**Nothing third-party.** Every sprite in the extension is original work, authored as pixel data in [`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts) and MIT alongside the code.
+The published v0.0.1 bundle contains only the original fallback art authored as pixel data in
+[`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts) and MIT alongside the code.
 
 | Asset | Form | Licence |
 |---|---|---|
 | All character, building and terrain sprites | 32×32 palette-indexed text in `src/lib/game/sprites.ts` | **MIT**, original |
-| `docs/demo/*.png` | README screenshots captured from the running extension | **MIT**, original |
+| Screenshots in the published v0.0.1 tag | Captured from the fallback renderer at release time | **MIT**, original |
 
 Sprites are data rather than image files for two reasons:
 
@@ -20,11 +21,24 @@ Sprites are data rather than image files for two reasons:
 
 ---
 
-## Bring your own art
+## Installed art in this working copy
 
-The game reads sprite sheets and backdrops out of **`public/Sprites/`**, which is **gitignored**. Nothing you put there is committed or pushed by this repo, and a fresh clone has none of it — every actor falls back to the pixel sprites above and the extension works completely.
+The current `docs/demo/*.png` files were regenerated from this installed-art build; they are no
+longer the same fallback-only screenshots published in the v0.0.1 tag.
 
-That split is deliberate. Whether a given file may sit on your disk is a question about you and whoever owns it; whether this repo redistributes it is a question about this repo, and the answer to that one is no. Ripped sheets from a commercial game are copyrighted by their publisher no matter which fan site is hosting them, and a public repo plus a Web Store listing are both places a rightsholder can reach.
+The game reads sprite sheets, item icons and backdrops out of **`public/Sprites/`**, which is
+**gitignored**. This working copy currently contains 421 files there. `pnpm build` copies them into
+the local bundle and the application now uses them consistently across Scene, Title, Acts, the
+dashboard, inventory, achievements, launcher and locally assembled landing page.
+
+Their source and licence are not recorded in this repository. They therefore must be treated as
+**local-only and not cleared for redistribution** until the owner supplies provenance. The newly
+generated screenshots can also contain pixels from this pack, so those screenshots must not be
+published under an MIT/original-art claim without the same review. A screenshot of copyrighted
+art is still redistribution.
+
+A fresh clone still has none of these files and falls back completely. To audit that path, run
+`SHOTS_ART=procedural pnpm shots`.
 
 ### How it works
 
@@ -44,7 +58,9 @@ Files with no transparency slice to a single frame covering the whole image, whi
 
 ### Checking it took
 
-`pnpm build` copies `public/` into the bundle; `pnpm shots` photographs the result. If the Crusade tab still shows pixel sprites on a flat navy field, the loader got `null` — the file is missing, the path in the atlas does not match what is on disk, or the browser refused to decode it.
+`pnpm build` copies `public/` into the bundle; `pnpm shots` photographs that exact result by
+default. If the Crusade tab still shows fallback sprites, the loader got `null` — the file is
+missing, the path in the atlas does not match what is on disk, or the browser refused to decode it.
 
 ## Candidates, if bundled art is ever wanted
 

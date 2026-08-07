@@ -24,7 +24,7 @@ import {
 } from '@/lib/game/economy';
 import { ACT_0, ACTS, ENDING, fanfareAllowed } from '@/lib/game/lore';
 import { evaluateAchievements, statsFrom } from '@/lib/game/achievements';
-import { ACTORS, encounterFor } from '@/lib/game/atlas';
+import { ACTORS, crusadeFoe } from '@/lib/game/atlas';
 import { Meter, Window } from '@/ui/dq';
 import Sprite from '@/ui/Sprite';
 import Scene from '@/ui/game/Scene';
@@ -78,7 +78,7 @@ export default function Crusade() {
       <Scene
         tier={tier}
         hero={ACTORS['khlaude-battle']!}
-        foe={encounterFor(stats.interviews > 0 ? 3 : 1)}
+        foe={crusadeFoe(level, stats.interviews > 0 ? 3 : 1)}
         speaker={latest ? 'Kh. Laude' : undefined}
         line={latest?.copy}
       />

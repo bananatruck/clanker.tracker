@@ -15,7 +15,7 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 [![Site](https://img.shields.io/badge/site-bananatruck.github.io-4c9c55.svg)](https://bananatruck.github.io/clanker.tracker/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-a8720c.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha%20·%20M8-ff8c1a.svg)](#-roadmap)
-[![Tests](https://img.shields.io/badge/tests-551%20passing-6ede6e.svg)](#-install)
+[![Tests](https://img.shields.io/badge/tests-553%20passing-6ede6e.svg)](#-install)
 [![Manifest V3](https://img.shields.io/badge/Chrome-Manifest%20V3-4c9c55.svg)](https://developer.chrome.com/docs/extensions/develop/migrate)
 [![Release](https://img.shields.io/github/v/release/bananatruck/clanker.tracker?color=a8720c&label=release)](https://github.com/bananatruck/clanker.tracker/releases/latest)
 
@@ -40,7 +40,8 @@ A local-first, open-source Chrome extension for people applying to a lot of jobs
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-Six screens in a Chrome side panel. Everything above the last line is a real job-hunting tool; the last line is what makes you open it again tomorrow.
+Seven tabs in a Chrome side panel (cover-letter writing lives inside Scan). Everything above the
+last line is a real job-hunting tool; the last line is what makes you open it again tomorrow.
 
 ---
 
@@ -105,13 +106,14 @@ do the middle step and nothing about the shape around it — so every other step
 remember.
 
 **It offers first.** A side panel you have to remember to open is a side panel nobody opens. The
-moment a page turns out to be an application, a badge appears in the corner with Kh. Laude on it
-and a count of what is waiting. Press it and the run starts. Dismiss it and it stays dismissed
-until the next posting.
+moment a page turns out to be an application, a badge appears in the corner with the campaign
+crest and a count of what is waiting. Press it to open the application command panel. Dismiss it
+and it stays dismissed until the next posting.
 
-**It gets past the wall.** Half of all applications begin with *create an account*, and the
-account is a formality that exists so the board can email you a rejection. With sign-in details
-saved, that step happens without you.
+**It reads the wall.** Half of all applications begin with *create an account*. The launcher can
+distinguish signup, login and confirmation pages, and Settings can store sign-in details. Passing
+the wall automatically is not wired into the shipping run yet; the classifier and form filler are
+tested building blocks, not a user-facing flow. See the [feature audit](./docs/FEATURE_AUDIT.md).
 
 Reading that wall is where the care goes, because getting it backwards is expensive — a new
 password typed into a sign-in form fails the login, and an existing address typed into a signup
@@ -138,13 +140,14 @@ account ─▶ fill ─▶ cover letter ─▶ confirm ─▶ sent, logged, bank
       without a yes        it asks        without this
 ```
 
-The whole order is a pure function in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts) — no DOM, no
-storage — so it is asserted in tests rather than clicked through on a job board.
+The intended order is a pure function in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts) — no DOM,
+no storage — and is asserted in tests. It is not yet the content script's runtime controller.
 
 ### Where the password lives
 
 `chrome.storage.local`, next to the API key, and **never** IndexedDB. That split is why a
-`.clankdb` export can dump every table without leaking a credential.
+a future `.clankdb` export can dump every table without leaking a credential. The import/export
+UI itself is not implemented yet.
 
 Said plainly, because a password store that oversells itself is worse than one that doesn't
 exist: **it is not encrypted at rest.** It is a file in your Chrome profile, and anything with
@@ -167,7 +170,9 @@ into a page is not a thing to do on someone's behalf until they've said so once 
 
 ### What the game looks like
 
-Every picture in this section is a fresh clone with nothing installed. That is not a limitation being photographed politely — it is the point. `pnpm shots` refuses to serve `public/Sprites/` unless you ask it to, so the README can never show art a visitor will not get.
+Every picture in this section is the production bundle exactly as it was built. `pnpm shots` now
+serves installed public assets by default, so the visual check exercises the same code and files
+as the extension. Use `SHOTS_ART=procedural pnpm shots` to audit the fallback renderer explicitly.
 
 <table>
 <tr>
@@ -182,7 +187,10 @@ Every picture in this section is a fresh clone with nothing installed. That is n
 </tr>
 </table>
 
-**The five acts are drawn, not shipped.** [`lib/game/backdrop.ts`](./src/lib/game/backdrop.ts) paints each one at 192×120 from a seeded PRNG — sky bands, two ridges, three ground bands, and whatever is standing on it — then scales it up with smoothing off. About five kilobytes of code where five backdrop images would have been ten megabytes, and it is deterministic, so the same act is the same world every time you open it.
+**The five acts use one shared asset seam.** When `public/Sprites/backdrop-*.png` exists, Scene,
+Title, Acts and both dashboards use it. Otherwise [`lib/game/backdrop.ts`](./src/lib/game/backdrop.ts)
+paints the same five-act progression at 192×120 from a seeded PRNG. The fallback remains
+deterministic and complete; it is no longer forced while public art is installed.
 
 <img src="./docs/demo/acts.png" alt="The five acts side by side: a green meadow, a river valley, ochre dust with ruins, a grey waste, and a lit hall." width="820">
 
@@ -192,13 +200,18 @@ The **encounter** is the one flourish: a hard white flash on `steps(3)`, the mes
 
 ### Where the art comes from
 
-**No third-party art is in this repo, and none ever will be.** That includes the screenshots — a picture of the game rendering somebody else's sprites is still that sprite, redistributed as pixels.
-
-The game reads sheets and backdrops out of `public/Sprites/`, which is gitignored — see [`docs/ASSETS.md`](./docs/ASSETS.md). Install sheets and it uses them; install nothing and it draws its own. **A fresh clone is not a degraded clone**: same five acts, same composition, same everything except whose art is in the frame.
-
-Whether a given file may sit on your disk is a question about you and whoever owns it. Whether this repository redistributes it is a question about this repository, and the answer to that one is no.
+The game reads sheets, icons and backdrops out of `public/Sprites/`; missing files fall back to the
+original in-code sprites and procedural acts. This checkout currently has 421 installed files and
+a local production build copies all of them. The directory is still gitignored, so the published
+v0.0.1 release does **not** contain that pack. Provenance and redistribution rights need to be
+resolved before those files are added to a public release or store submission. See
+[`docs/ASSETS.md`](./docs/ASSETS.md) and the [feature audit](./docs/FEATURE_AUDIT.md).
 
 **The atlas reaches further than the cast.** [`lib/game/items.ts`](./src/lib/game/items.ts) maps the item icons to the parts of the game that need objects: a medal per deed of note, a weapon that changes with the act, the story items the crusade puts in your pack, and an inventory where every skill off your resume is a thing you are holding. That last one is the only screen where both halves of this project are literally the same list — the inventory *is* what the scan matches against and what autofill answers from. Like the atlas, it names files and contains none, and every slot degrades to an empty cell rather than a broken image.
+
+The persistent Crusade scene uses posting-difficulty encounters through level 49, then spends all
+three public boss sheets across Act V and the Citadel. `pnpm art` reports cast, encounters, bosses
+and backdrops together, so a mapped-but-unused root sheet cannot disappear from the audit.
 
 There is no frame table and no build step. Sheets of this era are laid out on transparency with a gutter between frames, so [`lib/game/sheet.ts`](./src/lib/game/sheet.ts) finds the frames by scanning the sheet's own alpha — a row of empty pixels is a row boundary, a column of them is a frame boundary. Two projections, no configuration, and it re-derives itself the moment you swap a file. [`lib/game/atlas.ts`](./src/lib/game/atlas.ts) is the only thing you edit: it maps a part to a filename, a row, and a span of frames.
 
@@ -293,7 +306,9 @@ The curve is tuned against real volumes so the story is actually reachable: a li
 
 You reach the Citadel at level 60. **You cannot take it without an offer.** You can flatten the entire world and still not have a job.
 
-**The game never punishes inactivity.** No decay, no desertion, no streak-shaming. Step away for a month and the warband makes camp; come back and it rallies, with a bonus. The job hunt punishes you enough.
+**The game never punishes inactivity.** No decay, no desertion, no streak-shaming. The bounded
+return-bonus formula is implemented and tested, but no runtime currently records that bonus; this
+is named as a gap in the [feature audit](./docs/FEATURE_AUDIT.md).
 
 ### Deeds of note
 
@@ -457,8 +472,8 @@ src/
 | UI | Tailwind v4, Dragon Quest command-window design language |
 | Surface | Chrome Side Panel API |
 | Storage | Dexie (IndexedDB), local-first |
-| Game | Canvas2D, sprites authored as pixel data in-repo |
-| Network | Nothing, except the provider key you supply, on the one button that needs it |
+| Game | Canvas2D, runtime-sliced public sheets with in-code sprite/act fallbacks |
+| Network | Provider calls for cover letters and unresolved fill fields, using the key you supply |
 
 ---
 
@@ -481,9 +496,10 @@ Then load it, which Chrome now insists you do by hand:
 
 Setup opens by itself the first time. It wants a resume; the API key and writing samples are optional and can wait, because autofill and the keyword scan never call a provider at all.
 
-**That is the whole setup.** No art to download, no assets folder to populate, no environment file, no account, no build flags. The four commands above produce a 3.9 MB bundle with every screen working, the whole game drawn, and 551 tests passing.
-
-That claim is checkable, and it is checked the hard way: the screenshots in this README are generated by a clone with no `public/Sprites/` directory at all, and a fresh clone regenerates them **byte-identically**. There is no configuration under which this repo looks better than the pictures of it.
+**That is the whole setup.** No environment file or clanker account is required. A clean public
+clone builds the procedural fallback bundle; this working copy builds a 28.1 MB extension because
+it also contains 421 files under `public/Sprites/`. Both configurations are supported and the
+runtime selects per asset.
 
 ```bash
 pnpm art   # what art is installed, and what is being drawn instead
@@ -494,7 +510,7 @@ Nothing is required. `pnpm art` is there because a missing sheet is not an error
 `pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test        # 551 unit tests
+pnpm test        # 553 unit tests
 pnpm test:fill   # the fill pipeline against whole board fixtures
 pnpm compile     # typecheck
 pnpm build       # production bundle
@@ -510,7 +526,10 @@ pnpm site --serve  # …and serve it on :8732
 
 [`site/`](./site/) is one HTML file and one stylesheet with **no build step and no dependencies** — the same parchment-and-wood vocabulary as the extension, hand-copied rather than imported, because a brochure should not need Tailwind in its deploy path.
 
-`pnpm site` assembles it into `.output/site` by copying `site/` and then the images it points at out of `docs/`. Those images are generated from the real app — screenshots by `pnpm shots`, acts by `pnpm backdrops`, sprites by `pnpm sprites` — so the site cannot advertise a version of the product that does not exist. The Pages workflow runs exactly that script and publishes the result; nothing in CI knows anything you cannot see locally in ten seconds.
+`pnpm site` assembles it into `.output/site` from the generated images in `docs/`, then overlays
+matching backdrops and item icons from `public/Sprites/` when that folder is installed. The policy
+is the same as the runtime: public files first, complete generated fallback otherwise. The Pages
+workflow runs the same script.
 
 **The economy and the ledger rules are specified as tests.** `tests/unit/economy.test.ts` asserts the author's numbers from [`storyboard/raw-inputs.md`](./storyboard/raw-inputs.md) verbatim, `tests/unit/game/lore.test.ts` reads the storyboard off disk and fails if a shipped line has drifted from it, and `tests/unit/fill/boards.test.ts` runs whole application forms end to end. If one of those fails, the code has drifted from the story — fix the code, not the test.
 
@@ -524,12 +543,17 @@ pnpm site --serve  # …and serve it on :8732
 - [x] **M3** — Tracker, board view, CSV export, DP counter
 - [x] **M4** — First-run setup, real dashboard, fill on *any* site via activeTab, posting extraction, cover letters → **usable daily from here**
 - [x] **M5** — Clankerdom Deliverance: economy, march, achievements, sprites, lore transcribed from the storyboard
-- [x] **M6** — The whole application as a flow: page launcher badge, account-wall classification, stored sign-in details, live per-field fill checklist
+- [ ] **M6 (partial)** — Page launcher, account-wall classification, stored sign-in details and live checklist ship; automatic wall handling and the ordered flow controller are not wired
 - [x] **M7** — The tracker as a spreadsheet: nine columns, click-to-edit, COUNT/RANGE/MAX rollups, Notion-named CSV, a deed for researching a row
-- [x] **M8** — The game drawn rather than shipped: five procedural acts, title card, encounter transition, idle motion, item/medal/inventory mapping, landing page
+- [x] **M8** — Shared public-sprite seam with complete procedural fallback: five acts, title card, encounter transition, idle motion, item/medal/inventory mapping, landing page
 - [ ] **M9** — Resume upload, cover-letter attach, multi-step forms, answer-memory editor, auto-submit UI, `.clankdb` import/export, store listing ← *here*
 
-Theme packs and the `.clank` loader were dropped. The visual language ships whole — and since M8 the game draws its own acts, so there is no substrate to load art into and nothing to license.
+Theme packs and the `.clank` loader were dropped. The visual language ships whole; the one
+supported art seam is `public/Sprites/`, with deterministic fallback rendering behind it.
+
+The complete promise-by-promise result is in [`docs/FEATURE_AUDIT.md`](./docs/FEATURE_AUDIT.md),
+including features that currently exist only as tested library code and the status of the release,
+Pages site, sprite pack, and Chrome Web Store listing.
 
 ### Not built yet
 
@@ -542,6 +566,8 @@ Named plainly, because a README that describes intentions as features is how a p
 | **Sync adapters** | No live Sheets, Notion or Airtable connection, and none planned. The CSV uses those trackers' own column names, so importing it maps the fields instead of arriving as thirteen new ones. |
 | **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |
 | **Resume upload** | The resolver skips file inputs and nothing stores the original bytes, only the extracted text. Every board asks for an upload, so every application still needs one manual step. |
+| **Account-wall automation** | Classification, saved credentials and `fillGate` exist, but the content-script run never calls the filler or `stage.ts` controller. |
+| **Return/Rally bonuses** | The economy functions are tested, but no runtime interaction produces either bonus. |
 
 ---
 
@@ -549,14 +575,18 @@ Named plainly, because a README that describes intentions as features is how a p
 
 Your resume, answers, letters, and application history live in IndexedDB **on your machine**. There is no backend, no account, no telemetry, and no analytics.
 
-The only network call this extension ever makes is to the LLM provider whose key you supplied, and only when you press the cover letter button. **Autofill and the keyword scan never touch a provider.** Your API key lives in `chrome.storage.local` and never in the database, so a database export can dump every table without carrying a credential out with it.
+The only network destination the extension calls is the LLM provider whose key you supplied.
+Cover letters use it, and autofill may use one batched call when its four free resolver tiers leave
+unknown fields; the keyword scan stays local. Your API key lives in `chrome.storage.local` and
+never in the database, so a future database export can omit credentials.
 
 ---
 
 ## ▶ CREDITS
 
-**All art is original**, authored as pixel data in [`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and MIT alongside the code. Nothing third-party is bundled — no packs to audit, no provenance to justify, and no upstream to go missing. Full manifest in [`docs/ASSETS.md`](./docs/ASSETS.md).
-
-The look is Dragon Quest *inspired* and drawn from scratch. Sprites ripped from commercial games are deliberately excluded: a public repo and a store listing are both places a rightsholder can reach.
+The fallback art is original, authored as pixel data in
+[`src/lib/game/sprites.ts`](./src/lib/game/sprites.ts) and MIT alongside the code. Installed files
+under `public/Sprites/` are a separate asset pack and are not covered by that statement. Their
+provenance must be verified before redistribution. Full policy in [`docs/ASSETS.md`](./docs/ASSETS.md).
 
 **Not affiliated with** Greenhouse, Lever, Ashby, Workable, Workday, LinkedIn, SmartRecruiters, iCIMS, Jobvite, Simplify, Jobright, Square Enix, or any employer. Clankerdom Deliverance is a work of satire.

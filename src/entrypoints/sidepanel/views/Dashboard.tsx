@@ -13,9 +13,12 @@ import { costStats, funnelStats } from '@/lib/tracker/stats';
 import { STATUS_LABEL } from '@/lib/tracker/funnel';
 import { currentBudgetStatus } from '@/lib/llm';
 import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
+import { ACTORS } from '@/lib/game/atlas';
 import { profileCompleteness, type ResumeProfile } from '@/types/profile';
 import type { ApplicationStatus } from '@/lib/db/schema';
 import { Button, Meter, Window } from '@/ui/dq';
+import Actor from '@/ui/Actor';
+import Backdrop from '@/ui/game/Backdrop';
 
 const FUNNEL_ORDER: ApplicationStatus[] = [
   'applied',
@@ -68,22 +71,36 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
         </Window>
       )}
 
-      <Window title="The crusade" right={<span className="font-mono text-[12px] text-gold">{dp} DP</span>}>
-        <div className="flex items-baseline justify-between">
-          <span className="font-mono text-[14px] text-parchment">
-            {tierTitle} · Lv {level}
-          </span>
-          <span className="font-mono text-[12px] text-muted">
-            {dpIntoLevel}/{dpForNext}
-          </span>
+      <button
+        type="button"
+        onClick={() => onNavigate('crusade')}
+        className="dashboard-quest-card group relative block h-32 w-full overflow-hidden text-left"
+      >
+        <div className="absolute inset-0" aria-hidden>
+          <Backdrop tier={tier} />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#071b12]/95 via-[#071b12]/70 to-transparent" />
         </div>
-        <div className="mt-1.5">
-          <Meter value={progress} />
+        <div className="absolute bottom-0 right-5" aria-hidden>
+          <Actor art={ACTORS['khlaude-walk']!} scale={0.8} still />
         </div>
-        <p className="mt-1.5 font-mono text-[12px] text-faint">
-          {distanceToCitadel(level)} nodes to the Citadel
-        </p>
-      </Window>
+        <div className="relative flex h-full max-w-[72%] flex-col justify-between p-3 text-white">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-200">
+              The crusade · {dp} DP
+            </p>
+            <p className="mt-1 text-[19px] font-semibold leading-none">{tierTitle}</p>
+            <p className="mt-1 font-mono text-[11.5px] text-white/70">
+              Level {level} · {distanceToCitadel(level)} nodes to the Citadel
+            </p>
+          </div>
+          <div>
+            <Meter value={progress} cells={14} />
+            <p className="mt-1 font-mono text-[10.5px] text-white/70">
+              {dpIntoLevel}/{dpForNext} to next · open campaign ↗
+            </p>
+          </div>
+        </div>
+      </button>
 
       <Window
         title="Applications"
