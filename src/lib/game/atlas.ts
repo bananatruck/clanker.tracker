@@ -1,7 +1,7 @@
 /**
  * Which art file plays which part.
  *
- * This is a *mapping*, not art. No third-party bytes live in this repo — see
+ * This is a *mapping*, not art. Asset provenance is documented separately in
  * docs/ASSETS.md. Drop sheets into `public/Sprites/` and the game uses them;
  * leave it empty and every actor falls back to the original pixel sprites in
  * lib/game/sprites.ts, which ship with the code and always work.
@@ -165,6 +165,18 @@ export function encounterFor(requiredGaps: number): ActorArt {
     if (requiredGaps >= ENCOUNTER_THRESHOLDS[i]!) pick = i;
   }
   return ENCOUNTERS[pick]!;
+}
+
+/**
+ * The persistent Crusade scene becomes the boss ladder during Act V. Earlier
+ * acts still visualize application difficulty; the last ten levels spend all
+ * three installed boss sheets before the Citadel cap.
+ */
+export function crusadeFoe(level: number, requiredGaps: number): ActorArt {
+  if (level >= 60) return BOSSES.calasmalroth!;
+  if (level >= 57) return BOSSES.zoma!;
+  if (level >= 50) return BOSSES.malroth!;
+  return encounterFor(requiredGaps);
 }
 
 /**

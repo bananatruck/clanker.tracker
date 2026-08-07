@@ -101,7 +101,10 @@ export default defineContentScript({
           // forwarded while the user's click is still the reason for it.
           void chrome.runtime.sendMessage({ type: 'clanker:open-panel' }).catch(() => {});
         },
-        chrome.runtime.getURL('Sprites/Hero_Roto.png'),
+        // A single-file public sprite. The old path pointed at Hero_Roto.png,
+        // which does not exist; using the campaign crown keeps the launcher
+        // crisp without trying to squeeze an entire actor sheet into 34px.
+        chrome.runtime.getURL('Sprites/items/GoldCirclet.png'),
       );
     }
 

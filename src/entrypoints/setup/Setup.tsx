@@ -24,13 +24,13 @@ export default function Setup() {
   const [step, setStep] = useState(0);
 
   return (
-    <div className="min-h-full bg-field p-6">
+    <div className="setup-shell min-h-full p-6">
       <div className="mx-auto w-full max-w-[640px] space-y-3">
         <header className="flex items-baseline justify-between">
-          <h1 className="font-mono text-[18px] text-parchment">
+          <h1 className="font-mono text-[18px] text-white">
             clanker<span className="text-gold">.</span>tracker
           </h1>
-          <span className="dq-label">
+          <span className="dq-label text-white/65">
             {step + 1}/{STEPS.length} · {STEPS[step]}
           </span>
         </header>
@@ -41,7 +41,7 @@ export default function Setup() {
               key={label}
               title={label}
               className={`h-1.5 flex-1 border ${
-                i <= step ? 'border-gold bg-gold' : 'border-frame-dim bg-field'
+                i <= step ? 'border-gold bg-gold' : 'border-white/20 bg-white/5'
               }`}
             />
           ))}

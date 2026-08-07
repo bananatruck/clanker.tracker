@@ -24,44 +24,53 @@ const STYLE = `
 :host { all: initial; }
 .wrap {
   position: fixed; top: 16px; right: 16px; z-index: 2147483647;
-  width: 340px; max-height: calc(100vh - 32px); display: flex; flex-direction: column;
-  background: #0e1a5c; color: #ffffff; border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px #050a24;
+  width: 360px; max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+  overflow: hidden; background: #fffaf0; color: #2a1e10;
+  border: 1px solid rgba(96,72,43,.62); border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(7,20,14,.34), 0 3px 10px rgba(7,20,14,.18);
   font: 12px/1.5 ui-monospace, 'JetBrains Mono', 'SF Mono', monospace;
 }
 header { display: flex; align-items: baseline; justify-content: space-between;
-  padding: 6px 8px; border-bottom: 2px solid #6b78b8; }
-h2 { margin: 0; font: inherit; font-weight: 500; }
-.accent { color: #ffcf3f; }
-.meta { font-size: 10px; color: #7d87b8; }
-.bark { padding: 4px 8px; border-bottom: 2px solid #6b78b8; color: #ffcf3f;
-  font-size: 11px; font-style: italic; }
-.list { overflow-y: auto; padding: 4px; flex: 1; }
-.row { display: grid; grid-template-columns: 10px 1fr; gap: 6px; padding: 5px 4px; }
-.row:hover { background: #1d2d86; }
+  padding: 10px 12px; color: #f6fbf7;
+  background: linear-gradient(180deg, #2e7a4d, #205f3b);
+  border-bottom: 1px solid #123e27; }
+h2 { margin: 0; font: inherit; font-size: 13px; font-weight: 700; }
+.accent { color: #f0c45d; }
+.meta { font-size: 10px; color: rgba(246,251,247,.72); }
+.bark { padding: 8px 12px; color: #6c4a09; background: #f8e8bb;
+  border-bottom: 1px solid #d7c59f; font-size: 11px; font-style: italic; }
+.list { overflow-y: auto; padding: 5px 8px; flex: 1; background: #fffaf0; }
+.row { display: grid; grid-template-columns: 14px 1fr; gap: 7px; padding: 8px 4px;
+  border-bottom: 1px solid #eadfc6; }
+.row:last-child { border-bottom: 0; }
+.row:hover { background: #f7efdc; }
 .bar { font-size: 10px; line-height: 1.4; text-align: center; }
-.certain, .t-certain { color: #6ede6e; }
-.guessed, .t-guessed { color: #ffb347; }
-.missing, .t-missing { color: #ff6f6f; }
-label { display: block; font-size: 10px; line-height: 1.3; color: #b9c2e8;
+.certain { color: #278346; }
+.guessed { color: #b76b07; }
+.missing { color: #ba392f; }
+.t-certain { color: #9ce5ad; }
+.t-guessed { color: #ffd477; }
+.t-missing { color: #ff9990; }
+label { display: block; font-size: 10px; line-height: 1.3; color: #66543b;
   margin-bottom: 3px; word-break: break-word; }
 /* Form controls do not inherit typography, and the \`font\` shorthand rejects
    \`inherit\` as a family — which silently left every value in the overlay in the
    browser's default sans-serif, in the middle of a monospace design. */
-input { width: 100%; box-sizing: border-box; background: #050a24; color: #ffffff;
-  border: 2px solid #6b78b8; padding: 3px 5px;
+input { width: 100%; box-sizing: border-box; background: #ffffff; color: #2a1e10;
+  border: 1px solid #d7c59f; border-radius: 6px; padding: 5px 7px;
   font-family: inherit; font-size: 11px; line-height: 1.4; }
-input:focus { outline: none; border-color: #ffcf3f; }
-.tier { font-size: 9px; color: #7d87b8; margin-top: 3px; }
-footer { display: flex; gap: 6px; padding: 6px 8px; border-top: 2px solid #6b78b8; }
-button { flex: 1; border: 2px solid #ffffff; padding: 5px 4px;
-  background: #0e1a5c; color: #ffffff; cursor: pointer;
+input:focus { outline: 2px solid rgba(32,95,59,.18); border-color: #2e7a4d; }
+.tier { font-size: 9px; color: #8b7858; margin-top: 3px; }
+footer { display: flex; gap: 7px; padding: 9px 10px; border-top: 1px solid #d7c59f;
+  background: #f5ead1; }
+button { flex: 1; border: 1px solid #60482b; border-radius: 7px; padding: 7px 5px;
+  background: #fffaf0; color: #2a1e10; cursor: pointer;
   font-family: inherit; font-size: 11px; line-height: 1;
-  box-shadow: 2px 2px 0 0 #050a24; }
-button:hover { background: #1d2d86; }
-button:active { transform: translate(2px, 2px); box-shadow: none; }
-button.primary { background: #ffcf3f; color: #050a24; }
-button.primary:hover { background: #c9a022; }
+  box-shadow: 0 2px 5px rgba(42,30,16,.14); }
+button:hover { background: #f0e4c8; }
+button:active { transform: translateY(1px); box-shadow: none; }
+button.primary { background: #205f3b; color: #ffffff; border-color: #17472d; }
+button.primary:hover { background: #2e7a4d; }
 `;
 
 /** Kept in step with the Mark component in ui/dq.tsx. */

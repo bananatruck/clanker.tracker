@@ -8,7 +8,9 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { levelFromDp, tierForLevel, TIERS } from '@/lib/game/economy';
+import { ACTORS } from '@/lib/game/atlas';
 import { totalDp } from '@/lib/db/repo';
+import Actor from '@/ui/Actor';
 import Dashboard from './views/Dashboard';
 import Profile from './views/Profile';
 import Scan from './views/Scan';
@@ -26,14 +28,14 @@ export type Route =
   | 'crusade'
   | 'settings';
 
-const ROUTES: ReadonlyArray<{ id: Route; label: string }> = [
-  { id: 'dashboard', label: 'Home' },
-  { id: 'profile', label: 'Profile' },
-  { id: 'scan', label: 'Scan' },
-  { id: 'fill', label: 'Fill' },
-  { id: 'tracker', label: 'Tracker' },
-  { id: 'crusade', label: 'Crusade' },
-  { id: 'settings', label: 'Settings' },
+const ROUTES: ReadonlyArray<{ id: Route; label: string; glyph: string }> = [
+  { id: 'dashboard', label: 'Home', glyph: '⌂' },
+  { id: 'profile', label: 'Profile', glyph: '◆' },
+  { id: 'scan', label: 'Scan', glyph: '◎' },
+  { id: 'fill', label: 'Fill', glyph: '▣' },
+  { id: 'tracker', label: 'Tracker', glyph: '≡' },
+  { id: 'crusade', label: 'Crusade', glyph: '♜' },
+  { id: 'settings', label: 'Settings', glyph: '⚙' },
 ];
 
 export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
@@ -46,47 +48,51 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   const tierTitle = TIERS.find((t) => t.tier === tierForLevel(level))?.title ?? 'Squire';
 
   return (
-    <div className="flex h-full flex-col bg-window text-parchment">
-      <header className="dq-banner flex items-baseline justify-between px-2.5 py-2">
-        <h1 className="font-mono text-[15px] font-semibold">
-          clanker<span className="opacity-70">.</span>tracker
-        </h1>
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-[12.5px] opacity-90">
-            {tierTitle} · Lv {level}
+    <div className="app-shell flex h-full flex-col text-parchment">
+      <header className="app-topbar">
+        <div className="app-brand">
+          <span className="app-brand-avatar" aria-hidden>
+            <Actor art={ACTORS['khlaude-walk']!} scale={0.5} still />
+          </span>
+          <span>
+            <strong>clanker<span>.</span>tracker</strong>
+            <small>job hunt command</small>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="app-rank">
+            <small>{tierTitle}</small>
+            <strong>Lv {level}</strong>
           </span>
           {/* The panel is 420px because it lives beside an application. Reading
               your own history wants a page, so there is always one click to it. */}
           <button
-            onClick={() =>
-              chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') })
-            }
-            title="Open the dashboard in a tab"
-            className="border-2 border-banner-ink/40 px-1.5 py-0.5 font-mono text-[11.5px] hover:border-banner-ink"
+            onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') })}
+            title="Open the full dashboard"
+            aria-label="Open the full dashboard"
+            className="app-expand"
           >
-            dashboard ▸
+            ↗
           </button>
         </div>
       </header>
 
-      <nav className="flex gap-0.5 overflow-x-auto border-b-4 border-frame bg-window-hi px-1 py-1">
+      <nav className="app-nav" aria-label="Primary">
         {ROUTES.map((r) => (
           <button
             key={r.id}
             onClick={() => setRoute(r.id)}
             aria-current={route === r.id ? 'page' : undefined}
-            className={`shrink-0 border-2 px-1.5 py-1 text-[12.5px] ${
-              route === r.id
-                ? 'border-frame bg-banner font-semibold text-banner-ink'
-                : 'border-transparent text-muted hover:border-frame-dim hover:text-parchment'
-            }`}
+            className="app-nav-item"
           >
-            {r.label}
+            <span className="app-nav-glyph" aria-hidden>{r.glyph}</span>
+            <span>{r.label}</span>
           </button>
         ))}
       </nav>
 
-      <main className="flex-1 overflow-y-auto p-2">
+      <main className="app-content flex-1 overflow-y-auto p-2.5">
         {route === 'dashboard' ? (
           <Dashboard onNavigate={(next) => setRoute(next as Route)} />
         ) : route === 'profile' ? (
