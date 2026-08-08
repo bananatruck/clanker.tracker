@@ -62,6 +62,12 @@ export default defineConfig({
 
   vite: () => ({
     plugins: [tailwindcss(), escapeUnicodeNoncharacters()],
+    // Chrome extension pages do not benefit from Vite's document-level module
+    // preload hints, and Chrome can retain those hints across unpacked-extension
+    // reloads in a different execution world. The result is the noisy
+    // "cross-world extension resource mismatch" warning even though the real
+    // module graph loads correctly. Native ESM still loads every dependency.
+    build: { modulePreload: false },
     // transformers.js and pdfjs are large and load lazily in a worker.
     worker: { format: 'es' },
   }),
@@ -104,6 +110,16 @@ export default defineConfig({
 
     side_panel: { default_path: 'sidepanel.html' },
 
+    // One project-owned pixel crest across Chrome's extension list, toolbar,
+    // and management surfaces. Each size is a native hard-edged PNG so Chrome
+    // never has to soften a large illustration into a muddy 16px thumbnail.
+    icons: {
+      '16': 'icons/icon-16.png',
+      '32': 'icons/icon-32.png',
+      '48': 'icons/icon-48.png',
+      '128': 'icons/icon-128.png',
+    },
+
     /**
      * The badge the content script draws needs to load the hero art out of the
      * extension, which means the job board's page has to be allowed to fetch
@@ -112,12 +128,18 @@ export default defineConfig({
      */
     web_accessible_resources: [
       {
-        resources: ['Sprites/*', 'Sprites/items/*', 'Sprites/swords/*'],
+        resources: ['Sprites/*', 'Sprites/items/*', 'Sprites/swords/*', 'icons/*'],
         matches: ['<all_urls>'],
       },
     ],
 
-    action: { default_title: 'clanker.tracker' },
+    action: {
+      default_title: 'clanker.tracker',
+      default_icon: {
+        '16': 'icons/icon-16.png',
+        '32': 'icons/icon-32.png',
+      },
+    },
 
     // No remotely-hosted code anywhere: MV3 forbids it, and it is what
     // makes user-imported theme packs safe (data only, never script).

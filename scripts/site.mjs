@@ -60,7 +60,6 @@ for (const [from, to] of ASSETS) {
  * procedural equivalent. No HTML path changes between those configurations.
  */
 const uiArt = [
-  ['GoldCirclet.png', 'khlaude.png', 'crest.png'],
   ['GalScroll.png', 'khlaude.png', 'parse.png'],
   ['Astraeas_Abacus.png', 'tower.png', 'scan.png'],
   ['Magic_Key.png', 'pawn.png', 'fill.png'],
@@ -76,6 +75,10 @@ for (const [installed, fallback, name] of uiArt) {
   const fallbackFile = join(ROOT, 'docs/sprites/icons', fallback);
   cpSync(existsSync(publicFile) ? publicFile : fallbackFile, join(uiOut, name));
 }
+
+// The product crest is identity, not interchangeable scene art. Keep the
+// landing-page favicon in lockstep with the Chrome toolbar and dashboard.
+cpSync(join(ROOT, 'public/icons/icon-32.png'), join(uiOut, 'crest.png'));
 
 const publicBackdrops = {
   squire: 'backdrop-meadow.png',

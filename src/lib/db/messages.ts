@@ -30,6 +30,7 @@ export type DbRequest =
   | { type: 'db:recallAnswer'; question: string }
   | { type: 'db:rememberAnswer'; question: string; answer: string; ats: AtsId }
   | { type: 'db:recordFillRun'; run: RunRecord }
+  | { type: 'account:getCredentials' }
   | {
       type: 'db:logApplication';
       init: Omit<Application, 'id' | 'status' | 'appliedAt' | 'updatedAt'>;

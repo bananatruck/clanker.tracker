@@ -22,6 +22,7 @@ import { STATUS_COLOR, STATUS_LABEL, isStale } from '@/lib/tracker/funnel';
 import { shortDay } from '@/lib/tracker/table';
 import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
 import { ACTORS } from '@/lib/game/atlas';
+import { assetUrl } from '@/lib/game/assets';
 import type { ResumeProfile } from '@/types/profile';
 import { Meter, Window } from '@/ui/dq';
 import Actor from '@/ui/Actor';
@@ -74,7 +75,12 @@ export default function Dashboard({ initial }: { initial?: Section }) {
     <div className="dashboard-shell min-h-full">
       <aside className="dashboard-sidebar">
         <div className="dashboard-brand">
-          <span className="dashboard-brand-mark">c</span>
+          <img
+            className="dashboard-brand-mark"
+            src={assetUrl('icons/icon-48.png')}
+            alt=""
+            aria-hidden="true"
+          />
           <span>
             <strong>clanker<span>.</span>tracker</strong>
             <small>application command</small>
@@ -127,10 +133,15 @@ export default function Dashboard({ initial }: { initial?: Section }) {
             <h1>{active.label}</h1>
             <p>{active.blurb}</p>
           </div>
-          <div className="dashboard-status">
-            <span className="status-dot" aria-hidden />
-            <span>Local data</span>
-            <strong>{apps.length} applications</strong>
+          <div className="dashboard-heading-actions">
+            <button className="dashboard-resume-action" onClick={() => setSection('profile')}>
+              {profile ? 'Manage resume' : 'Upload resume'}
+            </button>
+            <div className="dashboard-status">
+              <span className="status-dot" aria-hidden />
+              <span>Local data</span>
+              <strong>{apps.length} applications</strong>
+            </div>
           </div>
         </header>
 
@@ -206,7 +217,12 @@ function Home({
               : `${funnel.responses} replies from ${funnel.total} applications. ${quiet.length + owed.length || 'Nothing'} waiting on you.`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button className="home-hero-primary" onClick={() => onGo('tracker')}>Open applications</button>
+            <button
+              className="home-hero-primary"
+              onClick={() => onGo(profile ? 'tracker' : 'profile')}
+            >
+              {profile ? 'Open applications' : 'Upload your resume'}
+            </button>
             <button className="home-hero-secondary" onClick={() => onGo('crusade')}>Enter the crusade</button>
           </div>
         </div>
@@ -244,7 +260,7 @@ function Home({
             form fills itself. Everything you send lands here.
           </p>
           <button className="dq-btn mt-2.5 px-3 py-1.5" onClick={() => onGo('profile')}>
-            Add a resume first
+            {profile ? 'Review your resume' : 'Upload your resume'}
           </button>
         </Window>
       ) : (

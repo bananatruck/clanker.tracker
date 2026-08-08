@@ -2,14 +2,20 @@
 
 Every bundled asset, its source, and its licence. Chrome Web Store review asks for this, and a public repo needs it to be auditable.
 
-## What public release bundles ship
+## What builds from this tree ship
 
-Published extension bundles contain only the original fallback art authored as pixel data in
-[`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts) and MIT alongside the code.
+Extension bundles built from this tree contain the original fallback art authored as pixel data in
+[`src/lib/game/sprites.ts`](../src/lib/game/sprites.ts), plus the project crest. Both ship under
+the repository's MIT licence.
 
 | Asset | Form | Licence |
 |---|---|---|
 | All character, building and terrain sprites | 32×32 palette-indexed text in `src/lib/game/sprites.ts` | **MIT**, original |
+| clanker.tracker extension crest | Transparent pixel PNGs in `public/icons/` | **MIT**, project-owned AI-generated asset |
+
+The crest's editable generated source and transparent master live in `docs/brand/`. The shipped
+16, 32, 48 and 128px files are palette-reduced, hard-alpha derivatives tuned separately for
+Chrome's toolbar and extension-management surfaces.
 
 Sprites are data rather than image files for two reasons:
 

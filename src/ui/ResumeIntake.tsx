@@ -24,13 +24,17 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
   const [error, setError] = useState('');
   const [pasted, setPasted] = useState('');
   const [over, setOver] = useState(false);
+  const [savedName, setSavedName] = useState('');
   const input = useRef<HTMLInputElement>(null);
 
   async function ingest(read: () => Promise<ReturnType<typeof fromPastedText>>) {
     setBusy(true);
     setError('');
+    setSavedName('');
     try {
-      await saveProfile(parseResume(await read()));
+      const source = await read();
+      await saveProfile(parseResume(source));
+      setSavedName(source.fileName);
       onDone?.();
     } catch (err) {
       // Surfaced verbatim: every throw on this path is already written to be
@@ -48,10 +52,10 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
     <div className="space-y-2">
       <div className="flex gap-1">
         <Button primary={mode === 'drop'} onClick={() => setMode('drop')}>
-          Upload a file
+          From a file
         </Button>
         <Button primary={mode === 'paste'} onClick={() => setMode('paste')}>
-          Paste the text
+          Paste text
         </Button>
       </div>
 
@@ -69,16 +73,30 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
               const file = e.dataTransfer.files[0];
               if (file) takeFile(file);
             }}
-            onClick={() => input.current?.click()}
-            className={`grid cursor-pointer place-items-center border-2 border-dashed p-6 text-center ${
+            className={`resume-upload-zone grid place-items-center border-2 border-dashed p-6 text-center ${
               over ? 'border-gold bg-window-hi' : 'border-frame-dim bg-window'
             }`}
           >
-            <div className="space-y-1">
-              <p className="text-[14px] text-parchment">
-                {busy ? 'Reading…' : 'Drop a resume — PDF, DOCX, or text'}
+            <div className="space-y-2">
+              <span className="resume-upload-icon" aria-hidden>⇧</span>
+              <div>
+                <p className="text-[15px] font-semibold text-parchment">
+                  {busy ? 'Reading your resume…' : 'Upload your resume'}
+                </p>
+                <p className="mt-0.5 text-[12px] text-faint">PDF, DOCX, TXT, or Markdown</p>
+              </div>
+              <Button
+                primary
+                disabled={busy}
+                onClick={() => input.current?.click()}
+                className="min-w-40"
+              >
+                {busy ? 'Parsing…' : 'Choose resume file'}
+              </Button>
+              <p className="text-[11.5px] text-faint">or drag and drop it into this box</p>
+              <p className="text-[12px] text-muted">
+                Parsed and saved on this device. Nothing is uploaded to a server.
               </p>
-              <p className="text-[12px] text-faint">Parsed on your machine. Nothing is uploaded.</p>
             </div>
           </div>
 
@@ -90,6 +108,9 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) takeFile(file);
+              // Let choosing the same file again trigger onChange after an
+              // error or an intentional replacement.
+              e.currentTarget.value = '';
             }}
           />
         </>
@@ -124,6 +145,13 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
               .
             </>
           )}
+        </Notice>
+      )}
+
+      {savedName && !error && (
+        <Notice>
+          Saved <span className="text-parchment">{savedName}</span> locally. Open the profile
+          fields below to review what was parsed.
         </Notice>
       )}
     </div>

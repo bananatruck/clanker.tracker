@@ -417,6 +417,10 @@ export async function deleteLetter(id: string): Promise<void> {
 
 /** Whether first-run setup has been completed. Gates the welcome tab. */
 export const SETUP_DONE_KEY = 'setup.completed';
+/** The page to restore after a refresh or an accidentally closed setup tab. */
+export const SETUP_STEP_KEY = 'setup.step';
+/** The furthest page reached, so completed setup pages remain revisitable. */
+export const SETUP_FURTHEST_KEY = 'setup.furthest';
 
 export async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const row = await db.settings.get(key);

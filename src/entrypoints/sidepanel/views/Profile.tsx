@@ -85,7 +85,7 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
             Re-parse
           </Button>
           <Button onClick={() => setReplacing((v) => !v)}>
-            {replacing ? 'Cancel' : 'Replace resume'}
+            {replacing ? 'Cancel upload' : 'Upload a different resume'}
           </Button>
           <Button
             onClick={() => {

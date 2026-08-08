@@ -30,6 +30,7 @@ interface Probe {
 interface FillResult {
   ok: boolean;
   error?: string;
+  account?: 'signup' | 'login';
   filled?: number;
   skipped?: number;
   llmCalls?: number;
@@ -169,7 +170,17 @@ export default function Fill() {
       {result && (
         <Window title="Result">
           {result.ok ? (
-            result.cancelled ? (
+            result.account ? (
+              <>
+                <p className="text-[13px] text-parchment">
+                  Prepared {result.filled} {result.filled === 1 ? 'field' : 'fields'} for this{' '}
+                  {result.account === 'signup' ? 'sign-up' : 'sign-in'} step.
+                </p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                  Review the page and continue it yourself. Clanker did not press the account button.
+                </p>
+              </>
+            ) : result.cancelled ? (
               <p className="text-[13px] text-muted">Cancelled — nothing was written.</p>
             ) : (
               <>

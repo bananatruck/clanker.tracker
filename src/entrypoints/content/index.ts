@@ -15,7 +15,9 @@ import { askBackground } from '@/lib/db/messages';
 import { extractPosting } from '@/lib/ats/posting';
 import { detectAts } from '@/lib/fill/adapters';
 import { findApplicationForm, harvestForm } from '@/lib/fill/harvest';
-import { readGate } from '@/lib/fill/account';
+import { fillGate, readGate } from '@/lib/fill/account';
+import { applyValue } from '@/lib/fill/apply';
+import { hasCredentials, type Credentials } from '@/lib/fill/credentials';
 import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
 import { emptyPreferences, type Preferences } from '@/lib/fill/types';
@@ -101,10 +103,9 @@ export default defineContentScript({
           // forwarded while the user's click is still the reason for it.
           void chrome.runtime.sendMessage({ type: 'clanker:open-panel' }).catch(() => {});
         },
-        // A single-file public sprite. The old path pointed at Hero_Roto.png,
-        // which does not exist; using the campaign crown keeps the launcher
-        // crisp without trying to squeeze an entire actor sheet into 34px.
-        chrome.runtime.getURL('Sprites/items/GoldCirclet.png'),
+        // The same project crest as Chrome's toolbar. It is exposed to job
+        // pages as a web-accessible resource, unlike the extension UI itself.
+        chrome.runtime.getURL('icons/icon-48.png'),
       );
     }
 
@@ -203,6 +204,48 @@ export default defineContentScript({
       if (request.type === 'clanker:fill') {
         void (async () => {
           try {
+            const gate = readGate(document);
+
+            if (gate.gate === 'confirm-email') {
+              sendResponse({
+                ok: false,
+                error: 'This board is waiting on an email link. Open it, then return here.',
+              });
+              return;
+            }
+
+            if (gate.gate === 'signup' || gate.gate === 'login') {
+              const credentials = await askBackground<Credentials>({
+                type: 'account:getCredentials',
+              });
+              if (!hasCredentials(credentials)) {
+                sendResponse({
+                  ok: false,
+                  error: 'This board needs an account first. Add sign-in details in Settings or complete it by hand.',
+                });
+                return;
+              }
+              if (!credentials.auto) {
+                sendResponse({
+                  ok: false,
+                  error: 'Account assistance is off. Turn it on in Settings or complete this step by hand.',
+                });
+                return;
+              }
+
+              const prepared = fillGate(gate, credentials, (field, value) => {
+                applyValue(field, value);
+              });
+              sendResponse({
+                ok: true,
+                account: gate.gate,
+                filled: prepared.length,
+                skipped: 0,
+                llmCalls: 0,
+              });
+              return;
+            }
+
             const profile = await askBackground<ResumeProfile | null>({
               type: 'db:getProfile',
             });

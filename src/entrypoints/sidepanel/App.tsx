@@ -8,9 +8,8 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { levelFromDp, tierForLevel, TIERS } from '@/lib/game/economy';
-import { ACTORS } from '@/lib/game/atlas';
-import { totalDp } from '@/lib/db/repo';
-import Actor from '@/ui/Actor';
+import { assetUrl } from '@/lib/game/assets';
+import { getProfile, totalDp } from '@/lib/db/repo';
 import Dashboard from './views/Dashboard';
 import Profile from './views/Profile';
 import Scan from './views/Scan';
@@ -44,6 +43,7 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
   // DP is never stored as a running total — it is always the sum of the deeds
   // ledger, which is what makes "idle can never outpace real work" checkable.
   const dp = useLiveQuery(() => totalDp(), [], 0) ?? 0;
+  const profile = useLiveQuery(() => getProfile(), []);
   const { level } = levelFromDp(dp);
   const tierTitle = TIERS.find((t) => t.tier === tierForLevel(level))?.title ?? 'Squire';
 
@@ -51,9 +51,12 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
     <div className="app-shell flex h-full flex-col text-parchment">
       <header className="app-topbar">
         <div className="app-brand">
-          <span className="app-brand-avatar" aria-hidden>
-            <Actor art={ACTORS['khlaude-walk']!} scale={0.5} still />
-          </span>
+          <img
+            className="app-brand-logo"
+            src={assetUrl('icons/icon-48.png')}
+            alt=""
+            aria-hidden="true"
+          />
           <span>
             <strong>clanker<span>.</span>tracker</strong>
             <small>job hunt command</small>
@@ -61,6 +64,13 @@ export default function App({ initialRoute }: { initialRoute?: Route } = {}) {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setRoute('profile')}
+            title={profile ? 'Review or replace your resume' : 'Upload your resume'}
+            className="app-resume-action"
+          >
+            {profile ? 'Resume' : '+ Resume'}
+          </button>
           <span className="app-rank">
             <small>{tierTitle}</small>
             <strong>Lv {level}</strong>

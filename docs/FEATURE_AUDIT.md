@@ -1,6 +1,6 @@
 # Feature and publication audit
 
-Audited against the `main` working tree on 2026-08-07. “Implemented” here means a user-facing
+Audited against the working tree on 2026-08-08. “Implemented” here means a user-facing
 route reaches the behavior; a pure function and a passing unit test do not count as a shipped
 feature by themselves.
 
@@ -14,6 +14,7 @@ feature by themselves.
 | Chrome Web Store | **Not published** | No store listing was found and M9 still names the store listing as unfinished. Installation is by release ZIP or “Load unpacked.” |
 | Public sprite pack | **Not in the public release** | The 421 files currently under `public/Sprites/` are copied into a local production build, but the folder is gitignored and absent from the public repository/release. Their provenance must be resolved before publishing them. |
 | This UI/sprite revamp | **Published** | The implementation is on `main`, documented by the refreshed site/README, and packaged in `v0.0.2`. Installed public art remains local-only. |
+| Logo, guided setup, and account-wall update | **Not published yet** | Implemented and verified in this working tree; it still needs a deliberate commit/release before users receive it. |
 
 ## User-facing feature matrix
 
@@ -32,10 +33,10 @@ feature by themselves.
 | Fill | Review every proposed value before writing | **Implemented** | The page overlay exposes the source tier, corrections, empty fields, and cancel/approve outcomes. |
 | Fill | Learn accepted/corrected answers | **Implemented** | Approved rows call `rememberAnswer`; repeat questions are resolved from IndexedDB. |
 | Fill | Edit answer memory directly | **Not implemented** | There is no questions-table UI to list, change, or delete learned answers. |
-| Fill | Page launcher starts the run | **Partial** | Detection and the dismissible launcher are wired. This revamp fixes its missing art path; clicking currently opens the side panel rather than directly invoking a fill. |
-| Fill | Classify signup/login/confirmation walls | **Partial** | `readGate` is production code and drives launcher copy, but classification alone does not get through a wall. |
-| Fill | Use stored sign-in details to pass account walls | **Library/UI only** | Settings stores/forgets credentials and `fillGate` is tested, but no shipping entrypoint calls `fillGate`. The v0.0.1 release note overstates this feature. |
-| Fill | Ordered account → fill → letter → confirm flow | **Library only** | `stage.ts` models and tests the order, but the content-script run still starts at harvest/resolve and never executes that state machine. |
+| Fill | Page launcher starts the run | **Partial** | Detection and the dismissible launcher are wired with the product crest. Clicking opens the side panel at the application rather than invoking Fill invisibly. |
+| Fill | Classify signup/login/confirmation walls | **Implemented** | `readGate` drives launcher copy and the explicit Fill path: signup/login can prepare saved fields, confirmation-email stops with the correct next action, and ordinary pages continue to the application resolver. |
+| Fill | Use stored sign-in details to prepare account walls | **Implemented** | Setup/Settings store and erase credentials. On an explicit Fill action the content script requests them from the background worker, calls `fillGate`, dispatches controlled-input events, reports what it prepared, and never presses the account button. Confirmation-email walls remain human-only. |
+| Fill | Ordered account → fill → letter → confirm flow | **Partial** | The account and form stages are both user-facing, but navigation between them is still user-driven and `stage.ts` is not yet the runtime orchestrator. Cover-letter file attachment and final submission remain separate/manual. |
 | Fill | Multi-step application support | **Not implemented** | A run operates on the current form/frame only and does not continue after navigation or a Next step. |
 | Fill | Live per-field checklist | **Implemented** | Content-script progress broadcasts drive the FillRun battle/checklist view. |
 | Fill | Auto-submit after a verified clean run | **Rules only** | Qualification rules and tests exist; there is no settings control and nothing calls `shouldAutoSubmit` in the runtime path. |
@@ -55,15 +56,13 @@ feature by themselves.
 | Data | Local-first profile, answers, scans, letters, applications, runs, and deeds | **Implemented** | Dexie owns application data; the background worker mediates content-script access. |
 | Secrets | API key and sign-in details outside IndexedDB | **Implemented** | Both use `chrome.storage.local`; Settings can erase saved sign-in details. They are not encrypted at rest. |
 | Privacy | No backend, telemetry, or analytics | **Implemented** | No project backend or telemetry path is present. Provider requests occur for cover letters and unresolved fill fields when configured. |
-| UI | First-run setup, side panel, and full-page dashboard | **Implemented** | All three are WXT entrypoints. This working tree contains the refreshed shell/dashboard and real-art integration. |
+| UI | Guided first-install setup, side panel, and full-page dashboard | **Implemented** | Install opens a persistent seven-step campaign: required resume intake, application defaults/account assistance, optional provider test, optional voice samples, a feature field guide/readiness audit, and dashboard launch. The toolbar routes unfinished installs back to setup. |
 
 ## Highest-priority product gaps
 
-1. Wire the already-written account/flow modules into the content-script run before continuing to
-   claim automatic account-wall handling.
-2. Retain user-selected resume bytes locally and attach them (plus an optional generated cover
+1. Retain user-selected resume bytes locally and attach them (plus an optional generated cover
    letter) only after explicit review.
-3. Add multi-step continuation and an answer-memory editor before exposing auto-submit controls.
-4. Implement `.clankdb` backup/restore and validate schema/version migrations.
-5. Resolve provenance and redistribution rights for `public/Sprites/` before adding those files to
+2. Add multi-step continuation and an answer-memory editor before exposing auto-submit controls.
+3. Implement `.clankdb` backup/restore and validate schema/version migrations.
+4. Resolve provenance and redistribution rights for `public/Sprites/` before adding those files to
    a public release or Chrome Web Store submission.

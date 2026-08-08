@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./public/icons/icon-128.png" alt="clanker.tracker pixel crest: a gold C on a dark green shield" width="96" height="96">
+
 # clanker.tracker
 
 <img src="./docs/demo/scene.png" alt="The Crusade screen: Kh. Laude in blue and gold armour with a red cape, seen from behind, facing a monster across the dust of a ruined town, with a dialogue window below." width="620">
@@ -93,7 +95,15 @@ what six weeks of applying actually produced.
 It carries no upgrade card, no match score, no recruiter-visibility toggle and no streak. Every
 one of its five sections is a place your own data lives.
 
-The rest — [Profile](./docs/demo/profile.png), [Scan](./docs/demo/scan.png),
+First install opens a real campaign setup rather than dropping you into an empty panel. It saves
+your place, distinguishes required local data from optional credentials, verifies an AI provider
+when asked, and ends with the complete posting → scan → fill → review → track → DP field guide.
+
+<div align="center">
+<img src="./docs/demo/setup-guide.png" alt="The first-install Field Guide: six steps for completing an application and a readiness checklist for the local profile, deterministic tools, account assistance, AI, and writing voice." width="820">
+</div>
+
+The rest — [Profile](./docs/demo/profile.png), [Resume upload](./docs/demo/profile-upload.png), [Scan](./docs/demo/scan.png),
 [Fill](./docs/demo/fill.png), [Board](./docs/demo/tracker.png),
 [Settings](./docs/demo/settings.png) — are in [`docs/demo/`](./docs/demo/).
 
@@ -111,9 +121,10 @@ crest and a count of what is waiting. Press it to open the application command p
 and it stays dismissed until the next posting.
 
 **It reads the wall.** Half of all applications begin with *create an account*. The launcher can
-distinguish signup, login and confirmation pages, and Settings can store sign-in details. Passing
-the wall automatically is not wired into the shipping run yet; the classifier and form filler are
-tested building blocks, not a user-facing flow. See the [feature audit](./docs/FEATURE_AUDIT.md).
+distinguish signup, login and confirmation pages, and setup can store dedicated sign-in details.
+With account assistance enabled, an explicit **Fill** action prepares the email/password fields
+and stops. You review and press the account button yourself; a confirmation-email wall always
+waits for you. See the [feature audit](./docs/FEATURE_AUDIT.md).
 
 Reading that wall is where the care goes, because getting it backwards is expensive — a new
 password typed into a sign-in form fails the login, and an existing address typed into a signup
@@ -494,7 +505,24 @@ Then load it, which Chrome now insists you do by hand:
 2. **Developer mode** on
 3. **Load unpacked** → select `.output/chrome-mv3`
 
-Setup opens by itself the first time. It wants a resume; the API key and writing samples are optional and can wait, because autofill and the keyword scan never call a provider at all.
+Setup opens by itself on first install and restores the same step if the tab is closed or refreshed:
+
+1. **Welcome** — see exactly what Scan, Fill, Write, Track, and the Crusade do.
+2. **Resume** — required; build the local profile from PDF, DOCX, TXT, Markdown, or pasted text.
+3. **Applications** — review what Fill will use and optionally save dedicated job-board sign-ins.
+4. **AI camp** — optional; choose a provider, save the key locally, and test the connection.
+5. **Your voice** — optional; add real writing samples for grounded cover letters.
+6. **Field guide** — learn the posting → scan → fill → review → track → DP loop and check readiness.
+7. **Ride** — mark setup complete and open the full command dashboard.
+
+Until the required resume step is complete, clicking the toolbar crest returns to setup instead of
+opening an unusable empty side panel. API keys, sign-in details, and writing samples can all wait:
+autofill and the keyword scan never require a provider.
+
+You can add or replace it at any time: open **Resume** in the side-panel header (or **My
+Profile** in the full dashboard), choose **From a file**, then press **Choose resume file**. PDF,
+DOCX, TXT, and Markdown are parsed and saved locally; **Paste text** remains available for scanned
+or locked files.
 
 **That is the whole setup.** No environment file or clanker account is required. A clean public
 clone builds the procedural fallback bundle; this working copy builds a 28.1 MB extension because

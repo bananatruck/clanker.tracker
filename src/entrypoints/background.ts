@@ -11,10 +11,12 @@ import {
   recallAnswer,
   recordFillRun,
   rememberAnswer,
+  SETUP_DONE_KEY,
   totalDp,
 } from '@/lib/db/repo';
 import { levelFromDp, tierForLevel } from '@/lib/game/economy';
 import { barkFor } from '@/lib/game/lore';
+import { getCredentials } from '@/lib/fill/credentials';
 import type { DbRequest, DbResponse } from '@/lib/db/messages';
 
 /**
@@ -51,16 +53,39 @@ async function handle(request: DbRequest): Promise<unknown> {
       await recordFillRun(request.run);
       return true;
 
+    // Secrets live in chrome.storage.local rather than Dexie. They are handed
+    // to the content script only for an explicit Fill action on an account
+    // wall; page JavaScript has no extension API with which to request them.
+    case 'account:getCredentials':
+      return getCredentials();
+
     case 'db:logApplication':
       return logApplication(request.init);
   }
 }
 
 export default defineBackground(() => {
-  // Clicking the toolbar icon opens the side panel rather than a popup.
+  // The action is routed explicitly so an unfinished first install returns to
+  // setup instead of opening a side panel whose core tools have no profile.
   chrome.sidePanel
-    .setPanelBehavior({ openPanelOnActionClick: true })
+    .setPanelBehavior({ openPanelOnActionClick: false })
     .catch((err) => console.error('[clanker] side panel behaviour:', err));
+
+  const openSetup = () => chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+
+  const openPanelOrSetup = async (tabId?: number) => {
+    if (!(await getSetting(SETUP_DONE_KEY, false))) {
+      await openSetup();
+      return;
+    }
+    if (tabId !== undefined) await chrome.sidePanel.open({ tabId });
+  };
+
+  chrome.action.onClicked.addListener((tab) => {
+    void openPanelOrSetup(tab.id).catch((err) =>
+      console.error('[clanker] toolbar action:', err),
+    );
+  });
 
   /**
    * Setup opens once, on install, in a full tab.
@@ -70,7 +95,7 @@ export default defineBackground(() => {
    */
   chrome.runtime.onInstalled.addListener(({ reason }) => {
     if (reason === 'install') {
-      chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
+      void openSetup();
     }
   });
 
@@ -84,12 +109,15 @@ export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((request: { type?: string }, sender) => {
     if (request?.type !== 'clanker:open-panel') return false;
     const tabId = sender.tab?.id;
-    if (tabId !== undefined) void chrome.sidePanel.open({ tabId }).catch(() => {});
+    void openPanelOrSetup(tabId).catch(() => {});
     return false;
   });
 
   chrome.runtime.onMessage.addListener((request: DbRequest, _sender, sendResponse) => {
-    if (typeof request?.type !== 'string' || !request.type.startsWith('db:')) return false;
+    if (
+      typeof request?.type !== 'string' ||
+      (!request.type.startsWith('db:') && !request.type.startsWith('account:'))
+    ) return false;
 
     handle(request)
       .then((data) => sendResponse({ ok: true, data } satisfies DbResponse))

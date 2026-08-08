@@ -39,7 +39,7 @@ const PROBE_HEIGHT = 1000;
  * submitted application.
  */
 const SHOTS = [
-  'dashboard', 'profile', 'scan', 'fill',
+  'dashboard', 'profile', 'profile-upload', 'scan', 'fill',
   'title', 'encounter', 'running',
   'tracker', 'tracker-table', 'crusade', 'settings', 'overlay',
 ];
@@ -71,8 +71,10 @@ const SETTLE = { encounter: 450 };
  * every internal toggle — routes that exist only to be screenshotted are
  * routes that rot — the shot drives the actual control a user would press.
  */
-const ROUTE_OF = { 'tracker-table': 'tracker' };
+const ROUTE_OF = { 'profile-upload': 'profile', 'tracker-table': 'tracker' };
 const CLICK = {
+  'profile-upload':
+    `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Upload a different resume')?.click()`,
   'tracker-table':
     `[...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'table')?.click()`,
 };
@@ -84,6 +86,7 @@ const PAGES = [
   // The table wants every column visible at once, which is the whole argument
   // for it living in a tab rather than a 420-pixel panel.
   { name: 'page-tracker', url: 'dashboard.html#/demo/tracker', width: 1440, height: 940 },
+  { name: 'setup-guide', url: 'setup.html#/demo/guide', width: 1280, height: 960 },
   // The README's hero: the battle screen alone, wide, with nothing around it.
   { name: 'scene', url: 'sidepanel.html#/demo/scene', width: 900, height: 484 },
   { name: 'acts', url: 'sidepanel.html#/demo/acts', width: 900, height: 174 },
