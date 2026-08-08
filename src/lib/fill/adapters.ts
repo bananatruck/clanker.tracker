@@ -161,7 +161,16 @@ const WORKDAY: AtsAdapter = {
     firstName: ['input[data-automation-id="legalNameSection_firstName"]'],
     lastName: ['input[data-automation-id="legalNameSection_lastName"]'],
     email: ['input[data-automation-id="email"]'],
-    phone: ['input[data-automation-id="phone-number"]'],
+    phone: [
+      'input[data-automation-id="phone-number"]',
+      'input[data-automation-id="phoneNumber"]',
+      'input[data-automation-id="phone"]',
+    ],
+    resume: [
+      'input[type="file"][data-automation-id="file-upload-input-ref"]',
+      'input[type="file"][data-automation-id*="resume" i]',
+      'input[type="file"][aria-label*="resume" i]',
+    ],
   },
 };
 

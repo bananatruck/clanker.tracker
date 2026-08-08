@@ -11,7 +11,6 @@ import {
   recallAnswer,
   recordFillRun,
   rememberAnswer,
-  SETUP_DONE_KEY,
   totalDp,
 } from '@/lib/db/repo';
 import { levelFromDp, tierForLevel } from '@/lib/game/economy';
@@ -65,27 +64,15 @@ async function handle(request: DbRequest): Promise<unknown> {
 }
 
 export default defineBackground(() => {
-  // The action is routed explicitly so an unfinished first install returns to
-  // setup instead of opening a side panel whose core tools have no profile.
+  // Let Chrome open the panel itself while it still owns the toolbar click's
+  // user-activation token. Do not put an async settings lookup between the
+  // click and sidePanel.open(): Chrome will reject the call once that token is
+  // gone, even though the user genuinely clicked the action.
   chrome.sidePanel
-    .setPanelBehavior({ openPanelOnActionClick: false })
+    .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((err) => console.error('[clanker] side panel behaviour:', err));
 
   const openSetup = () => chrome.tabs.create({ url: chrome.runtime.getURL('setup.html') });
-
-  const openPanelOrSetup = async (tabId?: number) => {
-    if (!(await getSetting(SETUP_DONE_KEY, false))) {
-      await openSetup();
-      return;
-    }
-    if (tabId !== undefined) await chrome.sidePanel.open({ tabId });
-  };
-
-  chrome.action.onClicked.addListener((tab) => {
-    void openPanelOrSetup(tab.id).catch((err) =>
-      console.error('[clanker] toolbar action:', err),
-    );
-  });
 
   /**
    * Setup opens once, on install, in a full tab.
@@ -109,7 +96,14 @@ export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((request: { type?: string }, sender) => {
     if (request?.type !== 'clanker:open-panel') return false;
     const tabId = sender.tab?.id;
-    void openPanelOrSetup(tabId).catch(() => {});
+    // This call must happen synchronously in the message event dispatched by
+    // the launcher's click. Awaiting IndexedDB (or any promise) first consumes
+    // the user gesture and makes Chrome reject the panel request.
+    if (tabId !== undefined) {
+      void chrome.sidePanel.open({ tabId }).catch((err) =>
+        console.error('[clanker] page launcher:', err),
+      );
+    }
     return false;
   });
 

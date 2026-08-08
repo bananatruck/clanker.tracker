@@ -515,8 +515,9 @@ Setup opens by itself on first install and restores the same step if the tab is 
 6. **Field guide** — learn the posting → scan → fill → review → track → DP loop and check readiness.
 7. **Ride** — mark setup complete and open the full command dashboard.
 
-Until the required resume step is complete, clicking the toolbar crest returns to setup instead of
-opening an unusable empty side panel. API keys, sign-in details, and writing samples can all wait:
+The toolbar crest always opens the side panel immediately. Chrome grants that action only during
+the click itself, so setup is opened separately on first install; an unfinished profile gets a
+clear Resume link inside the panel. API keys, sign-in details, and writing samples can all wait:
 autofill and the keyword scan never require a provider.
 
 You can add or replace it at any time: open **Resume** in the side-panel header (or **My
@@ -538,7 +539,7 @@ Nothing is required. `pnpm art` is there because a missing sheet is not an error
 `pnpm dev` gives you HMR and is what you want while working on it, but **Chrome 137+ removed the `--load-extension` flag** it relies on — a deliberate anti-malware change. There is no flag to bring it back. The three clicks above are the supported path, and they persist across restarts in a way the flag never did.
 
 ```bash
-pnpm test        # 553 unit tests
+pnpm test        # 556 unit tests
 pnpm test:fill   # the fill pipeline against whole board fixtures
 pnpm compile     # typecheck
 pnpm build       # production bundle

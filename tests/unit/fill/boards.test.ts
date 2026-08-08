@@ -392,6 +392,34 @@ describe('other hosted boards', () => {
     expect(values['urls[LinkedIn]']).toBe('https://linkedin.com/in/ada');
     expect(values['urls[GitHub]']).toBe('https://github.com/ada');
   });
+
+  it('fills Workday identity fields and recognises its resume control', async () => {
+    document.body.innerHTML = `
+      <form data-automation-id="applicationForm">
+        <label for="wd-first">First Name</label>
+        <input id="wd-first" data-automation-id="legalNameSection_firstName" />
+        <label for="wd-last">Last Name</label>
+        <input id="wd-last" data-automation-id="legalNameSection_lastName" />
+        <label for="wd-email">Email Address</label>
+        <input id="wd-email" type="email" data-automation-id="email" />
+        <label for="wd-phone">Phone Number</label>
+        <input id="wd-phone" type="tel" data-automation-id="phone-number" />
+        <label for="wd-resume">Resume/CV</label>
+        <input id="wd-resume" type="file" data-automation-id="file-upload-input-ref" />
+      </form>`;
+
+    const { adapter, values, llmCalls } = await fillPage('acme.wd5.myworkdayjobs.com');
+    const resume = document.querySelector<HTMLInputElement>('#wd-resume')!;
+
+    expect(adapter.id).toBe('workday');
+    expect(values['wd-first']).toBe('Ada');
+    expect(values['wd-last']).toBe('Lovelace');
+    expect(values['wd-email']).toBe('ada@example.com');
+    expect(values['wd-phone']).toBe('+44 20 7946 0958');
+    expect(knownFieldFor(adapter, resume, document)).toBe('resume');
+    expect(values['wd-resume']).toBeUndefined();
+    expect(llmCalls).toBe(0);
+  });
 });
 
 /* -------------------------------------------------------------- safety */

@@ -42,6 +42,10 @@ describe('launcherCopy', () => {
     expect(launcherCopy(state({ fields: 0 }))).toBeNull();
   });
 
+  it('does not mistake a Workday search box for an application', () => {
+    expect(launcherCopy(state({ fields: 1 }))).toBeNull();
+  });
+
   it('counts the fields it found', () => {
     expect(launcherCopy(state({ fields: 24 }))!.sub).toBe('24 fields found');
   });

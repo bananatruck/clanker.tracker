@@ -56,7 +56,7 @@ feature by themselves.
 | Data | Local-first profile, answers, scans, letters, applications, runs, and deeds | **Implemented** | Dexie owns application data; the background worker mediates content-script access. |
 | Secrets | API key and sign-in details outside IndexedDB | **Implemented** | Both use `chrome.storage.local`; Settings can erase saved sign-in details. They are not encrypted at rest. |
 | Privacy | No backend, telemetry, or analytics | **Implemented** | No project backend or telemetry path is present. Provider requests occur for cover letters and unresolved fill fields when configured. |
-| UI | Guided first-install setup, side panel, and full-page dashboard | **Implemented** | Install opens a persistent seven-step campaign: required resume intake, application defaults/account assistance, optional provider test, optional voice samples, a feature field guide/readiness audit, and dashboard launch. The toolbar routes unfinished installs back to setup. |
+| UI | Guided first-install setup, side panel, and full-page dashboard | **Implemented** | Install opens a persistent seven-step campaign: required resume intake, application defaults/account assistance, optional provider test, optional voice samples, a feature field guide/readiness audit, and dashboard launch. The toolbar always opens the panel synchronously; an unfinished profile links back to Resume from the panel. |
 
 ## Highest-priority product gaps
 

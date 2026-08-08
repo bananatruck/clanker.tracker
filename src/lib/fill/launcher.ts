@@ -80,9 +80,11 @@ export function launcherCopy(state: LauncherState): { title: string; sub: string
     case 'login':
       return { title: 'Sign in first', sub: 'Log in, then fill the form' };
     default:
-      // Nothing to offer on a page with no form on it. Showing a badge there
-      // is how an extension becomes furniture people learn to ignore.
-      return state.fields > 0
+      // One input is ordinarily the board's job-search box, not an
+      // application. Workday search results are the common case. Account
+      // walls still offer with one field because their gate was classified
+      // above; an application itself should have at least identity + contact.
+      return state.fields >= 2
         ? { title: 'Fill this application', sub: `${state.fields} fields found` }
         : null;
   }
