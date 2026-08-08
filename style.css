@@ -1,0 +1,269 @@
+/*
+ * The landing page, in the extension's own furniture.
+ *
+ * Same vocabulary as src/ui/tokens.css: a warm parchment pane over a deep
+ * campaign-green shell. Copied rather than
+ * imported because this page has no build step and no dependency on the
+ * extension — it is one HTML file and one stylesheet, which is what makes it
+ * deployable to a static host by copying a directory.
+ *
+ * The palette below is the extension's, value for value. If one of them
+ * changes, the two drift, and that is a real cost — accepted because the
+ * alternative is a Tailwind build in the deploy path of a brochure.
+ */
+
+:root {
+  --field: #07140e;
+  --window: #fffaf0;
+  --window-hi: #f2e8d2;
+  --frame: #69502e;
+  --frame-dim: #d7c6a2;
+  --parchment: #2a2117;
+  --muted: #6f604e;
+  --faint: #907f68;
+  --gold: #a56e14;
+  --ok: #247447;
+  --warn: #a55714;
+  --banner: #205f3b;
+  --banner-hi: #2f7b4f;
+  --banner-ink: #f4fbf3;
+
+  --ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  --quest: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 16px/1.6 var(--ui);
+  color: var(--parchment);
+  background:
+    radial-gradient(circle at 18% -10%, #28523a 0, transparent 34%),
+    radial-gradient(circle at 85% 12%, #1c3b2a 0, transparent 30%),
+    linear-gradient(145deg, #07140e, #10281b 55%, #07110c);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+img { max-width: 100%; height: auto; display: block; }
+
+a { color: var(--gold); text-decoration-thickness: 2px; text-underline-offset: 2px; }
+a:hover { color: var(--parchment); }
+
+.skip {
+  position: absolute; left: -9999px;
+  background: var(--window); padding: 8px 14px; z-index: 10;
+}
+.skip:focus { left: 12px; top: 12px; }
+
+/* ------------------------------------------------------------------ topbar */
+
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  padding: 10px 20px;
+  background: rgb(7 20 14 / 92%);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 18%);
+  backdrop-filter: blur(12px);
+}
+.wordmark {
+  font: 700 19px/1 var(--mono);
+  color: var(--banner-ink);
+  margin-right: auto;
+}
+.wordmark .dot { opacity: 0.6; }
+.topbar nav { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.topbar a {
+  color: var(--banner-ink); font: 500 14.5px/1 var(--ui);
+  text-decoration: none; padding: 5px 2px;
+}
+.topbar a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.topbar a.ghost {
+  border: 1px solid rgb(255 255 255 / 45%); padding: 6px 11px; border-radius: 999px;
+}
+.topbar a.ghost:hover { background: var(--banner-ink); color: var(--banner); text-decoration: none; }
+
+/* ------------------------------------------------------------------ layout */
+
+main { max-width: 1180px; margin: 0 auto; padding: 26px 16px 12px; }
+section { margin-bottom: 26px; }
+
+.row { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 900px) {
+  .row { grid-template-columns: 1fr 1fr; align-items: start; }
+  .row.three { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ------------------------------------------------------------------ window */
+
+.window {
+  background: var(--window);
+  border: 1px solid rgb(105 80 46 / 55%);
+  border-radius: 16px;
+  box-shadow: 0 20px 55px rgb(0 0 0 / 24%);
+  overflow: hidden;
+}
+
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, var(--banner-hi), var(--banner));
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 20%);
+  color: var(--banner-ink);
+  font: 700 13px/1 var(--mono);
+  letter-spacing: 0.12em;
+}
+.banner .close {
+  width: 20px; height: 20px; line-height: 18px; text-align: center;
+  border: 1px solid rgb(255 255 255 / 38%); border-radius: 999px;
+  background: rgb(255 255 255 / 12%); color: #fff;
+  font-size: 13px;
+}
+
+.pane { padding: 16px 18px; }
+.pane > :first-child { margin-top: 0; }
+.pane > :last-child { margin-bottom: 0; }
+.pane p { margin: 0 0 12px; }
+
+h1 {
+  font: 700 clamp(28px, 4.6vw, 44px)/1.1 var(--quest);
+  margin: 0 0 14px;
+  color: var(--parchment);
+}
+.lede { font-size: 17px; }
+.note { font-size: 14.5px; color: var(--muted); }
+
+/* -------------------------------------------------------------------- hero */
+
+.hero-pane { display: grid; gap: 22px; grid-template-columns: 1fr; }
+@media (min-width: 940px) {
+  .hero-pane { grid-template-columns: 1fr 1fr; align-items: center; }
+}
+.hero-shot img { border: 1px solid var(--frame-dim); border-radius: 11px; box-shadow: 0 10px 24px rgb(22 16 10 / 18%); }
+
+.claims { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px !important; }
+.chip {
+  border: 2px solid var(--frame-dim); background: var(--window-hi);
+  border-radius: 999px; padding: 4px 10px; font: 600 12.5px/1.4 var(--mono); color: var(--muted);
+}
+.chip.gold { border-color: var(--gold); color: var(--gold); }
+
+/* ------------------------------------------------------------------ button */
+
+.cta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 0 !important; }
+.btn {
+  display: inline-block; text-decoration: none;
+  padding: 10px 20px;
+  background: var(--banner); color: var(--banner-ink);
+  border: 1px solid rgb(0 0 0 / 22%); border-radius: 9px;
+  box-shadow: 0 7px 16px rgb(13 55 32 / 22%);
+  font: 700 15px/1 var(--mono);
+}
+.btn:hover { background: var(--banner-hi); color: #14320f; }
+.btn:active { transform: translateY(1px); box-shadow: 0 3px 8px rgb(13 55 32 / 20%); }
+.btn.quiet {
+  background: var(--window-hi); color: var(--parchment);
+  box-shadow: 0 7px 16px rgb(42 33 23 / 12%);
+}
+.btn.quiet:hover { background: #f6ecd4; }
+
+/* ------------------------------------------------------------------- slots */
+
+/* The inventory grid: a sunken cell per item, which is the one piece of the
+   reference GUI that is doing real work here — it makes six features read as
+   a set rather than as a bulleted list. */
+.slots { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 520px) { .slots { grid-template-columns: 1fr 1fr; } }
+
+.slot {
+  display: grid; grid-template-columns: 44px 1fr; gap: 4px 12px; align-items: center;
+  padding: 10px;
+  background: var(--window-hi);
+  border: 1px solid var(--frame-dim); border-radius: 10px;
+}
+.slot img { grid-row: span 2; width: 44px; height: 44px; image-rendering: pixelated; }
+.slot b { font: 700 15px/1.2 var(--ui); align-self: end; }
+.slot span { font-size: 13.5px; line-height: 1.45; color: var(--muted); align-self: start; }
+
+/* -------------------------------------------------------------------- code */
+
+pre {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--field); color: var(--window);
+  border: 1px solid rgb(255 255 255 / 12%); border-radius: 10px;
+  font: 13px/1.55 var(--mono);
+  overflow-x: auto;
+}
+.flow { color: var(--banner-hi); font-size: 12px; }
+code { font: 13px/1.4 var(--mono); background: var(--window-hi); padding: 1px 5px; }
+
+.steps { margin: 0 0 14px; padding-left: 22px; }
+.steps li { margin-bottom: 5px; }
+
+.ticks { list-style: none; margin: 0; padding: 0; }
+.ticks li {
+  position: relative; padding-left: 24px; margin-bottom: 11px;
+  font-size: 15px; line-height: 1.55;
+}
+.ticks li::before {
+  content: '✔'; position: absolute; left: 0; top: 0;
+  color: var(--ok); font-weight: 700;
+}
+
+/* ------------------------------------------------------------------- table */
+
+.scroll { overflow-x: auto; margin-bottom: 14px; }
+table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 14.5px; }
+th {
+  text-align: left; padding: 8px 10px;
+  background: var(--banner); color: var(--banner-ink);
+  font: 700 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+}
+td { padding: 8px 10px; border-bottom: 1px solid var(--frame-dim); }
+tr:last-child td { border-bottom: 0; }
+td.ok { color: var(--ok); font-weight: 600; }
+td.warn { color: var(--warn); font-weight: 600; }
+
+/* ------------------------------------------------------------------- shots */
+
+.shot { margin: 0; }
+.shot img { width: 100%; border-top: 1px solid var(--frame-dim); }
+.shot figcaption {
+  padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--muted);
+  border-top: 1px solid var(--frame-dim);
+}
+.shot.bare img { border-top: 0; }
+
+/* -------------------------------------------------------------------- acts */
+
+.acts { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+@media (min-width: 640px) { .acts { grid-template-columns: repeat(5, 1fr); } }
+
+.acts li {
+  background: var(--window-hi);
+  border: 1px solid var(--frame-dim); border-radius: 10px; overflow: hidden;
+  padding-bottom: 8px;
+}
+.acts img { width: 100%; aspect-ratio: 8 / 5; object-fit: cover; border-bottom: 2px solid #c9a86f; }
+.acts b { display: block; padding: 7px 8px 0; font: 700 13px/1.2 var(--mono); }
+.acts span { display: block; padding: 2px 8px 0; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+
+/* ------------------------------------------------------------------ footer */
+
+footer {
+  max-width: 1180px; margin: 0 auto; padding: 20px 18px 40px;
+  color: #b8c9ae; font-size: 14px; text-align: center;
+}
+footer a { color: #e0c98a; }
+footer a:hover { color: #fff; }
+footer .fine { font-size: 12.5px; color: #8fa387; margin-bottom: 0; }
+
+/* ----------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn { transition: background 90ms steps(2, end); }
+}

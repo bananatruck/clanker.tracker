@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clanker.tracker — apply to a lot of jobs, then go raze a village</title>
+<meta name="description" content="A local-first, open-source Chrome extension: resume parsing, ATS scanning, one-click autofill, grounded cover letters and an application tracker, wrapped in an idle RPG about being the villain.">
+<meta name="theme-color" content="#0b281a">
+
+<meta property="og:title" content="clanker.tracker">
+<meta property="og:description" content="Parse your resume. Scan it against the job. Fill the application in one click. Then go raze a village.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/demo/scene.png">
+
+<link rel="icon" href="assets/ui/crest.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip" href="#what">Skip to content</a>
+
+<header class="topbar">
+  <span class="wordmark">clanker<span class="dot">.</span>tracker</span>
+  <nav>
+    <a href="#what">What it does</a>
+    <a href="#cost">What it costs</a>
+    <a href="#game">The game</a>
+    <a href="#install">Install</a>
+    <a class="ghost" href="https://github.com/bananatruck/clanker.tracker">GitHub&nbsp;↗</a>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ------------------------------------------------------------- hero -->
+  <section class="hero">
+    <div class="window wide">
+      <div class="banner">
+        <span>CLANKERDOM DELIVERANCE</span>
+        <span class="close" aria-hidden="true">×</span>
+      </div>
+      <div class="pane hero-pane">
+        <div class="hero-copy">
+          <h1>Apply to a lot of jobs.<br>Then go raze a village.</h1>
+          <p class="lede">
+            A local-first Chrome extension that parses your resume, scans it against the posting,
+            fills the application in one click, and logs what it cost — wrapped in an idle RPG
+            about being the villain of somebody else&rsquo;s story.
+          </p>
+          <p class="claims">
+            <span class="chip">No account</span>
+            <span class="chip">No server</span>
+            <span class="chip">No telemetry</span>
+            <span class="chip gold">Median application: 0 model calls</span>
+          </p>
+          <p class="cta">
+            <a class="btn" href="#install">Install it</a>
+            <a class="btn quiet" href="https://github.com/bananatruck/clanker.tracker">Read the source</a>
+          </p>
+        </div>
+        <figure class="hero-shot">
+          <img src="assets/demo/scene.png" alt="The battle screen: a knight in blue and gold armour, seen from behind, facing a monster across the dust of a ruined town, with a message window below." width="900" height="484" loading="eager">
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- what it does -->
+  <section id="what">
+    <div class="row">
+      <div class="window">
+        <div class="banner"><span>INVENTORY</span><span class="close" aria-hidden="true">×</span></div>
+        <div class="pane">
+          <ul class="slots">
+            <li class="slot">
+              <img src="assets/ui/parse.png" alt="" width="64" height="64">
+              <b>Parse</b><span>Drop a PDF. It never leaves your machine.</span>
+            </li>
+            <li class="slot">
+              <img src="assets/ui/scan.png" alt="" width="64" height="64">
+              <b>Scan</b><span>Every requirement mapped to your evidence, or named as a gap.</span>
+            </li>
+            <li class="slot">
+              <img src="assets/ui/fill.png" alt="" width="64" height="64">
+              <b>Fill</b><span>Any application form, in one click, on five tiers of cheapest-first.</span>
+            </li>
+            <li class="slot">
+              <img src="assets/ui/write.png" alt="" width="64" height="64">
+              <b>Write</b><span>A cover letter that may only claim what the scan found evidence for.</span>
+            </li>
+            <li class="slot">
+              <img src="assets/ui/track.png" alt="" width="64" height="64">
+              <b>Track</b><span>A board and a spreadsheet over one store. CSV out, any time.</span>
+            </li>
+            <li class="slot">
+              <img src="assets/ui/crusade.png" alt="" width="64" height="64">
+              <b>Crusade</b><span>Every application razes two family homes. It adds up.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="window">
+        <div class="banner"><span>THE FLOW</span><span class="close" aria-hidden="true">×</span></div>
+        <div class="pane">
+          <p>An application is not one action. The extension ships the middle of this queue today; the account-wall classifier and ordered controller are tested, but not yet connected to the live fill run:</p>
+          <pre class="flow">account ─▶ fill ─▶ cover letter ─▶ confirm ─▶ sent, logged, banked
+   │                 │              ▲
+   └─ blocked        └─ only if     └─ nothing is ever sent
+      without a yes     it asks        without this</pre>
+          <p>Two edges carry the intended design. A <b>confirmation wall outranks everything</b> — hammering the form behind it is how an address gets rate-limited. And <b>fields the resolver handed back block the send</b>: refusing to invent a salary expectation is the tool working, and submitting over that empty box would throw the refusal away. Today, account walls and final submission remain manual.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------ what it costs -->
+  <section id="cost">
+    <div class="window wide">
+      <div class="banner"><span>WHAT IT COSTS</span><span class="close" aria-hidden="true">×</span></div>
+      <div class="pane">
+        <p class="lede">
+          The engineering claim is that <b>the median application costs zero model calls</b>.
+          Field resolution runs a chain, cheapest first, and only escalates on a miss.
+        </p>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr><th>Tier</th><th>How</th><th>Cost</th><th>Typical hit rate</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Site adapter &amp; autocomplete</td><td class="ok">free</td><td>~55%</td></tr>
+              <tr><td>2</td><td>Answer memory — what you accepted last time</td><td class="ok">free</td><td>~25%</td></tr>
+              <tr><td>3</td><td>Label table</td><td class="ok">free</td><td>~10%</td></tr>
+              <tr><td>4</td><td>Fuzzy bigram match</td><td class="ok">free</td><td>~5%</td></tr>
+              <tr><td>5</td><td>One batched model call, for whatever is left</td><td class="warn">paid</td><td>~5%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Tier 2 is why it gets cheaper the more you use it: every field you accept or correct is written back, so the hit rate climbs as the pile grows. And every row in the review overlay says which tier answered it, so the cost of an application is visible at the moment you approve it rather than asserted on a landing page.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ screens -->
+  <section id="screens">
+    <div class="row three">
+      <figure class="window shot">
+        <div class="banner"><span>FILLING</span></div>
+        <img src="assets/demo/running.png" alt="A fill in progress: the battle scene above, and below it a checklist ticking off each field as it is answered." loading="lazy">
+        <figcaption>Every question, ticked as it lands. &ldquo;Filled 22 fields&rdquo; is not a claim anyone can check; a list of the actual questions is.</figcaption>
+      </figure>
+      <figure class="window shot">
+        <div class="banner"><span>REVIEW</span></div>
+        <img src="assets/demo/overlay.png" alt="The review overlay on a job board: fourteen fields, each labelled with the tier that answered it." loading="lazy">
+        <figcaption>The step before submission. Nothing is sent without a yes, and the two blanks are the tool refusing to invent an answer.</figcaption>
+      </figure>
+      <figure class="window shot">
+        <div class="banner"><span>TRACKER</span></div>
+        <img src="assets/demo/tracker-table.png" alt="The tracker table: company, position, status and date, with rollups underneath." loading="lazy">
+        <figcaption>A board answers what stage this is in. A table answers everything else. Same rows, one store, CSV out.</figcaption>
+      </figure>
+    </div>
+
+    <div class="window wide">
+      <div class="banner"><span>THE DASHBOARD</span><span class="close" aria-hidden="true">×</span></div>
+      <figure class="shot bare">
+        <img src="assets/demo/page-tracker.png" alt="The full-page dashboard showing the applications table with nine columns and a rollup footer." loading="lazy">
+        <figcaption>Nine columns, click-to-edit, with COUNT / RANGE / MAX underneath. Fill in the four columns no autofill can know and it banks a point — once, ever.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------------- game -->
+  <section id="game">
+    <div class="window wide">
+      <div class="banner"><span>CLANKERDOM DELIVERANCE</span><span class="close" aria-hidden="true">×</span></div>
+      <div class="pane">
+        <p class="lede">
+          You are <b>Sir Khums Alaude</b> — excellent handwriting, no dental coverage — commissioned
+          by a king who never leaves his tower to destroy a dynasty that turns out to be poor people.
+          Somewhere around the tenth village you notice. In the cleared ground rise new data centres,
+          cooled by the river you dried.
+        </p>
+        <p>
+          Every point comes from a real action. No daily bonus, no energy timer, no streak. If you
+          didn&rsquo;t apply, you didn&rsquo;t earn — the moment this is fun without the job hunt, it
+          has failed. And nothing decays: step away for a month and the warband makes camp.
+        </p>
+
+        <ol class="acts">
+          <li><img src="assets/backdrops/squire.png" alt="A green meadow with huts on the horizon." loading="lazy"><b>Squire</b><span>A hamlet still standing</span></li>
+          <li><img src="assets/backdrops/knight-errant.png" alt="A river valley under a blue sky." loading="lazy"><b>Knight-Errant</b><span>The river, before it was dried</span></li>
+          <li><img src="assets/backdrops/warlord.png" alt="Ochre dust with ruins and smoke." loading="lazy"><b>Warlord</b><span>A town already taken</span></li>
+          <li><img src="assets/backdrops/devastator.png" alt="A grey plain with dead stumps." loading="lazy"><b>Devastator</b><span>The colour of nothing</span></li>
+          <li><img src="assets/backdrops/ascendant.png" alt="A dark hall with pillars and a lit window." loading="lazy"><b>Ascendant</b><span>A room you were let into</span></li>
+        </ol>
+
+        <p class="note">
+          These images are the installed files under <b>public/Sprites</b>, read through the same
+          asset seam in scenes, title cards, acts and dashboards. A fresh public clone falls back
+          to the deterministic in-code art. The installed pack is not in the published release;
+          its provenance must be cleared before redistribution.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ install -->
+  <section id="install">
+    <div class="row">
+      <div class="window">
+        <div class="banner"><span>INSTALL</span><span class="close" aria-hidden="true">×</span></div>
+        <div class="pane">
+          <pre class="code">git clone https://github.com/bananatruck/clanker.tracker
+cd clanker.tracker
+pnpm install
+pnpm build</pre>
+          <p>Then, because Chrome now insists you do it by hand:</p>
+          <ol class="steps">
+            <li><code>chrome://extensions</code></li>
+            <li>Turn on <b>Developer mode</b></li>
+            <li><b>Load unpacked</b> → pick <code>.output/chrome-mv3</code></li>
+          </ol>
+          <p class="note">No environment file or clanker account is required. A clean clone builds with the complete procedural fallback; a working copy with <code>public/Sprites</code> builds with that installed art. The current suite has 553 passing tests.</p>
+          <p class="cta"><a class="btn" href="https://github.com/bananatruck/clanker.tracker">Get it on GitHub</a></p>
+        </div>
+      </div>
+
+      <div class="window">
+        <div class="banner"><span>PRIVACY</span><span class="close" aria-hidden="true">×</span></div>
+        <div class="pane">
+          <ul class="ticks">
+            <li>Your resume is parsed <b>on your machine</b> and stored in IndexedDB. It is never uploaded.</li>
+            <li>There is no backend, no account, and no analytics of any kind.</li>
+            <li>The only network call the extension can make is to <b>your own</b> model provider, with <b>your own</b> key, and only when a field genuinely could not be resolved for free.</li>
+            <li>Keys and sign-in details live in <code>chrome.storage.local</code>, never in the database — the separation needed for a future credential-free database export. Import/export itself is not built yet.</li>
+            <li>It is MIT, and the whole thing is readable in an afternoon.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    MIT · built by <a href="https://github.com/bananatruck">bananatruck</a> ·
+    <a href="https://github.com/bananatruck/clanker.tracker">source</a>
+  </p>
+  <p class="fine">
+    Not affiliated with any job board, applicant tracking system, or model provider.
+    Every picture on this page is the extension itself, rendering its real database.
+  </p>
+</footer>
+
+</body>
+</html>
