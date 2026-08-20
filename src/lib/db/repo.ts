@@ -10,6 +10,7 @@ import {
   type CoverLetter,
   type DeedRecord,
   type QuestionAnswer,
+  type StoredDocument,
   type WritingSample,
 } from './schema';
 import {
@@ -26,6 +27,7 @@ import { deedsToAward } from '@/lib/tracker/funnel';
 import { intelToAward } from '@/lib/tracker/table';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
+import { resumeDocumentFromFile } from '@/lib/resume/document';
 
 /* ---------------------------------------------------------------- profile */
 
@@ -129,7 +131,25 @@ export async function setSkills(skills: string[], id = PRIMARY_PROFILE_ID): Prom
 
 /** Throw the profile away. The only way to start over from a different resume. */
 export async function deleteProfile(id = PRIMARY_PROFILE_ID): Promise<void> {
-  await db.profiles.delete(id);
+  await db.transaction('rw', db.profiles, db.documents, async () => {
+    await db.profiles.delete(id);
+    await db.documents.delete('primary-resume');
+  });
+}
+
+/* ------------------------------------------------------------- documents */
+
+/** Retain the original bytes locally; parsing text alone cannot reattach it. */
+export async function saveResumeDocument(file: File): Promise<void> {
+  await db.documents.put(await resumeDocumentFromFile(file));
+}
+
+export function getResumeDocument(): Promise<StoredDocument | undefined> {
+  return db.documents.get('primary-resume');
+}
+
+export async function clearResumeDocument(): Promise<void> {
+  await db.documents.delete('primary-resume');
 }
 
 /* -------------------------------------------------------- tier 2: answers */

@@ -13,7 +13,7 @@
 import { useRef, useState } from 'react';
 import { extractText, fromPastedText } from '@/lib/resume/extract';
 import { parseResume } from '@/lib/resume/parse';
-import { saveProfile } from '@/lib/db/repo';
+import { clearResumeDocument, saveProfile, saveResumeDocument } from '@/lib/db/repo';
 import { Button, Notice } from './dq';
 
 type Mode = 'drop' | 'paste';
@@ -27,13 +27,18 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
   const [savedName, setSavedName] = useState('');
   const input = useRef<HTMLInputElement>(null);
 
-  async function ingest(read: () => Promise<ReturnType<typeof fromPastedText>>) {
+  async function ingest(
+    read: () => Promise<ReturnType<typeof fromPastedText>>,
+    originalFile?: File,
+  ) {
     setBusy(true);
     setError('');
     setSavedName('');
     try {
       const source = await read();
       await saveProfile(parseResume(source));
+      if (originalFile) await saveResumeDocument(originalFile);
+      else await clearResumeDocument();
       setSavedName(source.fileName);
       onDone?.();
     } catch (err) {
@@ -45,7 +50,7 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  const takeFile = (file: File) => void ingest(() => extractText(file));
+  const takeFile = (file: File) => void ingest(() => extractText(file), file);
   const takePaste = () => void ingest(async () => fromPastedText(pasted));
 
   return (
@@ -95,7 +100,7 @@ export default function ResumeIntake({ onDone }: { onDone?: () => void }) {
               </Button>
               <p className="text-[11.5px] text-faint">or drag and drop it into this box</p>
               <p className="text-[12px] text-muted">
-                Parsed and saved on this device. Nothing is uploaded to a server.
+                Parsed and retained on this device so the same file can be attached after review.
               </p>
             </div>
           </div>

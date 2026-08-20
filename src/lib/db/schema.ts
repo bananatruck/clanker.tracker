@@ -35,6 +35,17 @@ export interface QuestionAnswer {
   lastUsedAt: number;
 }
 
+/** The exact user-selected file retained for an explicit application attachment. */
+export interface StoredDocument {
+  id: 'primary-resume';
+  kind: 'resume';
+  fileName: string;
+  mimeType: string;
+  size: number;
+  bytes: ArrayBuffer;
+  updatedAt: number;
+}
+
 /** Where an application is in the funnel. Drives the M3 board view. */
 export type ApplicationStatus =
   | 'applied'
@@ -142,6 +153,7 @@ export class ClankerDB extends Dexie {
   settings!: EntityTable<SettingRow, 'key'>;
   writingSamples!: EntityTable<WritingSample, 'id'>;
   letters!: EntityTable<CoverLetter, 'id'>;
+  documents!: EntityTable<StoredDocument, 'id'>;
 
   constructor(name = 'clanker.tracker') {
     super(name);
@@ -185,6 +197,25 @@ export class ClankerDB extends Dexie {
     this.version(5).stores({
       applications: 'id, company, status, appliedAt, updatedAt, scanId',
     });
+
+    // v6: retain the exact resume selected by the user. The profile upgrade
+    // keeps installations written by v5 readable before their next re-parse.
+    this.version(6)
+      .stores({
+        documents: 'id, kind, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('profiles').toCollection().modify((profile) => {
+          profile.projects ??= [];
+          profile.education = (profile.education ?? []).map((entry: Record<string, unknown>) => ({
+            fieldOfStudy: '',
+            location: '',
+            start: null,
+            gpa: '',
+            ...entry,
+          }));
+        });
+      });
   }
 }
 
