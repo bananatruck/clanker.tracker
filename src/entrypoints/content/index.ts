@@ -22,6 +22,7 @@ import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launch
 import { runFill } from '@/lib/fill/run';
 import { optionSignature } from '@/lib/fill/semantic';
 import { continuationStep, pageKeyFor } from '@/lib/fill/session';
+import { mutationTouchesFillSurface, nextOfferDelay } from '@/lib/fill/mutations';
 import { normalizePreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
@@ -140,9 +141,16 @@ export default defineContentScript({
      * application form emits a great many mutations while it settles.
      */
     let pending = 0;
-    const observer = new MutationObserver(() => {
+    let firstRelevantMutation = 0;
+    const observer = new MutationObserver((records) => {
+      if (!mutationTouchesFillSurface(records)) return;
+      const now = Date.now();
+      if (firstRelevantMutation === 0) firstRelevantMutation = now;
       clearTimeout(pending);
-      pending = setTimeout(offer, 400) as unknown as number;
+      pending = setTimeout(() => {
+        firstRelevantMutation = 0;
+        offer();
+      }, nextOfferDelay(firstRelevantMutation, now)) as unknown as number;
     });
 
     function armTracker(llmCalls: number): void {
@@ -174,7 +182,12 @@ export default defineContentScript({
     }
 
     if (window.top === window.self) {
-      observer.observe(document.documentElement, { childList: true, subtree: true });
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['aria-hidden', 'aria-disabled', 'aria-required', 'disabled', 'hidden'],
+      });
       void chrome.runtime.sendMessage({ type: 'clanker:page-ready' }).catch(() => {});
       // A history change on a single-page board is a new posting, so an
       // earlier dismissal should not silence the badge on it forever.
