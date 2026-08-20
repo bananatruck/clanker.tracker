@@ -20,7 +20,7 @@ import { applyValue } from '@/lib/fill/apply';
 import { hasCredentials, type Credentials } from '@/lib/fill/credentials';
 import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
-import { emptyPreferences, type Preferences } from '@/lib/fill/types';
+import { normalizePreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
@@ -258,11 +258,12 @@ export default defineContentScript({
               return;
             }
 
-            const preferences = await askBackground<Preferences>({
+            const storedPreferences = await askBackground<Partial<Preferences>>({
               type: 'db:getSetting',
               key: 'fill.preferences',
-              fallback: emptyPreferences(),
+              fallback: {},
             });
+            const preferences = normalizePreferences(storedPreferences);
 
             const outcome = await runFill(
               { profile, preferences },

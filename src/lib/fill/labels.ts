@@ -39,7 +39,10 @@ const RULES: Rule[] = [
   // --- identity ---
   { test: (l) => has(l, 'first', 'name'), value: (c) => c.profile.contact.firstName.value },
   { test: (l) => has(l, 'last', 'name'), value: (c) => c.profile.contact.lastName.value },
-  { test: (l) => has(l, 'preferred', 'name'), value: (c) => c.profile.contact.firstName.value },
+  {
+    test: (l) => has(l, 'preferred', 'name'),
+    value: (c) => c.preferences.preferredName || c.profile.contact.firstName.value,
+  },
   { test: (l) => has(l, 'full', 'name') || l === 'name', value: (c) => c.profile.contact.fullName.value },
 
   // --- contact ---
@@ -53,7 +56,23 @@ const RULES: Rule[] = [
   },
   {
     test: (l) => includes(l, 'location', 'city', 'where are you based', 'current residence'),
-    value: (c) => c.profile.contact.location.value,
+    value: (c) => c.preferences.city || c.profile.contact.location.value,
+  },
+  {
+    test: (l) => includes(l, 'street address', 'address line 1', 'address 1'),
+    value: (c) => c.preferences.streetAddress,
+  },
+  {
+    test: (l) => includes(l, 'state province', 'state/province', 'province', 'region'),
+    value: (c) => c.preferences.region,
+  },
+  {
+    test: (l) => includes(l, 'postal code', 'zip code', 'postcode'),
+    value: (c) => c.preferences.postalCode,
+  },
+  {
+    test: (l) => l === 'country' || includes(l, 'country of residence'),
+    value: (c) => c.preferences.country,
   },
 
   // --- work eligibility ---

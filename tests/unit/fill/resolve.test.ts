@@ -47,7 +47,17 @@ function makeProfile(): ResumeProfile {
 
 const ctx: FillContext = {
   profile: makeProfile(),
-  preferences: { ...emptyPreferences(), workAuthorized: 'Yes', salaryExpectation: '£90,000' },
+  preferences: {
+    ...emptyPreferences(),
+    preferredName: 'Augusta',
+    streetAddress: '12 St James Square',
+    city: 'London',
+    region: 'Greater London',
+    postalCode: 'SW1Y 4LB',
+    country: 'United Kingdom',
+    workAuthorized: 'Yes',
+    salaryExpectation: '£90,000',
+  },
 };
 
 const textField = (over: Partial<HarvestedField> = {}): HarvestedField => ({
@@ -71,6 +81,9 @@ describe('tier 3 label matching', () => {
     expect(matchLabel('LinkedIn Profile', ctx)).toBe('https://linkedin.com/in/ada');
     expect(matchLabel('Are you legally authorized to work?', ctx)).toBe('Yes');
     expect(matchLabel('Desired Salary', ctx)).toBe('£90,000');
+    expect(matchLabel('Preferred name', ctx)).toBe('Augusta');
+    expect(matchLabel('Street address', ctx)).toBe('12 St James Square');
+    expect(matchLabel('ZIP code', ctx)).toBe('SW1Y 4LB');
   });
 
   it('does not let the bare name rule hijack a first-name field', () => {
@@ -214,6 +227,9 @@ describe('tier 1 autocomplete', () => {
     expect(autocompleteValue('family-name', ctx)).toBe('Lovelace');
     expect(autocompleteValue('tel', ctx)).toBe('+44 20 7946 0958');
     expect(autocompleteValue('organization', ctx)).toBe('Acme Corp');
+    expect(autocompleteValue('address-line1', ctx)).toBe('12 St James Square');
+    expect(autocompleteValue('address-level2', ctx)).toBe('London');
+    expect(autocompleteValue('postal-code', ctx)).toBe('SW1Y 4LB');
   });
 
   it('returns null for a token we hold nothing for, so the chain carries on', () => {

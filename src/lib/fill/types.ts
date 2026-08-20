@@ -87,6 +87,13 @@ export interface FillPlan {
 
 /** Answers the user gives once and reuses on every application. */
 export interface Preferences {
+  /** Exact application facts that a resume location line cannot supply safely. */
+  preferredName: string;
+  streetAddress: string;
+  city: string;
+  region: string;
+  postalCode: string;
+  country: string;
   workAuthorized: string;
   requiresSponsorship: string;
   willingToRelocate: string;
@@ -101,6 +108,12 @@ export interface Preferences {
 }
 
 export const emptyPreferences = (): Preferences => ({
+  preferredName: '',
+  streetAddress: '',
+  city: '',
+  region: '',
+  postalCode: '',
+  country: '',
   workAuthorized: '',
   requiresSponsorship: '',
   willingToRelocate: '',
@@ -112,3 +125,8 @@ export const emptyPreferences = (): Preferences => ({
   disabilityStatus: '',
   pronouns: '',
 });
+
+/** Old installations receive newly added preference fields without migration. */
+export const normalizePreferences = (
+  value: Partial<Preferences> | null | undefined,
+): Preferences => ({ ...emptyPreferences(), ...(value ?? {}) });

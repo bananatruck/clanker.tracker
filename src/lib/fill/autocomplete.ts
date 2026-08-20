@@ -19,16 +19,15 @@ const NON_FIELD = new Set(['off', 'on', '']);
 /**
  * Standard token → the value it asks for.
  *
- * Address tokens deliberately collapse onto the one free-text location we
- * keep. Splitting a resume's "Berlin, Germany" into street/city/postcode would
- * be inventing precision the source never had, and a wrong postcode is worse
- * than an empty one.
+ * Address tokens use explicit setup facts. We never split a resume's
+ * "Berlin, Germany" into a street or postcode: a blank is safer than invented
+ * precision, and setup gives the applicant one durable place to add it.
  */
 const TOKEN_VALUE: Record<string, (ctx: FillContext) => string> = {
   'given-name': (c) => c.profile.contact.firstName.value,
   'family-name': (c) => c.profile.contact.lastName.value,
   name: (c) => c.profile.contact.fullName.value,
-  nickname: (c) => c.profile.contact.firstName.value,
+  nickname: (c) => c.preferences.preferredName || c.profile.contact.firstName.value,
   username: (c) => c.profile.contact.email.value,
 
   email: (c) => c.profile.contact.email.value,
@@ -37,9 +36,13 @@ const TOKEN_VALUE: Record<string, (ctx: FillContext) => string> = {
 
   url: (c) => c.profile.contact.website.value,
 
-  'address-level2': (c) => c.profile.contact.location.value,
-  'address-line1': (c) => c.profile.contact.location.value,
-  'street-address': (c) => c.profile.contact.location.value,
+  'address-line1': (c) => c.preferences.streetAddress,
+  'street-address': (c) => c.preferences.streetAddress,
+  'address-level1': (c) => c.preferences.region,
+  'address-level2': (c) => c.preferences.city,
+  'postal-code': (c) => c.preferences.postalCode,
+  country: (c) => c.preferences.country,
+  'country-name': (c) => c.preferences.country,
 
   organization: (c) => c.profile.experience[0]?.company ?? '',
   'organization-title': (c) => c.profile.experience[0]?.title ?? '',
