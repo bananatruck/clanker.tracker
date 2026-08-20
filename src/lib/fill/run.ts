@@ -18,6 +18,7 @@ import type { FillContext } from './labels';
 import type { RunRecord } from './autosubmit';
 import { reportProgress, type FieldProgress, type FillPhase } from './progress';
 import type { HarvestedField, Resolution } from './types';
+import { prepareRepeaters } from './repeaters';
 
 export interface RunHooks {
   memory: AnswerMemory;
@@ -61,6 +62,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   clearOverlays();
 
   const doc = document;
+  await prepareRepeaters(doc, ctx.profile);
   const form = findApplicationForm(doc);
   const { fields, elements } = harvestForm(form);
   const { hits, ats } = adapterHitsFor(elements, doc, location.hostname);
