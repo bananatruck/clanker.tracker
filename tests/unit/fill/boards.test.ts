@@ -49,6 +49,7 @@ function makeProfile(): ResumeProfile {
       },
     ],
     education: [],
+    projects: [],
     skills: ['Go'],
     rawText: '',
     source: { fileName: 'a.txt', kind: 'txt', bytes: 1 },

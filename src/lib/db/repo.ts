@@ -14,6 +14,7 @@ import {
 } from './schema';
 import {
   PRIMARY_PROFILE_ID,
+  normalizeProfile,
   type ContactKey,
   type EducationEntry,
   type ExperienceEntry,
@@ -28,12 +29,13 @@ import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
 
 /* ---------------------------------------------------------------- profile */
 
-export function getProfile(id = PRIMARY_PROFILE_ID): Promise<ResumeProfile | undefined> {
-  return db.profiles.get(id);
+export async function getProfile(id = PRIMARY_PROFILE_ID): Promise<ResumeProfile | undefined> {
+  const profile = await db.profiles.get(id);
+  return profile ? normalizeProfile(profile) : undefined;
 }
 
 export async function saveProfile(profile: ResumeProfile): Promise<void> {
-  await db.profiles.put({ ...profile, updatedAt: Date.now() });
+  await db.profiles.put({ ...normalizeProfile(profile), updatedAt: Date.now() });
 }
 
 /**

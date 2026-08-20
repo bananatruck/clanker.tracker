@@ -84,14 +84,36 @@ export interface ExperienceEntry {
   /** The achievement bullets. These are the evidence the ATS scan matches. */
   bullets: string[];
   confidence: Confidence;
+  source?: FieldSource;
 }
 
 export interface EducationEntry {
   id: string;
   school: string;
   degree: string;
+  /** Major, concentration, or field of study when the resume states one. */
+  fieldOfStudy: string;
+  location: string;
+  start: ResumeDate | null;
   end: ResumeDate | null;
+  /** Kept as written; an absent GPA is never inferred. */
+  gpa: string;
   confidence: Confidence;
+  source?: FieldSource;
+}
+
+/** A project is application evidence in its own right, not an employment footnote. */
+export interface ProjectEntry {
+  id: string;
+  name: string;
+  role: string;
+  url: string;
+  start: ResumeDate | null;
+  end: ResumeDate | null;
+  bullets: string[];
+  technologies: string[];
+  confidence: Confidence;
+  source?: FieldSource;
 }
 
 export interface ResumeProfile {
@@ -100,6 +122,7 @@ export interface ResumeProfile {
   contact: Contact;
   experience: ExperienceEntry[];
   education: EducationEntry[];
+  projects: ProjectEntry[];
   skills: string[];
   /** Kept so a re-parse with better heuristics never needs the file again. */
   rawText: string;
@@ -116,18 +139,56 @@ export function emptyContact(): Contact {
   ) as Contact;
 }
 
+/**
+ * Fill fields added after the first public schema without discarding a user's
+ * existing profile. IndexedDB rows are plain objects, so TypeScript's current
+ * interface cannot protect a profile written by an older extension version.
+ */
+export function normalizeProfile(profile: ResumeProfile): ResumeProfile {
+  return {
+    ...profile,
+    experience: (profile.experience ?? []).map((entry) => ({
+      ...entry,
+      source: entry.source ?? 'heuristic',
+    })),
+    education: (profile.education ?? []).map((entry) => ({
+      ...entry,
+      fieldOfStudy: entry.fieldOfStudy ?? '',
+      location: entry.location ?? '',
+      start: entry.start ?? null,
+      gpa: entry.gpa ?? '',
+      source: entry.source ?? 'heuristic',
+    })),
+    projects: (profile.projects ?? []).map((entry) => ({
+      ...entry,
+      source: entry.source ?? 'heuristic',
+    })),
+    skills: profile.skills ?? [],
+  };
+}
+
 /** Every bullet in the profile, flattened — the evidence pool for a scan. */
 export function allBullets(
   profile: ResumeProfile,
 ): Array<{ experienceId: string; company: string; title: string; text: string }> {
-  return profile.experience.flatMap((e) =>
-    e.bullets.map((text) => ({
-      experienceId: e.id,
-      company: e.company,
-      title: e.title,
-      text,
-    })),
-  );
+  return [
+    ...profile.experience.flatMap((e) =>
+      e.bullets.map((text) => ({
+        experienceId: e.id,
+        company: e.company,
+        title: e.title,
+        text,
+      })),
+    ),
+    ...(profile.projects ?? []).flatMap((project) =>
+      project.bullets.map((text) => ({
+        experienceId: project.id,
+        company: project.url,
+        title: project.name,
+        text,
+      })),
+    ),
+  ];
 }
 
 /** How much of the profile parsed cleanly. Drives the review grid's header. */

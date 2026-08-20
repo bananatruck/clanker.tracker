@@ -50,6 +50,7 @@ function makeProfile(): ResumeProfile {
     contact,
     experience: [],
     education: [],
+    projects: [],
     skills: [],
     rawText: '',
     source: { fileName: 'a.txt', kind: 'txt', bytes: 1 },

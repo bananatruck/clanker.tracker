@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { parseResumeDate, parseDateRange, durationMonths, formatRange } from '@/lib/resume/dates';
 import { splitSections, classifyHeading, isHeading, preamble, linesOfKind } from '@/lib/resume/sections';
 import { extractContact, looksLikeName } from '@/lib/resume/contact';
-import { parseExperience, parseEducation, parseSkills } from '@/lib/resume/entries';
+import { parseExperience, parseEducation, parseProjects, parseSkills } from '@/lib/resume/entries';
 import { normalizeText } from '@/lib/resume/extract';
 import { parseResume, reparse } from '@/lib/resume/parse';
+import { normalizeProfile } from '@/types/profile';
 import type { ExtractedText } from '@/lib/resume/extract';
 
 describe('resume dates', () => {
@@ -172,6 +173,37 @@ describe('education and skills', () => {
     const [entry] = parseEducation(['MIT | B.S. Computer Science | 2014 - 2018']);
     expect(entry!.school).toBe('MIT');
     expect(entry!.degree).toMatch(/B\.S\./);
+    expect(entry!.fieldOfStudy).toBe('Computer Science');
+    expect(entry!.start).toEqual({ year: 2014, month: null });
+    expect(entry!.end).toEqual({ year: 2018, month: null });
+  });
+
+  it('keeps education details applications ask for', () => {
+    const [entry] = parseEducation([
+      'Stanford University | M.S. in Computer Science | Stanford, CA | GPA 3.9/4.0 | 2018 - 2020',
+    ]);
+    expect(entry).toMatchObject({
+      school: 'Stanford University',
+      fieldOfStudy: 'Computer Science',
+      location: 'Stanford, CA',
+      gpa: '3.9/4.0',
+    });
+  });
+
+  it('joins school, degree, dates, and GPA from a multi-line education block', () => {
+    const [entry] = parseEducation([
+      'Massachusetts Institute of Technology',
+      'B.S. Computer Science',
+      '2014 - 2018',
+      '• GPA: 3.8/4.0',
+    ]);
+    expect(entry).toMatchObject({
+      school: 'Massachusetts Institute of Technology',
+      fieldOfStudy: 'Computer Science',
+      start: { year: 2014, month: null },
+      end: { year: 2018, month: null },
+      gpa: '3.8/4.0',
+    });
   });
 
   it('flattens a skills list and strips category labels', () => {
@@ -186,6 +218,41 @@ describe('education and skills', () => {
       'I am a highly motivated engineer with a passion for scalable distributed systems',
     ]);
     expect(skills).toEqual([]);
+  });
+});
+
+describe('project entries', () => {
+  it('turns a Projects section into reusable application records', () => {
+    const entries = parseProjects([
+      'Clanker Tracker | Lead Developer | https://clanker.dev | TypeScript, React | 2024 - Present',
+      '• Built a local-first application assistant used across five ATS families',
+      'Compiler Lab | Python, LLVM | 2022',
+      '• Compiled a small language to WebAssembly',
+    ]);
+
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toMatchObject({
+      name: 'Clanker Tracker',
+      role: 'Lead Developer',
+      url: 'https://clanker.dev',
+      technologies: ['TypeScript', 'React'],
+    });
+    expect(entries[0]!.bullets[0]).toContain('local-first');
+    expect(entries[1]!.name).toBe('Compiler Lab');
+  });
+
+  it('reads role and technology lines under a project header', () => {
+    const [project] = parseProjects([
+      'Portfolio Engine | https://example.dev',
+      'Role: Maintainer',
+      'Technologies: TypeScript, WebAssembly',
+      '• Rendered application evidence locally',
+    ]);
+    expect(project).toMatchObject({
+      name: 'Portfolio Engine',
+      role: 'Maintainer',
+      technologies: ['TypeScript', 'WebAssembly'],
+    });
   });
 });
 
@@ -217,6 +284,10 @@ Globex Inc | Engineer | June 2018 - Dec 2020
 EDUCATION
 MIT | B.S. Computer Science | 2014 - 2018
 
+PROJECTS
+Clanker Tracker | Lead Developer | https://clanker.dev | TypeScript, React | 2023 - Present
+• Built a local-first application assistant for Workday forms
+
 TECHNICAL SKILLS
 Languages: Go, Python, TypeScript
 Tools: Docker, Kubernetes, PostgreSQL`;
@@ -235,6 +306,7 @@ describe('full parse', () => {
     expect(profile.contact.email.value).toBe('ada@example.com');
     expect(profile.experience).toHaveLength(2);
     expect(profile.education).toHaveLength(1);
+    expect(profile.projects).toHaveLength(1);
     expect(profile.skills).toContain('Go');
   });
 
@@ -256,5 +328,23 @@ describe('full parse', () => {
     expect(again.contact.phone.value).toBe('+44 7700 900000');
     // A non-user field is free to be re-derived from the raw text.
     expect(again.contact.email.value).toBe('ada@example.com');
+  });
+
+  it('reparse preserves structured entries corrected by the user', () => {
+    const edited = structuredClone(profile);
+    edited.projects[0] = {
+      ...edited.projects[0]!,
+      role: 'Creator',
+      confidence: 'certain',
+      source: 'user',
+    };
+    expect(reparse(edited, 2000).projects[0]!.role).toBe('Creator');
+  });
+
+  it('normalises profiles written before structured projects shipped', () => {
+    const legacy = structuredClone(profile) as Partial<typeof profile>;
+    delete legacy.projects;
+
+    expect(normalizeProfile(legacy as typeof profile).projects).toEqual([]);
   });
 });

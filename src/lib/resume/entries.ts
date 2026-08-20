@@ -11,7 +11,7 @@
  * glyph is stripped. Rewording a bullet here would mean the evidence table
  * quotes something the user never wrote.
  */
-import type { EducationEntry, ExperienceEntry } from '@/types/profile';
+import type { EducationEntry, ExperienceEntry, ProjectEntry } from '@/types/profile';
 import { parseDateRange } from './dates';
 
 /** Glyphs templates use to mark a bullet. */
@@ -135,6 +135,7 @@ export function parseExperience(lines: readonly string[]): ExperienceEntry[] {
         end: range.end,
         bullets: [],
         confidence: 'guessed',
+        source: 'heuristic',
       };
       pendingHeader = [];
       continue;
@@ -171,35 +172,157 @@ export function parseExperience(lines: readonly string[]): ExperienceEntry[] {
 const DEGREE =
   /\b(b\.?\s?s\.?|b\.?\s?a\.?|m\.?\s?s\.?|m\.?\s?a\.?|mba|ph\.?\s?d\.?|bachelor'?s?|master'?s?|doctorate|associate'?s?|diploma|certificate)\b[^,|·•—–]*/i;
 
+// Require the label. Treating any bare decimal/year as a GPA turns graduation
+// years into plausible-looking academic data, which is worse than leaving it
+// blank.
+const GPA = /\bgpa\s*[:=]?\s*(\d(?:\.\d{1,2})?(?:\s*\/\s*\d(?:\.\d{1,2})?)?)/i;
+
 /** Parse the education section. Same date anchoring, simpler shape. */
 export function parseEducation(lines: readonly string[]): EducationEntry[] {
   const entries: EducationEntry[] = [];
+  let pending: string[] = [];
 
-  for (const raw of lines) {
+  for (let index = 0; index < lines.length; index++) {
+    const raw = lines[index]!;
     const line = raw.trim();
-    if (!line || isBullet(line)) continue;
+    if (!line) continue;
+    if (isBullet(line)) {
+      const gpa = GPA.exec(line)?.[1]?.replace(/\s+/g, '') ?? '';
+      if (gpa && entries.length > 0) entries.at(-1)!.gpa = gpa;
+      continue;
+    }
 
-    const range = parseDateRange(line);
-    const degreeMatch = DEGREE.exec(line);
-    if (!range && !degreeMatch) continue;
+    let sourceLine = [...pending, line].join(' | ');
+    let range = parseDateRange(sourceLine);
+    let degreeMatch = DEGREE.exec(sourceLine);
+    if (!range && !degreeMatch) {
+      pending.push(line);
+      if (pending.length > 3) pending.shift();
+      continue;
+    }
 
-    const tokens = stripDates(line)
+    // Multi-line layouts commonly put school, degree, and dates on separate
+    // lines. Pull in the next line only when it supplies the missing anchor.
+    const next = lines[index + 1]?.trim() ?? '';
+    if (next && !isBullet(next)) {
+      const nextRange = parseDateRange(next);
+      const nextDegree = DEGREE.exec(next);
+      if ((!range && nextRange) || (!degreeMatch && nextDegree)) {
+        sourceLine = `${sourceLine} | ${next}`;
+        range = parseDateRange(sourceLine);
+        degreeMatch = DEGREE.exec(sourceLine);
+        index++;
+      }
+    }
+    pending = [];
+
+    const tokens = stripDates(sourceLine)
       .split(FIELD_SEP)
       .map((t) => t.trim())
       .filter(Boolean);
 
     const degree = degreeMatch?.[0]?.trim() ?? '';
     const school = tokens.find((t) => t !== degree && !DEGREE.test(t)) ?? tokens[0] ?? '';
+    const location = tokens.find((t) => /^[A-Z][\w.'-]*(?:\s+[\w.'-]+)*,\s*(?:[A-Z]{2}|[A-Z][a-z]+)$/.test(t)) ?? '';
+    const fieldOfStudy = degree
+      .replace(DEGREE, (matched) => matched.replace(DEGREE.exec(matched)?.[1] ?? matched, ''))
+      .replace(/^[\s.,;:–—-]*(?:in|of)?\s*/i, '')
+      .trim();
 
     entries.push({
       id: `edu-${entries.length}`,
       school,
       degree,
+      fieldOfStudy,
+      location,
+      start: range?.start ?? null,
       end: range?.end ?? range?.start ?? null,
+      gpa: GPA.exec(sourceLine)?.[1]?.replace(/\s+/g, '') ?? '',
       confidence: school && degree ? 'certain' : 'guessed',
+      source: 'heuristic',
     });
   }
 
+  return entries;
+}
+
+const URL = /\b(?:https?:\/\/|www\.)[^\s|·•]+/i;
+
+/**
+ * Parse named projects into records the application resolver can address.
+ *
+ * Unlike employment, projects often omit dates. A short non-bullet line after
+ * a project's bullets therefore starts the next record even without a date;
+ * prose stays attached to the current project.
+ */
+export function parseProjects(lines: readonly string[]): ProjectEntry[] {
+  const entries: ProjectEntry[] = [];
+  let current: ProjectEntry | null = null;
+
+  const finish = () => {
+    if (!current) return;
+    current.technologies = parseSkills(current.technologies);
+    current.confidence = current.name && current.bullets.length > 0 ? 'certain' : 'guessed';
+    entries.push(current);
+    current = null;
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+
+    if (isBullet(line)) {
+      if (current) current.bullets.push(stripBullet(line));
+      continue;
+    }
+
+    const technologyLine = line.match(
+      /^(?:technologies|technology|tech stack|tools|built with)\s*[:—–-]\s*(.+)$/i,
+    );
+    if (current && technologyLine) {
+      current.technologies.push(technologyLine[1]!);
+      continue;
+    }
+    const roleLine = line.match(/^(?:role|position)\s*[:—–-]\s*(.+)$/i);
+    if (current && roleLine) {
+      current.role = roleLine[1]!.trim();
+      continue;
+    }
+
+    const range = parseDateRange(line);
+    const shouldStart =
+      current === null ||
+      range !== null ||
+      (current.bullets.length > 0 && line.length <= 90 && !/[.!?]$/.test(line));
+
+    if (shouldStart) {
+      finish();
+      const url = URL.exec(line)?.[0] ?? '';
+      const tokens = stripDates(line.replace(url, ' ')).split(FIELD_SEP).filter(Boolean);
+      const name = tokens[0]?.trim() ?? line.replace(url, '').trim();
+      const rest = tokens.slice(1).map((token) => token.trim()).filter(Boolean);
+      const roleIndex = rest.findIndex((token) => TITLE_WORDS.test(token));
+      const role = roleIndex >= 0 ? rest.splice(roleIndex, 1)[0]! : '';
+
+      current = {
+        id: `project-${entries.length}`,
+        name,
+        role,
+        url,
+        start: range?.start ?? null,
+        end: range?.end ?? range?.start ?? null,
+        bullets: [],
+        technologies: rest,
+        confidence: 'guessed',
+        source: 'heuristic',
+      };
+      continue;
+    }
+
+    if (current) current.bullets.push(line);
+  }
+
+  finish();
   return entries;
 }
 
