@@ -26,6 +26,7 @@ interface Probe {
   fieldCount: number;
   requiredCount: number;
   sessionStep?: number;
+  canStart?: boolean;
 }
 
 interface FillResult {
@@ -37,6 +38,7 @@ interface FillResult {
   llmCalls?: number;
   cancelled?: boolean;
   sessionStep?: number;
+  opening?: boolean;
 }
 
 export default function Fill() {
@@ -157,12 +159,14 @@ export default function Fill() {
         <Button
           primary
           onClick={fill}
-          disabled={!probe || probe.fieldCount === 0 || busy}
+          disabled={!probe || (probe.fieldCount === 0 && !probe.canStart) || busy}
           className="flex-1"
         >
           {busy
             ? 'Filling…'
-            : probe?.sessionStep && probe.sessionStep > 1
+            : probe?.canStart && probe.fieldCount === 0
+              ? 'Open application'
+              : probe?.sessionStep && probe.sessionStep > 1
               ? `Continue · step ${probe.sessionStep}`
               : 'Fill this step'}
         </Button>
@@ -184,7 +188,15 @@ export default function Fill() {
       {result && (
         <Window title="Result">
           {result.ok ? (
-            result.account ? (
+            result.opening ? (
+              <>
+                <p className="text-[13px] text-parchment">Opening the Workday application…</p>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                  Clanker chose Apply Manually so it can use your local profile. On the next page,
+                  press Fill again to prepare the sign-in or application step.
+                </p>
+              </>
+            ) : result.account ? (
               <>
                 <p className="text-[13px] text-parchment">
                   Prepared {result.filled} {result.filled === 1 ? 'field' : 'fields'} for this{' '}

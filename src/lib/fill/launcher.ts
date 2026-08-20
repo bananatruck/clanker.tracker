@@ -26,6 +26,8 @@ export interface LauncherState {
   fields: number;
   /** Whether a run has already been done here. */
   done: boolean;
+  /** A posting can transition into a local-profile flow after a user click. */
+  canStart?: boolean;
 }
 
 const STYLE = `
@@ -80,6 +82,7 @@ export function launcherCopy(state: LauncherState): { title: string; sub: string
     case 'login':
       return { title: 'Sign in first', sub: 'Log in, then fill the form' };
     default:
+      if (state.canStart) return { title: 'Open this application', sub: 'Start the Workday flow' };
       // One input is ordinarily the board's job-search box, not an
       // application. Workday search results are the common case. Account
       // walls still offer with one field because their gate was classified

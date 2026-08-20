@@ -17,6 +17,7 @@ import { findApplicationForm, harvestForm } from '@/lib/fill/harvest';
 import { fillGate, readGate } from '@/lib/fill/account';
 import { applyValue } from '@/lib/fill/apply';
 import { hasCredentials, type Credentials } from '@/lib/fill/credentials';
+import { applicationEntry, beginApplication } from '@/lib/fill/entry';
 import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
 import { optionSignature } from '@/lib/fill/semantic';
@@ -111,7 +112,12 @@ export default defineContentScript({
       observedPageKey = pageKey;
 
       renderLauncher(
-        { gate, fields: fields.length, done: filledHere },
+        {
+          gate,
+          fields: fields.length,
+          done: filledHere,
+          canStart: Boolean(applicationEntry(document, ats.id)),
+        },
         () => {
           // Opening the panel is the background worker's job — a content
           // script cannot open a side panel, and the gesture has to be
@@ -197,6 +203,7 @@ export default defineContentScript({
               fieldCount: fields.length,
               requiredCount: fields.filter((field) => field.required).length,
               sessionStep: continuationStep(session, pageKey),
+              canStart: Boolean(applicationEntry(document, ats.id)),
             });
           })
           .catch(() => {
@@ -204,6 +211,7 @@ export default defineContentScript({
               ats: ats.id,
               fieldCount: fields.length,
               requiredCount: fields.filter((field) => field.required).length,
+              canStart: Boolean(applicationEntry(document, ats.id)),
             });
           });
         return true;
@@ -234,6 +242,16 @@ export default defineContentScript({
       }
 
       if (request.type === 'clanker:fill') {
+        const entry = applicationEntry(document, ats.id);
+        if (entry) {
+          // Reply before Workday navigation tears down this message port.
+          sendResponse({ ok: true, opening: true, filled: 0, skipped: 0, llmCalls: 0 });
+          void beginApplication(document, ats.id).then((opened) => {
+            if (!opened) console.error('[clanker] Workday did not expose Apply Manually.');
+          });
+          return false;
+        }
+
         void (async () => {
           try {
             const gate = readGate(document);

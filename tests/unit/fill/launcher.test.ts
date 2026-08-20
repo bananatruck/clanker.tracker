@@ -42,6 +42,14 @@ describe('launcherCopy', () => {
     expect(launcherCopy(state({ fields: 0 }))).toBeNull();
   });
 
+  it('offers the explicit Workday entry even before a form exists', () => {
+    const copy = launcherCopy(state({ fields: 0, canStart: true }));
+    expect(copy).toEqual({
+      title: 'Open this application',
+      sub: 'Start the Workday flow',
+    });
+  });
+
   it('does not mistake a Workday search box for an application', () => {
     expect(launcherCopy(state({ fields: 1 }))).toBeNull();
   });
