@@ -56,6 +56,10 @@ export default defineContentScript({
     'https://*.workable.com/*',
     'https://*.myworkdayjobs.com/*',
     'https://www.linkedin.com/jobs/*',
+    // A loopback fixture is the only deterministic way CI can prove that the
+    // production bundle really installs and injects. This host is already in
+    // host_permissions for local model providers; it grants no remote site.
+    'http://localhost/*',
   ],
   runAt: 'document_idle',
   allFrames: true,

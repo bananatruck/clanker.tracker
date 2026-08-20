@@ -12,6 +12,7 @@
     "test": "vitest run --no-file-parallelism",
     "test:watch": "vitest",
     "test:fill": "vitest run --no-file-parallelism tests/unit/fill",
+    "test:browser": "pnpm build && node tests/e2e/extension-smoke.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
     "sprites": "node scripts/render-sprites.mjs",
     "shots": "node scripts/shoot.mjs",
