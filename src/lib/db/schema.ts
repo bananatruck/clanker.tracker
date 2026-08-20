@@ -13,7 +13,7 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { ResumeProfile } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
-import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
+import type { AtsId, RunRecord } from '@/lib/fill/records';
 import type { Deed } from '@/lib/game/economy';
 
 /**

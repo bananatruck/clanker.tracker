@@ -6,9 +6,8 @@
  * and wreck the application form. Both matter when the "page" is an arbitrary
  * ATS we do not control.
  *
- * This is the default path, not a safety net. The extension fills and
- * highlights; the human reviews and submits. Auto-submit only ever skips this
- * screen on a site that has already earned it — see autosubmit.ts.
+ * This is the product boundary, not a safety net. The extension proposes and
+ * highlights; the human approves page writes and later submits the form.
  */
 import { TIER_LABEL, type HarvestedField, type Resolution, type ResolverTier } from './types';
 

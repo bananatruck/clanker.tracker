@@ -18,7 +18,7 @@
  *     on the attribute conventions essentially every HTML form follows. This
  *     is what makes a proprietary board work at all.
  */
-import type { AtsId } from './autosubmit';
+import type { AtsId } from './records';
 
 /** Profile-backed fields an adapter can name directly. */
 export type KnownField =
@@ -250,8 +250,8 @@ export const ADAPTERS: readonly AtsAdapter[] = [
  * Paired attribute selectors matter: `[name*="first"]` alone would fire on
  * `first_time_applicant`, so both halves are required on the same element.
  *
- * This adapter still never earns auto-submit — see `isCleanRun`. Convention is
- * strong evidence, not a verified mapping, and a human confirms every value.
+ * Convention is strong evidence, not a verified mapping, so a human confirms
+ * every value before any write reaches the page.
  */
 export const GENERIC: AtsAdapter = {
   id: 'generic',

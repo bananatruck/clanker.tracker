@@ -575,7 +575,7 @@ workflow runs the same script.
 - [ ] **M6 (partial)** — Page launcher, account-wall classification, stored sign-in details and live checklist ship; automatic wall handling and the ordered flow controller are not wired
 - [x] **M7** — The tracker as a spreadsheet: nine columns, click-to-edit, COUNT/RANGE/MAX rollups, Notion-named CSV, a deed for researching a row
 - [x] **M8** — Shared public-sprite seam with complete procedural fallback: five acts, title card, encounter transition, idle motion, item/medal/inventory mapping, landing page
-- [ ] **M9** — Resume upload, cover-letter attach, multi-step forms, answer-memory editor, auto-submit UI, `.clankdb` import/export, store listing ← *here*
+- [ ] **M9** — Resume upload, cover-letter attach, multi-step forms, answer-memory editor, `.clankdb` import/export, store listing ← *here*
 
 Theme packs and the `.clank` loader were dropped. The visual language ships whole; the one
 supported art seam is `public/Sprites/`, with deterministic fallback rendering behind it.
@@ -590,7 +590,7 @@ Named plainly, because a README that describes intentions as features is how a p
 
 | | Status |
 |---|---|
-| **Auto-submit** | The earned-unlock rules are written and tested ([`lib/fill/autosubmit.ts`](./src/lib/fill/autosubmit.ts)) — a site qualifies only after a verified clean run, and the generic adapter never qualifies. **There is no toggle in Settings yet**, so nothing auto-submits today. |
+| **Unattended submission** | Intentionally out of scope. Like Simplify Copilot, Clanker proposes reviewed page writes and leaves Next/Submit to the applicant. This avoids sending guesses or creating legally meaningful submissions without a final human action. |
 | **Cover-letter attach** | The `letter` and `ready` stages are modelled and tested in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts), but nothing is wired to the file input yet — same blocker as resume upload. Generating a letter works; attaching it is manual. |
 | **Sync adapters** | No live Sheets, Notion or Airtable connection, and none planned. The CSV uses those trackers' own column names, so importing it maps the fields instead of arriving as thirteen new ones. |
 | **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |

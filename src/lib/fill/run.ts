@@ -15,7 +15,7 @@ import { batchModel } from './model';
 import { clearOverlays, showReview, type ReviewRow } from './overlay';
 import { resolveFields, tierBreakdown, type AnswerMemory } from './resolve';
 import type { FillContext } from './labels';
-import type { RunRecord } from './autosubmit';
+import type { RunRecord } from './records';
 import { reportProgress, type FieldProgress, type FillPhase } from './progress';
 import type { HarvestedField, Resolution } from './types';
 import { prepareRepeaters } from './repeaters';
@@ -25,7 +25,7 @@ export interface RunHooks {
   memory: AnswerMemory;
   /** Called once per accepted answer, to grow tier 2. */
   remember(field: HarvestedField, answer: string): Promise<void>;
-  /** Called with the completed run so the auto-submit gate can score it. */
+  /** Persist measured fill quality for the dashboard and regression checks. */
   record(run: RunRecord): Promise<void>;
   /**
    * The skirmish line for the player's current tier, if the game has one.

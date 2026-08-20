@@ -5,7 +5,6 @@ import { diceSimilarity, resolveLexically } from '@/lib/fill/lexical';
 import { autocompleteToken, autocompleteValue } from '@/lib/fill/autocomplete';
 import { applyValue, highlight, clearHighlight } from '@/lib/fill/apply';
 import { detectAts, knownFieldFor } from '@/lib/fill/adapters';
-import { isCleanRun } from '@/lib/fill/autosubmit';
 import { harvestForm, findApplicationForm } from '@/lib/fill/harvest';
 import { emptyPreferences, type HarvestedField } from '@/lib/fill/types';
 import { emptyContact, field, PRIMARY_PROFILE_ID, type ResumeProfile } from '@/types/profile';
@@ -500,19 +499,4 @@ describe('ATS adapters', () => {
     expect(mapped).toEqual(['firstName', 'email']);
   });
 
-  it('still refuses the generic adapter auto-submit, map or no map', () => {
-    // Generic now carries convention-based selectors so proprietary boards
-    // work. Convention is strong evidence, not a verified mapping, so the
-    // auto-submit gate must not soften because tier 1 started answering.
-    expect(
-      isCleanRun({
-        ats: 'generic',
-        totalFields: 6,
-        certainFields: 6,
-        correctedFields: 0,
-        unfilledRequired: 0,
-        at: Date.now(),
-      }),
-    ).toBe(false);
-  });
 });

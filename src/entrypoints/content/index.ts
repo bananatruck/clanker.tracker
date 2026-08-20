@@ -7,9 +7,8 @@
  * every write landed in their storage. Everything persistent goes through the
  * background worker; see lib/db/messages.ts.
  *
- * It never touches the submit button on its own. Auto-submit is opt-in,
- * per-site, and unlocked only after a verified clean run — see
- * lib/fill/autosubmit.ts.
+ * It never touches the submit button. Review and manual submission are product
+ * boundaries, including on boards that have filled successfully before.
  */
 import { askBackground } from '@/lib/db/messages';
 import { extractPosting } from '@/lib/ats/posting';

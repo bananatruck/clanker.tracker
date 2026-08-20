@@ -39,7 +39,7 @@ feature by themselves.
 | Fill | Ordered account → fill → letter → confirm flow | **Partial** | The account and form stages are both user-facing, but navigation between them is still user-driven and `stage.ts` is not yet the runtime orchestrator. Cover-letter file attachment and final submission remain separate/manual. |
 | Fill | Multi-step application support | **Not implemented** | A run operates on the current form/frame only and does not continue after navigation or a Next step. |
 | Fill | Live per-field checklist | **Implemented** | Content-script progress broadcasts drive the FillRun battle/checklist view. |
-| Fill | Auto-submit after a verified clean run | **Rules only** | Qualification rules and tests exist; there is no settings control and nothing calls `shouldAutoSubmit` in the runtime path. |
+| Fill | Submission boundary | **Implemented** | Autofill always stops after reviewed writes. The user advances and submits; no dead auto-submit policy is presented as a feature. |
 | Tracker | Log only after a real submission | **Implemented** | A capture-phase form/button watcher arms after a successful fill and calls the background repository. |
 | Tracker | Manual logging for email/hand applications | **Implemented** | The tracker Add form writes directly to the same applications table. |
 | Tracker | Board, list/table, nine editable columns, and rollups | **Implemented** | Both narrow and wide tracker views use the same records and inline update repository. |
@@ -62,7 +62,7 @@ feature by themselves.
 
 1. Retain user-selected resume bytes locally and attach them (plus an optional generated cover
    letter) only after explicit review.
-2. Add multi-step continuation and an answer-memory editor before exposing auto-submit controls.
+2. Add guarded multi-step continuation while preserving review and manual submission.
 3. Implement `.clankdb` backup/restore and validate schema/version migrations.
 4. Resolve provenance and redistribution rights for `public/Sprites/` before adding those files to
    a public release or Chrome Web Store submission.

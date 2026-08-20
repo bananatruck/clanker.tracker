@@ -27,7 +27,7 @@ import { normalizeQuestion } from '@/lib/fill/normalize';
 import { deedsToAward } from '@/lib/tracker/funnel';
 import { intelToAward } from '@/lib/tracker/table';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
-import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
+import type { AtsId, RunRecord } from '@/lib/fill/records';
 import { resumeDocumentFromFile } from '@/lib/resume/document';
 import { answerKey, type AnswerContext } from '@/lib/fill/memory';
 

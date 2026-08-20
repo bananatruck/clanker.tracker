@@ -20,7 +20,7 @@
  * Keeping Dexie out of the content bundle is a happy side effect: it drops
  * ~90kB from every page we inject into.
  */
-import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
+import type { AtsId, RunRecord } from '@/lib/fill/records';
 import type { Application } from './schema';
 
 export type DbRequest =
