@@ -14,11 +14,12 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { reparse } from '@/lib/resume/parse';
-import { formatRange } from '@/lib/resume/dates';
+import { parseResumeDate } from '@/lib/resume/dates';
 import {
   correctContactField,
   correctEducation,
   correctExperience,
+  correctProject,
   deleteProfile,
   getProfile,
   removeEntry,
@@ -30,6 +31,7 @@ import {
   CONTACT_LABELS,
   profileCompleteness,
   type ContactKey,
+  type ResumeDate,
   type ResumeProfile,
 } from '@/types/profile';
 import { Button, Editable, Mark, Window } from '@/ui/dq';
@@ -142,10 +144,21 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
                         className="text-muted"
                       />
                     </div>
-                    <p className="px-1 font-mono text-[12px] text-faint">
-                      {formatRange(entry.start, entry.end)}
-                      {entry.location && ` · ${entry.location}`}
-                    </p>
+                    <div className="flex">
+                      <Editable
+                        value={entry.location}
+                        placeholder="location not found"
+                        onCommit={(location) => correctExperience(entry.id, { location })}
+                        className="text-faint"
+                      />
+                    </div>
+                    <DateEditors
+                      start={entry.start}
+                      end={entry.end}
+                      presentWhenEmpty
+                      onStart={(start) => correctExperience(entry.id, { start })}
+                      onEnd={(end) => correctExperience(entry.id, { end })}
+                    />
                   </div>
                   <button
                     type="button"
@@ -198,44 +211,228 @@ function ProfileGrid({ profile }: { profile: ResumeProfile }) {
         {profile.education.length === 0 ? (
           <p className="text-[13px] text-muted">Nothing parsed.</p>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {profile.education.map((entry) => (
-              <div key={entry.id} className="flex items-start gap-1.5">
-                <Mark confidence={entry.confidence} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex">
-                    <Editable
-                      value={entry.school}
-                      placeholder="school not found"
-                      onCommit={(school) => correctEducation(entry.id, { school })}
-                      className="text-parchment"
+              <article key={entry.id} className="dq-window p-2">
+                <div className="flex items-start gap-1.5">
+                  <Mark confidence={entry.confidence} />
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex">
+                      <Editable
+                        value={entry.school}
+                        placeholder="school not found"
+                        onCommit={(school) => correctEducation(entry.id, { school })}
+                        className="text-parchment"
+                      />
+                    </div>
+                    <div className="flex">
+                      <Editable
+                        value={entry.degree}
+                        placeholder="degree not found"
+                        onCommit={(degree) => correctEducation(entry.id, { degree })}
+                        className="text-muted"
+                      />
+                    </div>
+                    <div className="flex">
+                      <Editable
+                        value={entry.fieldOfStudy}
+                        placeholder="field of study not found"
+                        onCommit={(fieldOfStudy) => correctEducation(entry.id, { fieldOfStudy })}
+                        className="text-faint"
+                      />
+                    </div>
+                    <div className="flex gap-1">
+                      <Editable
+                        value={entry.location}
+                        placeholder="location"
+                        onCommit={(location) => correctEducation(entry.id, { location })}
+                        className="text-faint"
+                      />
+                      <Editable
+                        value={entry.gpa}
+                        placeholder="GPA"
+                        onCommit={(gpa) => correctEducation(entry.id, { gpa })}
+                        className="text-faint"
+                      />
+                    </div>
+                    <DateEditors
+                      start={entry.start}
+                      end={entry.end}
+                      onStart={(start) => correctEducation(entry.id, { start })}
+                      onEnd={(end) => correctEducation(entry.id, { end })}
                     />
                   </div>
-                  <div className="flex">
-                    <Editable
-                      value={entry.degree}
-                      placeholder="degree not found"
-                      onCommit={(degree) => correctEducation(entry.id, { degree })}
-                      className="text-muted"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    title="Remove this entry"
+                    onClick={() => void removeEntry('education', entry.id)}
+                    className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
+                  >
+                    ✖
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  title="Remove this entry"
-                  onClick={() => void removeEntry('education', entry.id)}
-                  className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
-                >
-                  ✖
-                </button>
-              </div>
+              </article>
             ))}
           </div>
         )}
       </Window>
 
+      <Projects profile={profile} />
+
       <Skills profile={profile} />
     </div>
+  );
+}
+
+const dateText = (date: ResumeDate | null): string => {
+  if (!date) return '';
+  return date.month === null
+    ? String(date.year)
+    : `${String(date.month).padStart(2, '0')}/${date.year}`;
+};
+
+const editedDate = (raw: string, current: ResumeDate | null): ResumeDate | null => {
+  if (!raw || /^(present|current|now)$/i.test(raw)) return null;
+  return parseResumeDate(raw) ?? current;
+};
+
+function DateEditors({
+  start,
+  end,
+  presentWhenEmpty = false,
+  onStart,
+  onEnd,
+}: {
+  start: ResumeDate | null;
+  end: ResumeDate | null;
+  presentWhenEmpty?: boolean;
+  onStart: (value: ResumeDate | null) => void | Promise<void>;
+  onEnd: (value: ResumeDate | null) => void | Promise<void>;
+}) {
+  return (
+    <div className="flex items-center gap-1 px-1 font-mono text-[12px] text-faint">
+      <span className="shrink-0">Dates</span>
+      <Editable
+        value={dateText(start)}
+        placeholder="start YYYY"
+        onCommit={(raw) => onStart(editedDate(raw, start))}
+      />
+      <span>→</span>
+      <Editable
+        value={dateText(end) || (presentWhenEmpty ? 'Present' : '')}
+        placeholder="end YYYY"
+        onCommit={(raw) => onEnd(editedDate(raw, end))}
+      />
+    </div>
+  );
+}
+
+function Projects({ profile }: { profile: ResumeProfile }) {
+  return (
+    <Window title={`Projects · ${profile.projects.length}`}>
+      {profile.projects.length === 0 ? (
+        <p className="text-[13px] leading-snug text-muted">
+          No projects parsed. A Projects heading in your resume creates reusable project records
+          for applications and evidence scans.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {profile.projects.map((project) => (
+            <article key={project.id} className="dq-window p-2">
+              <div className="flex items-start gap-1.5">
+                <Mark confidence={project.confidence} />
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex">
+                    <Editable
+                      value={project.name}
+                      placeholder="project name not found"
+                      onCommit={(name) => correctProject(project.id, { name })}
+                      className="text-parchment"
+                    />
+                  </div>
+                  <div className="flex">
+                    <Editable
+                      value={project.role}
+                      placeholder="your role"
+                      onCommit={(role) => correctProject(project.id, { role })}
+                      className="text-muted"
+                    />
+                  </div>
+                  <div className="flex">
+                    <Editable
+                      value={project.url}
+                      placeholder="project URL"
+                      onCommit={(url) => correctProject(project.id, { url })}
+                      className="text-faint"
+                    />
+                  </div>
+                  <div className="flex">
+                    <Editable
+                      value={project.technologies.join(', ')}
+                      placeholder="technologies"
+                      onCommit={(value) =>
+                        correctProject(project.id, {
+                          technologies: [...new Set(
+                            value.split(',').map((item) => item.trim()).filter(Boolean),
+                          )],
+                        })
+                      }
+                      className="text-faint"
+                    />
+                  </div>
+                  <DateEditors
+                    start={project.start}
+                    end={project.end}
+                    onStart={(start) => correctProject(project.id, { start })}
+                    onEnd={(end) => correctProject(project.id, { end })}
+                  />
+                </div>
+                <button
+                  type="button"
+                  title="Remove this project"
+                  onClick={() => void removeEntry('project', project.id)}
+                  className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
+                >
+                  ✖
+                </button>
+              </div>
+
+              <ul className="mt-1.5 space-y-0.5">
+                {project.bullets.map((bullet, index) => (
+                  <li key={index} className="flex gap-1 text-[13px] leading-snug text-muted">
+                    <span className="shrink-0 text-faint">·</span>
+                    <Editable
+                      value={bullet}
+                      onCommit={(next) =>
+                        correctProject(project.id, {
+                          bullets: next
+                            ? project.bullets.map((item, i) => (i === index ? next : item))
+                            : project.bullets.filter((_, i) => i !== index),
+                        })
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() =>
+                  void correctProject(project.id, {
+                    bullets: [...project.bullets, 'New bullet'],
+                  })
+                }
+                className="mt-1 px-1 font-mono text-[12px] text-faint hover:text-gold"
+              >
+                + bullet
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-[12px] leading-snug text-faint">
+        Dates accept YYYY, MM/YYYY, or a month name. Every edit becomes a trusted local fact.
+      </p>
+    </Window>
   );
 }
 

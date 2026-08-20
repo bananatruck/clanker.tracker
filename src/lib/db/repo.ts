@@ -19,6 +19,7 @@ import {
   type ContactKey,
   type EducationEntry,
   type ExperienceEntry,
+  type ProjectEntry,
   type ResumeProfile,
 } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
@@ -52,7 +53,7 @@ export async function correctContactField(
   value: string,
   id = PRIMARY_PROFILE_ID,
 ): Promise<void> {
-  const profile = await db.profiles.get(id);
+  const profile = await getProfile(id);
   if (!profile) return;
 
   profile.contact[key] = { value, confidence: 'certain', source: 'user' };
@@ -70,11 +71,11 @@ export async function correctExperience(
   patch: Partial<Omit<ExperienceEntry, 'id'>>,
   id = PRIMARY_PROFILE_ID,
 ): Promise<void> {
-  const profile = await db.profiles.get(id);
+  const profile = await getProfile(id);
   if (!profile) return;
 
   profile.experience = profile.experience.map((e) =>
-    e.id === entryId ? { ...e, ...patch, confidence: 'certain' } : e,
+    e.id === entryId ? { ...e, ...patch, confidence: 'certain', source: 'user' } : e,
   );
   await saveProfile(profile);
 }
@@ -84,28 +85,46 @@ export async function correctEducation(
   patch: Partial<Omit<EducationEntry, 'id'>>,
   id = PRIMARY_PROFILE_ID,
 ): Promise<void> {
-  const profile = await db.profiles.get(id);
+  const profile = await getProfile(id);
   if (!profile) return;
 
   profile.education = profile.education.map((e) =>
-    e.id === entryId ? { ...e, ...patch, confidence: 'certain' } : e,
+    e.id === entryId ? { ...e, ...patch, confidence: 'certain', source: 'user' } : e,
+  );
+  await saveProfile(profile);
+}
+
+export async function correctProject(
+  entryId: string,
+  patch: Partial<Omit<ProjectEntry, 'id'>>,
+  id = PRIMARY_PROFILE_ID,
+): Promise<void> {
+  const profile = await getProfile(id);
+  if (!profile) return;
+
+  profile.projects = profile.projects.map((project) =>
+    project.id === entryId
+      ? { ...project, ...patch, confidence: 'certain', source: 'user' }
+      : project,
   );
   await saveProfile(profile);
 }
 
 /** Drop an entry the parser invented, or one the user no longer wants sent. */
 export async function removeEntry(
-  kind: 'experience' | 'education',
+  kind: 'experience' | 'education' | 'project',
   entryId: string,
   id = PRIMARY_PROFILE_ID,
 ): Promise<void> {
-  const profile = await db.profiles.get(id);
+  const profile = await getProfile(id);
   if (!profile) return;
 
   if (kind === 'experience') {
     profile.experience = profile.experience.filter((e) => e.id !== entryId);
-  } else {
+  } else if (kind === 'education') {
     profile.education = profile.education.filter((e) => e.id !== entryId);
+  } else {
+    profile.projects = profile.projects.filter((project) => project.id !== entryId);
   }
   await saveProfile(profile);
 }
@@ -118,7 +137,7 @@ export async function removeEntry(
  * and the ATS scan gets sharper every time it happens.
  */
 export async function setSkills(skills: string[], id = PRIMARY_PROFILE_ID): Promise<void> {
-  const profile = await db.profiles.get(id);
+  const profile = await getProfile(id);
   if (!profile) return;
 
   // Case-insensitive dedupe, first spelling wins.
