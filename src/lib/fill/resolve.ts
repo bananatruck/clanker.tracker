@@ -31,10 +31,15 @@ import { questionHash } from './normalize';
 import { autocompleteValue } from './autocomplete';
 import { resolveLexically } from './lexical';
 import type { KnownField } from './adapters';
+import { optionSignature, semanticValue } from './semantic';
+import type { AnswerContext } from './memory';
 
 /** Tier 2 lookup, injected so the chain has no direct Dexie dependency. */
 export interface AnswerMemory {
-  recall(rawQuestion: string): Promise<string | null>;
+  recall(
+    rawQuestion: string,
+    context?: AnswerContext,
+  ): Promise<string | null>;
 }
 
 /** Tier 5, injected for the same reason. Returns one answer per field id. */
@@ -136,10 +141,21 @@ export async function resolveFields(
     // failure mode this resolver is built to avoid — so only answer memory,
     // where the user supplied the value themselves, may speak to it.
     const aboutSomeoneElse = isAboutSomeoneElse(field.label);
+    let structuredBlank = false;
+
+    // A canonical path is stronger than the repeated label visible on a card.
+    // Without it every "Company" input receives the current employer. An
+    // explicitly absent profile value remains blank unless the user has
+    // previously supplied an answer for this exact record and control shape.
+    if (!aboutSomeoneElse && field.semanticPath) {
+      const structured = semanticValue(field, ctx);
+      if (structured && record(resolutions, field, structured, 1)) continue;
+      structuredBlank = true;
+    }
 
     // --- tier 1: the site adapter's verified selector map ---
     const known = aboutSomeoneElse ? undefined : adapterHits?.get(field.id);
-    if (known) {
+    if (!structuredBlank && known) {
       const value = knownFieldValue(known, ctx);
       if (value && record(resolutions, field, value, 1)) continue;
     }
@@ -149,15 +165,23 @@ export async function resolveFields(
     // trustworthy as an adapter selector and costs exactly as little. A site
     // that marks a referrer's box `autocomplete="email"` is telling us what
     // the browser should offer, not whose address belongs there.
-    if (field.autocomplete && !aboutSomeoneElse) {
+    if (field.autocomplete && !aboutSomeoneElse && !structuredBlank) {
       const stated = autocompleteValue(field.autocomplete, ctx);
       if (stated && record(resolutions, field, stated, 1)) continue;
     }
 
     // --- tier 2: answer memory, the reason a repeat costs nothing ---
     if (memory && field.label) {
-      const remembered = await memory.recall(field.label);
+      const remembered = await memory.recall(field.label, {
+        semanticPath: field.semanticPath,
+        optionSignature: optionSignature(field.options),
+      });
       if (remembered && record(resolutions, field, remembered, 2)) continue;
+    }
+
+    if (structuredBlank) {
+      unresolved.push({ fieldId: field.id, reason: 'no-profile' });
+      continue;
     }
 
     if (aboutSomeoneElse) {

@@ -20,6 +20,7 @@ import { applyValue } from '@/lib/fill/apply';
 import { hasCredentials, type Credentials } from '@/lib/fill/credentials';
 import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
+import { optionSignature } from '@/lib/fill/semantic';
 import { normalizePreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
@@ -269,15 +270,22 @@ export default defineContentScript({
               { profile, preferences },
               {
                 memory: {
-                  recall: (question) =>
-                    askBackground<string | null>({ type: 'db:recallAnswer', question }),
+                  recall: (question, context) =>
+                    askBackground<string | null>({
+                      type: 'db:recallAnswer',
+                      question,
+                      semanticPath: context?.semanticPath,
+                      optionSignature: context?.optionSignature,
+                    }),
                 },
-                remember: async (question, answer) => {
+                remember: async (field, answer) => {
                   await askBackground({
                     type: 'db:rememberAnswer',
-                    question,
+                    question: field.label,
                     answer,
                     ats: ats.id,
+                    semanticPath: field.semanticPath,
+                    optionSignature: optionSignature(field.options),
                   });
                 },
                 record: async (run) => {

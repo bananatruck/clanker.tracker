@@ -33,6 +33,9 @@ export interface QuestionAnswer {
   seenOn: AtsId[];
   timesUsed: number;
   lastUsedAt: number;
+  /** Scope repeated labels such as Company to their record and choice set. */
+  semanticPath?: string;
+  optionSignature?: string;
 }
 
 /** The exact user-selected file retained for an explicit application attachment. */

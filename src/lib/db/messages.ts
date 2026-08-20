@@ -27,8 +27,15 @@ export type DbRequest =
   | { type: 'db:getProfile' }
   | { type: 'db:bark' }
   | { type: 'db:getSetting'; key: string; fallback: unknown }
-  | { type: 'db:recallAnswer'; question: string }
-  | { type: 'db:rememberAnswer'; question: string; answer: string; ats: AtsId }
+  | { type: 'db:recallAnswer'; question: string; semanticPath?: string; optionSignature?: string }
+  | {
+      type: 'db:rememberAnswer';
+      question: string;
+      answer: string;
+      ats: AtsId;
+      semanticPath?: string;
+      optionSignature?: string;
+    }
   | { type: 'db:recordFillRun'; run: RunRecord }
   | { type: 'account:getCredentials' }
   | {

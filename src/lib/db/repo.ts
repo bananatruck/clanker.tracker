@@ -22,12 +22,13 @@ import {
   type ResumeProfile,
 } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
-import { questionHash, normalizeQuestion } from '@/lib/fill/normalize';
+import { normalizeQuestion } from '@/lib/fill/normalize';
 import { deedsToAward } from '@/lib/tracker/funnel';
 import { intelToAward } from '@/lib/tracker/table';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/autosubmit';
 import { resumeDocumentFromFile } from '@/lib/resume/document';
+import { answerKey, type AnswerContext } from '@/lib/fill/memory';
 
 /* ---------------------------------------------------------------- profile */
 
@@ -155,8 +156,11 @@ export async function clearResumeDocument(): Promise<void> {
 /* -------------------------------------------------------- tier 2: answers */
 
 /** Look up a previously accepted answer. Free, and the whole cost argument. */
-export async function recallAnswer(rawQuestion: string): Promise<QuestionAnswer | undefined> {
-  return db.questions.get(questionHash(rawQuestion));
+export async function recallAnswer(
+  rawQuestion: string,
+  context: AnswerContext = {},
+): Promise<QuestionAnswer | undefined> {
+  return db.questions.get(answerKey(rawQuestion, context));
 }
 
 /**
@@ -169,8 +173,9 @@ export async function rememberAnswer(
   rawQuestion: string,
   answer: string,
   ats: AtsId,
+  context: AnswerContext = {},
 ): Promise<void> {
-  const hash = questionHash(rawQuestion);
+  const hash = answerKey(rawQuestion, context);
   const existing = await db.questions.get(hash);
 
   await db.questions.put({
@@ -181,6 +186,8 @@ export async function rememberAnswer(
     seenOn: [...new Set([...(existing?.seenOn ?? []), ats])],
     timesUsed: (existing?.timesUsed ?? 0) + 1,
     lastUsedAt: Date.now(),
+    semanticPath: context.semanticPath,
+    optionSignature: context.optionSignature,
   });
 }
 

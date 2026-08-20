@@ -22,7 +22,7 @@ import type { HarvestedField, Resolution } from './types';
 export interface RunHooks {
   memory: AnswerMemory;
   /** Called once per accepted answer, to grow tier 2. */
-  remember(question: string, answer: string): Promise<void>;
+  remember(field: HarvestedField, answer: string): Promise<void>;
   /** Called with the completed run so the auto-submit gate can score it. */
   record(run: RunRecord): Promise<void>;
   /**
@@ -170,7 +170,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
       filled++;
       progress.set(field.id, { ...row, state: 'filled', value });
       // Learn the answer under the question as this site phrased it.
-      if (field.label) await hooks.remember(field.label, value);
+      if (field.label) await hooks.remember(field, value);
     } else {
       skipped++;
       progress.set(field.id, { ...row, state: 'needs-you', value: '' });

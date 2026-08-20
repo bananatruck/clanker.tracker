@@ -42,10 +42,16 @@ async function handle(request: DbRequest): Promise<unknown> {
       return getSetting(request.key, request.fallback);
 
     case 'db:recallAnswer':
-      return (await recallAnswer(request.question))?.answer ?? null;
+      return (await recallAnswer(request.question, {
+        semanticPath: request.semanticPath,
+        optionSignature: request.optionSignature,
+      }))?.answer ?? null;
 
     case 'db:rememberAnswer':
-      await rememberAnswer(request.question, request.answer, request.ats);
+      await rememberAnswer(request.question, request.answer, request.ats, {
+        semanticPath: request.semanticPath,
+        optionSignature: request.optionSignature,
+      });
       return true;
 
     case 'db:recordFillRun':

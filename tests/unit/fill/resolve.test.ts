@@ -245,6 +245,49 @@ describe('the resolver chain', () => {
     },
   });
 
+  it('maps repeated records by semantic path instead of copying the newest job', async () => {
+    const plan = await resolveFields(
+      [
+        textField({ id: 'current', label: 'Company', semanticPath: 'experience[0].company' }),
+        textField({ id: 'older', label: 'Company', semanticPath: 'experience[1].company' }),
+      ],
+      { ctx, model: null },
+    );
+
+    expect(plan.resolutions).toEqual([
+      expect.objectContaining({ fieldId: 'current', value: 'Acme Corp', tier: 1 }),
+    ]);
+    expect(plan.unresolved).toContainEqual({ fieldId: 'older', reason: 'no-profile' });
+  });
+
+  it('keeps an absent structured value blank instead of asking a model to invent it', async () => {
+    const model = { answer: async () => ({ end: '2099' }) };
+    const plan = await resolveFields(
+      [textField({ id: 'end', label: 'End Year', semanticPath: 'experience[0].end.year' })],
+      { ctx, model },
+    );
+
+    expect(plan.resolutions).toEqual([]);
+    expect(plan.unresolved).toEqual([{ fieldId: 'end', reason: 'no-profile' }]);
+    expect(plan.llmCalls).toBe(0);
+  });
+
+  it('lets a user-confirmed scoped answer supply a missing structured value', async () => {
+    const plan = await resolveFields(
+      [textField({ id: 'location', label: 'Location', semanticPath: 'experience[0].location' })],
+      {
+        ctx,
+        memory: {
+          recall: async (_question, context) =>
+            context?.semanticPath === 'experience[0].location' ? 'Remote' : null,
+        },
+        model: null,
+      },
+    );
+
+    expect(plan.resolutions[0]).toMatchObject({ fieldId: 'location', value: 'Remote', tier: 2 });
+  });
+
   it('escalates cheapest-first and stops at the first tier that answers', async () => {
     const plan = await resolveFields(
       [
