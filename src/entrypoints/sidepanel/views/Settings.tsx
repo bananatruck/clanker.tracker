@@ -29,6 +29,12 @@ import {
   setCredentials,
   type Credentials,
 } from '@/lib/fill/credentials';
+import { getSetting, setSetting } from '@/lib/db/repo';
+import {
+  emptyPreferences,
+  normalizePreferences,
+  type Preferences,
+} from '@/lib/fill/types';
 import { Button, Meter, Window } from '@/ui/dq';
 import WritingSamples from '@/ui/WritingSamples';
 
@@ -194,6 +200,7 @@ export default function Settings() {
         </Window>
       )}
 
+      <ApplicationDefaults />
       <AccountCredentials />
 
       <Window title="Setup">
@@ -204,6 +211,88 @@ export default function Settings() {
         </Button>
       </Window>
     </div>
+  );
+}
+
+function ApplicationDefaults() {
+  const [preferences, setPreferences] = useState<Preferences>(emptyPreferences());
+  const [loaded, setLoaded] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    void getSetting<Partial<Preferences>>('fill.preferences', {}).then((value) => {
+      setPreferences(normalizePreferences(value));
+      setLoaded(true);
+    });
+  }, []);
+
+  const save = async () => {
+    await setSetting('fill.preferences', preferences);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1600);
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <Window
+      title="Application defaults"
+      right={saved ? <span className="font-mono text-[11px] text-ok">saved</span> : undefined}
+    >
+      <p className="mb-2 text-[12px] leading-snug text-muted">
+        Exact facts used for address and eligibility steps. Blank values stay blank for review.
+      </p>
+      <div className="grid grid-cols-2 gap-1.5">
+        {([
+          ['preferredName', 'Preferred name'],
+          ['streetAddress', 'Street address'],
+          ['city', 'City'],
+          ['region', 'State / province'],
+          ['postalCode', 'Postal / ZIP'],
+          ['country', 'Country'],
+          ['noticePeriod', 'Availability'],
+          ['salaryExpectation', 'Salary'],
+        ] as const).map(([key, label]) => (
+          <label className="dq-label block" key={key}>
+            {label}
+            <input
+              className="dq-input mt-0.5 w-full px-1.5 py-1"
+              value={preferences[key]}
+              onChange={(event) => {
+                setPreferences({ ...preferences, [key]: event.target.value });
+                setSaved(false);
+              }}
+            />
+          </label>
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-1">
+        {([
+          ['workAuthorized', 'Work auth'],
+          ['requiresSponsorship', 'Sponsorship'],
+          ['willingToRelocate', 'Relocate'],
+        ] as const).map(([key, label]) => (
+          <label className="dq-label block" key={key}>
+            {label}
+            <select
+              className="dq-input mt-0.5 w-full px-1 py-1"
+              value={preferences[key]}
+              onChange={(event) => {
+                setPreferences({ ...preferences, [key]: event.target.value });
+                setSaved(false);
+              }}
+            >
+              <option value="">—</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+        ))}
+      </div>
+      <Button primary onClick={() => void save()} className="mt-2">
+        Save defaults
+      </Button>
+    </Window>
   );
 }
 

@@ -32,6 +32,11 @@ import {
   setCredentials,
   type Credentials,
 } from '@/lib/fill/credentials';
+import {
+  emptyPreferences,
+  normalizePreferences,
+  type Preferences,
+} from '@/lib/fill/types';
 import { profileCompleteness } from '@/types/profile';
 import { Button, Notice, Window } from '@/ui/dq';
 import ResumeIntake from '@/ui/ResumeIntake';
@@ -244,13 +249,18 @@ function ApplicationStep({ onBack, onNext }: { onBack: () => void; onNext: () =>
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [auto, setAuto] = useState(false);
+  const [preferences, setPreferences] = useState<Preferences>(emptyPreferences());
 
   useEffect(() => {
     if (loaded || !profile) return;
-    void getCredentials().then((credentials) => {
+    void Promise.all([
+      getCredentials(),
+      getSetting<Partial<Preferences>>('fill.preferences', {}),
+    ]).then(([credentials, storedPreferences]) => {
       setEmail(credentials.email || profile.contact.email.value);
       setExistingPassword(credentials.password !== '');
       setAuto(credentials.auto);
+      setPreferences(normalizePreferences(storedPreferences));
       setLoaded(true);
     });
   }, [loaded, profile]);
@@ -259,11 +269,14 @@ function ApplicationStep({ onBack, onNext }: { onBack: () => void; onNext: () =>
   const effectivePassword = password !== '' || existingPassword;
 
   const save = async () => {
-    await setCredentials({
-      email: email.trim(),
-      ...(password ? { password } : {}),
-      auto: effectivePassword && auto,
-    });
+    await Promise.all([
+      setCredentials({
+        email: email.trim(),
+        ...(password ? { password } : {}),
+        auto: effectivePassword && auto,
+      }),
+      setSetting('fill.preferences', preferences),
+    ]);
     setExistingPassword(effectivePassword);
     setPassword('');
     setSaved(true);
@@ -303,6 +316,63 @@ function ApplicationStep({ onBack, onNext }: { onBack: () => void; onNext: () =>
           </div>
         </div>
       )}
+
+      <Window title="Application facts — local defaults">
+        <p className="mb-3 text-[13px] leading-relaxed text-muted">
+          Resumes rarely contain a complete address or eligibility answers. Add them once here
+          so multi-step forms do not stop halfway through. Blank values always stay for review.
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {([
+            ['preferredName', 'Preferred name', 'optional'],
+            ['streetAddress', 'Street address', '123 Example St'],
+            ['city', 'City', 'Seattle'],
+            ['region', 'State / province', 'WA'],
+            ['postalCode', 'Postal / ZIP code', '98101'],
+            ['country', 'Country', 'United States'],
+            ['noticePeriod', 'Availability / notice', 'Two weeks'],
+            ['salaryExpectation', 'Salary expectation', 'optional'],
+          ] as const).map(([key, label, placeholder]) => (
+            <label className="dq-label block" key={key}>
+              {label}
+              <input
+                className="dq-input mt-1 w-full px-2 py-1.5"
+                value={preferences[key]}
+                placeholder={placeholder}
+                onChange={(event) => {
+                  setPreferences({ ...preferences, [key]: event.target.value });
+                  setSaved(false);
+                }}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {([
+            ['workAuthorized', 'Authorized to work?'],
+            ['requiresSponsorship', 'Need sponsorship?'],
+            ['willingToRelocate', 'Willing to relocate?'],
+          ] as const).map(([key, label]) => (
+            <label className="dq-label block" key={key}>
+              {label}
+              <select
+                className="dq-input mt-1 w-full px-2 py-1.5"
+                value={preferences[key]}
+                onChange={(event) => {
+                  setPreferences({ ...preferences, [key]: event.target.value });
+                  setSaved(false);
+                }}
+              >
+                <option value="">Review each time</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </label>
+          ))}
+        </div>
+      </Window>
 
       <Window title="Job-board sign-ins — optional">
         <p className="mb-3 text-[13px] leading-relaxed text-muted">
