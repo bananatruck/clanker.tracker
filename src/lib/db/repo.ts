@@ -6,6 +6,7 @@
 import {
   db,
   type Application,
+  type ApplicationSession,
   type ApplicationStatus,
   type CoverLetter,
   type DeedRecord,
@@ -30,6 +31,7 @@ import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/records';
 import { resumeDocumentFromFile } from '@/lib/resume/document';
 import { answerKey, type AnswerContext } from '@/lib/fill/memory';
+import { checkpointSession } from '@/lib/fill/session';
 
 /* ---------------------------------------------------------------- profile */
 
@@ -378,6 +380,43 @@ export async function deleteApplication(id: string): Promise<void> {
 
 export async function recordFillRun(run: RunRecord): Promise<void> {
   await db.runs.add(run);
+}
+
+/* ------------------------------------------------------ application flow */
+
+const SESSION_MAX_AGE = 12 * 60 * 60 * 1000;
+const sessionId = (tabId: number) => `tab-${tabId}`;
+
+export async function getApplicationSession(
+  tabId: number,
+  ats: AtsId,
+): Promise<ApplicationSession | undefined> {
+  const id = sessionId(tabId);
+  const session = await db.applicationSessions.get(id);
+  if (!session || session.status === 'complete') return undefined;
+  if (session.ats !== ats || Date.now() - session.updatedAt > SESSION_MAX_AGE) {
+    await db.applicationSessions.delete(id);
+    return undefined;
+  }
+  return session;
+}
+
+export async function touchApplicationSession(
+  tabId: number,
+  init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'>,
+): Promise<ApplicationSession> {
+  const existing = await getApplicationSession(tabId, init.ats);
+  const session = checkpointSession(existing, tabId, init);
+  await db.applicationSessions.put(session);
+  return session;
+}
+
+export async function completeApplicationSession(tabId: number): Promise<void> {
+  const id = sessionId(tabId);
+  const existing = await db.applicationSessions.get(id);
+  if (existing) {
+    await db.applicationSessions.put({ ...existing, status: 'complete', updatedAt: Date.now() });
+  }
 }
 
 /* ------------------------------------------------------------- game ledger */

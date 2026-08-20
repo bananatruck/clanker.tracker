@@ -42,6 +42,8 @@ export interface RunOutcome {
   llmCalls: number;
   run: RunRecord;
   cancelled: boolean;
+  /** Structured facts verified on this page, retained across later steps. */
+  completedPaths: string[];
 }
 
 /** Map adapter selectors onto harvested field ids, for tier 1. */
@@ -165,7 +167,14 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
 
   if (!outcome.submitted) {
     say('cancelled', plan.llmCalls);
-    return { filled: 0, skipped: pending.length, llmCalls: plan.llmCalls, run: emptyRun, cancelled: true };
+    return {
+      filled: 0,
+      skipped: pending.length,
+      llmCalls: plan.llmCalls,
+      run: emptyRun,
+      cancelled: true,
+      completedPaths: [],
+    };
   }
 
   let filled = 0;
@@ -212,7 +221,12 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
 
   say('done', plan.llmCalls);
 
-  return { filled, skipped, llmCalls: plan.llmCalls, run, cancelled: false };
+  const completedPaths = pending
+    .filter((field) => progress.get(field.id)?.state === 'filled')
+    .map((field) => field.semanticPath)
+    .filter((path): path is string => Boolean(path));
+
+  return { filled, skipped, llmCalls: plan.llmCalls, run, cancelled: false, completedPaths };
 }
 
 export { tierBreakdown };

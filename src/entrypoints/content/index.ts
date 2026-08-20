@@ -20,11 +20,12 @@ import { hasCredentials, type Credentials } from '@/lib/fill/credentials';
 import { removeLauncher, renderLauncher, resetLauncher } from '@/lib/fill/launcher';
 import { runFill } from '@/lib/fill/run';
 import { optionSignature } from '@/lib/fill/semantic';
+import { continuationStep, pageKeyFor } from '@/lib/fill/session';
 import { normalizePreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
-import type { StoredDocument } from '@/lib/db/schema';
+import type { ApplicationSession, StoredDocument } from '@/lib/db/schema';
 
 /** Messages the side panel sends us. */
 type Request =
@@ -83,6 +84,8 @@ export default defineContentScript({
 
     /** Set once a run has completed here, so the badge stops offering. */
     let filledHere = false;
+    let filledPageKey = '';
+    let observedPageKey = '';
 
     /**
      * Offer, without being asked.
@@ -99,6 +102,13 @@ export default defineContentScript({
 
       const gate = readGate(document).gate;
       const { fields } = harvestForm(findApplicationForm(document));
+      const pageKey = pageKeyFor(fields);
+      if (observedPageKey && observedPageKey !== pageKey) {
+        resetLauncher();
+        filledHere = filledPageKey === pageKey;
+        void chrome.runtime.sendMessage({ type: 'clanker:page-ready' }).catch(() => {});
+      }
+      observedPageKey = pageKey;
 
       renderLauncher(
         { gate, fields: fields.length, done: filledHere },
@@ -150,11 +160,13 @@ export default defineContentScript({
             llmCalls,
           },
         }).catch((err) => console.error('[clanker] could not log application:', err));
+        void askBackground({ type: 'db:completeApplicationSession' }).catch(() => {});
       });
     }
 
     if (window.top === window.self) {
       observer.observe(document.documentElement, { childList: true, subtree: true });
+      void chrome.runtime.sendMessage({ type: 'clanker:page-ready' }).catch(() => {});
       // A history change on a single-page board is a new posting, so an
       // earlier dismissal should not silence the badge on it forever.
       window.addEventListener('popstate', () => {
@@ -174,12 +186,27 @@ export default defineContentScript({
 
       if (request.type === 'clanker:probe') {
         const { fields } = harvestForm(findApplicationForm(document));
-        sendResponse({
+        const pageKey = pageKeyFor(fields);
+        void askBackground<ApplicationSession | null>({
+          type: 'db:getApplicationSession',
           ats: ats.id,
-          fieldCount: fields.length,
-          requiredCount: fields.filter((f) => f.required).length,
-        });
-        return false;
+        })
+          .then((session) => {
+            sendResponse({
+              ats: ats.id,
+              fieldCount: fields.length,
+              requiredCount: fields.filter((field) => field.required).length,
+              sessionStep: continuationStep(session, pageKey),
+            });
+          })
+          .catch(() => {
+            sendResponse({
+              ats: ats.id,
+              fieldCount: fields.length,
+              requiredCount: fields.filter((field) => field.required).length,
+            });
+          });
+        return true;
       }
 
       // The scan reads the posting off the page rather than asking the user to
@@ -241,12 +268,25 @@ export default defineContentScript({
               const prepared = fillGate(gate, credentials, (field, value) => {
                 applyValue(field, value);
               });
+              const fields = harvestForm(findApplicationForm(document)).fields;
+              const session = prepared.length > 0
+                ? await askBackground<ApplicationSession>({
+                    type: 'db:touchApplicationSession',
+                    init: {
+                      ats: ats.id,
+                      url: location.href,
+                      pageKey: pageKeyFor(fields),
+                      completedPaths: [],
+                    },
+                  }).catch(() => null)
+                : null;
               sendResponse({
                 ok: true,
                 account: gate.gate,
                 filled: prepared.length,
                 skipped: 0,
                 llmCalls: 0,
+                sessionStep: session?.step,
               });
               return;
             }
@@ -305,7 +345,20 @@ export default defineContentScript({
             if (!outcome.cancelled && outcome.filled > 0) {
               armTracker(outcome.llmCalls);
               filledHere = true;
+              const currentFields = harvestForm(findApplicationForm(document)).fields;
+              filledPageKey = pageKeyFor(currentFields);
               removeLauncher();
+              const session = await askBackground<ApplicationSession>({
+                type: 'db:touchApplicationSession',
+                init: {
+                  ats: ats.id,
+                  url: location.href,
+                  pageKey: filledPageKey,
+                  completedPaths: outcome.completedPaths,
+                },
+              }).catch(() => null);
+              sendResponse({ ok: true, ...outcome, sessionStep: session?.step });
+              return;
             }
 
             sendResponse({ ok: true, ...outcome });

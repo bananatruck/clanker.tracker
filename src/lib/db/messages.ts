@@ -21,7 +21,7 @@
  * ~90kB from every page we inject into.
  */
 import type { AtsId, RunRecord } from '@/lib/fill/records';
-import type { Application } from './schema';
+import type { Application, ApplicationSession } from './schema';
 
 export type DbRequest =
   | { type: 'db:getProfile' }
@@ -38,6 +38,12 @@ export type DbRequest =
       optionSignature?: string;
     }
   | { type: 'db:recordFillRun'; run: RunRecord }
+  | { type: 'db:getApplicationSession'; ats: AtsId }
+  | {
+      type: 'db:touchApplicationSession';
+      init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'>;
+    }
+  | { type: 'db:completeApplicationSession' }
   | { type: 'account:getCredentials' }
   | {
       type: 'db:logApplication';

@@ -25,6 +25,7 @@ interface Probe {
   ats: string;
   fieldCount: number;
   requiredCount: number;
+  sessionStep?: number;
 }
 
 interface FillResult {
@@ -35,6 +36,7 @@ interface FillResult {
   skipped?: number;
   llmCalls?: number;
   cancelled?: boolean;
+  sessionStep?: number;
 }
 
 export default function Fill() {
@@ -78,6 +80,14 @@ export default function Fill() {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const listener = (message: { type?: string }) => {
+      if (message?.type === 'clanker:page-ready') void refresh();
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    return () => chrome.runtime.onMessage.removeListener(listener);
   }, [refresh]);
 
   const fill = async () => {
@@ -150,7 +160,11 @@ export default function Fill() {
           disabled={!probe || probe.fieldCount === 0 || busy}
           className="flex-1"
         >
-          {busy ? 'Filling…' : 'Fill this application'}
+          {busy
+            ? 'Filling…'
+            : probe?.sessionStep && probe.sessionStep > 1
+              ? `Continue · step ${probe.sessionStep}`
+              : 'Fill this step'}
         </Button>
         <Button onClick={() => void refresh()}>Refresh</Button>
       </div>
@@ -198,6 +212,12 @@ export default function Fill() {
                     ? 'zero model calls — every field came from a free tier'
                     : `${result.llmCalls} batched ${TIER_LABEL[5]} call`}
                 </p>
+                {result.sessionStep ? (
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted">
+                    Step {result.sessionStep} is saved locally. Use the board's Next button;
+                    Clanker will recognize the following step and never press Submit.
+                  </p>
+                ) : null}
               </>
             )
           ) : (

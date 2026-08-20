@@ -5,6 +5,8 @@
  *   - message routing between content scripts and the side panel
  */
 import {
+  completeApplicationSession,
+  getApplicationSession,
   getProfile,
   getResumeDocument,
   getSetting,
@@ -13,6 +15,7 @@ import {
   recordFillRun,
   rememberAnswer,
   totalDp,
+  touchApplicationSession,
 } from '@/lib/db/repo';
 import { levelFromDp, tierForLevel } from '@/lib/game/economy';
 import { barkFor } from '@/lib/game/lore';
@@ -27,7 +30,7 @@ import type { DbRequest, DbResponse } from '@/lib/db/messages';
  * script that gets no reply cannot tell "empty" from "broken", and that
  * ambiguity is what hid the origin bug for so long.
  */
-async function handle(request: DbRequest): Promise<unknown> {
+async function handle(request: DbRequest, tabId?: number): Promise<unknown> {
   switch (request.type) {
     case 'db:getProfile':
       return (await getProfile()) ?? null;
@@ -60,6 +63,17 @@ async function handle(request: DbRequest): Promise<unknown> {
 
     case 'db:recordFillRun':
       await recordFillRun(request.run);
+      return true;
+
+    case 'db:getApplicationSession':
+      return tabId === undefined ? null : (await getApplicationSession(tabId, request.ats)) ?? null;
+
+    case 'db:touchApplicationSession':
+      if (tabId === undefined) throw new Error('Application sessions require a browser tab.');
+      return touchApplicationSession(tabId, request.init);
+
+    case 'db:completeApplicationSession':
+      if (tabId !== undefined) await completeApplicationSession(tabId);
       return true;
 
     // Secrets live in chrome.storage.local rather than Dexie. They are handed
@@ -117,13 +131,13 @@ export default defineBackground(() => {
     return false;
   });
 
-  chrome.runtime.onMessage.addListener((request: DbRequest, _sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((request: DbRequest, sender, sendResponse) => {
     if (
       typeof request?.type !== 'string' ||
       (!request.type.startsWith('db:') && !request.type.startsWith('account:'))
     ) return false;
 
-    handle(request)
+    handle(request, sender.tab?.id)
       .then((data) => sendResponse({ ok: true, data } satisfies DbResponse))
       .catch((err) =>
         sendResponse({

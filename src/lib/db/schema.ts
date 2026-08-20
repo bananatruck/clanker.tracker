@@ -49,6 +49,20 @@ export interface StoredDocument {
   updatedAt: number;
 }
 
+/** A reviewed checkpoint across ATS pages; never permission to advance or submit. */
+export interface ApplicationSession {
+  id: string;
+  tabId: number;
+  ats: AtsId;
+  url: string;
+  /** Signature of the fields, so same-URL SPA steps remain distinct. */
+  pageKey: string;
+  step: number;
+  completedPaths: string[];
+  status: 'review' | 'complete';
+  updatedAt: number;
+}
+
 /** Where an application is in the funnel. Drives the M3 board view. */
 export type ApplicationStatus =
   | 'applied'
@@ -157,6 +171,7 @@ export class ClankerDB extends Dexie {
   writingSamples!: EntityTable<WritingSample, 'id'>;
   letters!: EntityTable<CoverLetter, 'id'>;
   documents!: EntityTable<StoredDocument, 'id'>;
+  applicationSessions!: EntityTable<ApplicationSession, 'id'>;
 
   constructor(name = 'clanker.tracker') {
     super(name);
@@ -219,6 +234,11 @@ export class ClankerDB extends Dexie {
           }));
         });
       });
+
+    // v7: resumable checkpoints for multi-page and same-URL SPA applications.
+    this.version(7).stores({
+      applicationSessions: 'id, tabId, ats, status, updatedAt',
+    });
   }
 }
 
