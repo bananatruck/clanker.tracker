@@ -11,11 +11,27 @@
  * authorised to work?" is one question with two options, not two questions.
  */
 import type { FieldKind, FieldOption, HarvestedField } from './types';
+import { SECTION_HINT_RE, semanticPath, semanticReading } from './semantic';
 
 export type FieldElement = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+export type AnswerElement = FieldElement | HTMLElement;
 
 /** Input types we never touch. Hidden and submit are not questions. */
 const IGNORED_TYPES = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'password']);
+
+/** Known bot-trap controls must never receive applicant data. */
+function isHoneypot(el: Element): boolean {
+  const signal = [
+    el.getAttribute('data-automation-id'),
+    el.getAttribute('data-testid'),
+    el.getAttribute('name'),
+    el.getAttribute('id'),
+  ].filter(Boolean).join(' ');
+  return (
+    el.hasAttribute('data-honeypot') ||
+    /\b(beecatcher|honey[\s_-]?pot|captcha[\s_-]?trap)\b/i.test(signal)
+  );
+}
 
 function isVisible(el: Element): boolean {
   if (!(el instanceof HTMLElement)) return false;
@@ -27,9 +43,23 @@ function isVisible(el: Element): boolean {
   return style.display !== 'none' && style.visibility !== 'hidden';
 }
 
-function kindOf(el: FieldElement): FieldKind | null {
+function kindOf(el: AnswerElement): FieldKind | null {
   if (el instanceof HTMLTextAreaElement) return 'textarea';
   if (el instanceof HTMLSelectElement) return 'select';
+  if (!(el instanceof HTMLInputElement)) {
+    const role = el.getAttribute('role');
+    if (role === 'combobox') return 'combobox';
+    if (role === 'radiogroup') return 'radiogroup';
+    if (role === 'switch' || role === 'checkbox') return 'switch';
+    if (
+      role === 'textbox' ||
+      el.isContentEditable ||
+      (el.hasAttribute('contenteditable') && el.getAttribute('contenteditable') !== 'false')
+    ) {
+      return 'contenteditable';
+    }
+    return null;
+  }
 
   const type = (el.type || 'text').toLowerCase();
   if (IGNORED_TYPES.has(type)) return null;
@@ -59,6 +89,83 @@ function kindOf(el: FieldElement): FieldKind | null {
 const clean = (s: string | null | undefined): string =>
   (s ?? '').replace(/\s+/g, ' ').trim();
 
+/** One piece of ancestor context, and how far up it was found. */
+interface ContextPart {
+  text: string;
+  depth: number;
+}
+
+/**
+ * Compact structural context; never include the entire application as a label.
+ *
+ * Depth is kept rather than flattened because the resolver weights this
+ * evidence by proximity — see `SignalPart` in semantic.ts. A word on the card
+ * a field sits in means far more than the same word on the page wrapper.
+ */
+function contextParts(el: Element): ContextPart[] {
+  const parts: ContextPart[] = [];
+  const seen = new Set<string>();
+  let current: Element | null = el;
+
+  const push = (value: string, depth: number) => {
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    parts.push({ text: value, depth });
+  };
+
+  for (let depth = 0; current && depth < 7; depth++) {
+    for (const attr of ['data-automation-id', 'data-testid', 'name', 'id', 'aria-label']) {
+      const value = clean(current.getAttribute(attr));
+      if (value && value.length <= 120) push(value, depth);
+    }
+
+    // Class names are the only structural signal some boards give. Greenhouse
+    // wraps its education block in `.education--container` and nothing else on
+    // the field or its ancestors says "education" at all, so without this the
+    // Degree and Discipline selects have no section to belong to. Filtered to
+    // section vocabulary: dumping every class would bury the real evidence in
+    // `remix-css-b62m3t-container` noise.
+    for (const token of (current.getAttribute('class') ?? '').split(/\s+/)) {
+      if (token && token.length <= 40 && SECTION_HINT_RE.test(token)) push(token, depth);
+    }
+
+    // Real section headers are often neither a <legend> nor an <h*>. Greenhouse
+    // renders "Education" as a <p> inside `.education--header`, so an element
+    // whose class says it is a header counts as one.
+    const heading = current.querySelector<HTMLElement>(
+      ':scope > legend, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > [role="heading"],' +
+        ':scope > [class*="header" i], :scope > [class*="heading" i], :scope > [class*="legend" i]',
+    );
+    const headingText = clean(heading?.textContent);
+    if (headingText && headingText.length <= 160) push(headingText, depth);
+
+    if (current.parentElement) {
+      current = current.parentElement;
+    } else {
+      const root = current.getRootNode();
+      current = 'host' in root && root.host instanceof Element ? root.host : null;
+    }
+  }
+
+  return parts;
+}
+
+/**
+ * Proximity weight for context found `depth` levels up.
+ *
+ * Starts just below the field's own label and flattens out, so distant
+ * ancestors still contribute but can never outvote the field itself.
+ */
+const contextWeight = (depth: number): number => Math.max(0.35, 0.85 - depth * 0.1);
+
+/** Compact structural context; never include the entire application as a label. */
+function contextFor(el: Element): string {
+  return contextParts(el)
+    .map((p) => p.text)
+    .join(' · ')
+    .slice(0, 700);
+}
+
 /** Text of an element with nested inputs stripped out. */
 function ownText(el: Element): string {
   const clone = el.cloneNode(true) as Element;
@@ -76,12 +183,15 @@ function ownText(el: Element): string {
  * back to the `name` attribute is last because a humanised `name` is often
  * close enough for tier 2 to hash consistently, which is better than nothing.
  */
-export function labelFor(el: FieldElement): string {
+export function labelFor(el: AnswerElement): string {
   const doc = el.ownerDocument;
+  const root = el.getRootNode() as Document | ShadowRoot;
+  const inRoot = (selector: string): Element | null =>
+    root.querySelector(selector) ?? doc.querySelector(selector);
 
   // 1. <label for="id">
   if (el.id) {
-    const explicit = doc.querySelector(`label[for="${CSS.escape(el.id)}"]`);
+    const explicit = inRoot(`label[for="${CSS.escape(el.id)}"]`);
     const text = explicit ? ownText(explicit) : '';
     if (text) return text;
   }
@@ -98,7 +208,7 @@ export function labelFor(el: FieldElement): string {
   if (labelledBy) {
     const text = labelledBy
       .split(/\s+/)
-      .map((id) => clean(doc.getElementById(id)?.textContent))
+      .map((id) => clean(inRoot(`#${CSS.escape(id)}`)?.textContent))
       .filter(Boolean)
       .join(' ');
     if (text) return text;
@@ -130,7 +240,8 @@ export function labelFor(el: FieldElement): string {
   return '';
 }
 
-function optionsOf(el: FieldElement, doc: Document): FieldOption[] {
+function optionsOf(el: AnswerElement, doc: Document): FieldOption[] {
+  const root = el.getRootNode() as Document | ShadowRoot;
   if (el instanceof HTMLSelectElement) {
     return [...el.options]
       .filter((o) => o.value !== '')
@@ -138,25 +249,69 @@ function optionsOf(el: FieldElement, doc: Document): FieldOption[] {
   }
 
   if (el instanceof HTMLInputElement && el.type === 'radio' && el.name) {
-    const group = doc.querySelectorAll<HTMLInputElement>(
+    const group = root.querySelectorAll<HTMLInputElement>(
       `input[type="radio"][name="${CSS.escape(el.name)}"]`,
     );
     return [...group].map((r) => ({ value: r.value, label: labelFor(r) || r.value }));
   }
 
+  if (el.getAttribute('role') === 'combobox') {
+    const controlled = el.getAttribute('aria-controls');
+    const scope = controlled
+      ? root.querySelector<HTMLElement>(`#${CSS.escape(controlled)}`)
+      : root;
+    return [...(scope?.querySelectorAll<HTMLElement>('[role="option"]') ?? [])]
+      .filter(isVisible)
+      .map((option) => ({
+        value: clean(option.getAttribute('data-value')) || clean(option.textContent),
+        label: clean(option.textContent),
+      }))
+      .filter((option) => option.value);
+  }
+
+  if (el.getAttribute('role') === 'radiogroup') {
+    return [...el.querySelectorAll<HTMLElement>('[role="radio"], input[type="radio"]')]
+      .map((option) => ({
+        value:
+          clean(option.getAttribute('data-value')) ||
+          clean(option.getAttribute('value')) ||
+          clean(option.getAttribute('aria-label')) ||
+          clean(option.textContent),
+        label: labelFor(option) || clean(option.textContent),
+      }))
+      .filter((option) => option.value);
+  }
+
+  if (el.getAttribute('role') === 'switch' || el.getAttribute('role') === 'checkbox') {
+    return [{ value: 'Yes', label: 'Yes' }, { value: 'No', label: 'No' }];
+  }
+
   return [];
 }
 
-function currentValue(el: FieldElement): string {
+function currentValue(el: AnswerElement): string {
   if (el instanceof HTMLInputElement && (el.type === 'radio' || el.type === 'checkbox')) {
     return el.checked ? el.value : '';
   }
-  return el.value ?? '';
+  if ('value' in el) return String(el.value ?? '');
+  if (el.getAttribute('role') === 'radiogroup') {
+    const checked = el.querySelector<HTMLElement>('[role="radio"][aria-checked="true"], input[type="radio"]:checked');
+    return checked
+      ? clean(checked.getAttribute('data-value')) ||
+          clean(checked.getAttribute('value')) ||
+          clean(checked.getAttribute('aria-label')) ||
+          clean(checked.textContent)
+      : '';
+  }
+  if (el.getAttribute('role') === 'switch' || el.getAttribute('role') === 'checkbox') {
+    return el.getAttribute('aria-checked') === 'true' ? 'Yes' : '';
+  }
+  return clean(el.textContent);
 }
 
 /** A radio group's "current value" is whichever member is checked. */
-function radioGroupValue(name: string, doc: Document): string {
-  const checked = doc.querySelector<HTMLInputElement>(
+function radioGroupValue(name: string, root: ParentNode): string {
+  const checked = root.querySelector<HTMLInputElement>(
     `input[type="radio"][name="${CSS.escape(name)}"]:checked`,
   );
   return checked?.value ?? '';
@@ -165,7 +320,7 @@ function radioGroupValue(name: string, doc: Document): string {
 export interface Harvest {
   fields: HarvestedField[];
   /** Live handles, kept out of the serialisable field list. */
-  elements: Map<string, FieldElement>;
+  elements: Map<string, AnswerElement>;
 }
 
 /** How deep to follow shadow roots. Guards against a pathological tree. */
@@ -186,10 +341,12 @@ export function collectFieldElements(
   root: ParentNode,
   depth = 0,
   seen = new Set<Element>(),
-): FieldElement[] {
-  const out: FieldElement[] = [];
+): AnswerElement[] {
+  const out: AnswerElement[] = [];
 
-  for (const el of root.querySelectorAll<FieldElement>('input, textarea, select')) {
+  for (const el of root.querySelectorAll<AnswerElement>(
+    'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="radiogroup"], [role="switch"], [role="checkbox"]',
+  )) {
     if (seen.has(el)) continue;
     seen.add(el);
     out.push(el);
@@ -217,48 +374,100 @@ export function harvestForm(root: ParentNode & { ownerDocument?: Document | null
     (root as Element).ownerDocument ?? (root as unknown as Document) ?? globalThis.document;
 
   const fields: HarvestedField[] = [];
-  const elements = new Map<string, FieldElement>();
+  const elements = new Map<string, AnswerElement>();
   const seenRadioGroups = new Set<string>();
+  const occurrence = new Map<string, number>();
+  const explicitBase = new Map<string, number>();
 
   const candidates = collectFieldElements(root);
 
   for (const el of candidates) {
     const kind = kindOf(el);
     if (!kind) continue;
-    if (!isVisible(el)) continue;
-    if (el.disabled) continue;
+    if (isHoneypot(el)) continue;
+    // Native file controls are commonly hidden behind a styled upload button.
+    // Attaching to that real control is still the correct, event-producing
+    // path; every other invisible input remains out of scope.
+    if (!isVisible(el) && kind !== 'file') continue;
+    if ('disabled' in el && el.disabled) continue;
+    if (el.getAttribute('aria-disabled') === 'true') continue;
+
+    // A custom radiogroup is the question. Native radios nested inside it are
+    // implementation details and must not become a duplicate second field.
+    if (
+      kind === 'radio' &&
+      el instanceof HTMLInputElement &&
+      el.closest('[role="radiogroup"]')
+    ) continue;
 
     // One question per radio group, not one per option.
     if (kind === 'radio') {
-      const name = el.name;
+      const name = el instanceof HTMLInputElement ? el.name : '';
       if (!name || seenRadioGroups.has(name)) continue;
       seenRadioGroups.add(name);
     }
 
     const id = `f${fields.length}`;
     const label = labelFor(el);
+    const ancestry = contextParts(el);
+    const context = ancestry.map((p) => p.text).join(' · ').slice(0, 700);
 
     // A radio group's label lives on its fieldset, not on the first option.
     const groupLabel =
-      kind === 'radio'
+      kind === 'radio' || kind === 'radiogroup'
         ? clean(
             el.closest('fieldset')?.querySelector('legend')?.textContent ??
+              el.querySelector<HTMLElement>(':scope > legend, :scope > [role="heading"]')?.textContent ??
               el.getAttribute('aria-label') ??
               '',
           ) || label
         : label;
 
+    const name = clean(el.getAttribute('name'));
+    const placeholder = clean(el.getAttribute('placeholder'));
+    const autocomplete = clean(el.getAttribute('autocomplete'));
+    // Ordered by how much each signal is worth: the label a human reads is the
+    // field's own account of itself, the attributes it carries come next, and
+    // the DOM around it decays with distance.
+    const semantic = semanticReading([
+      { text: groupLabel, weight: 1 },
+      { text: name, weight: 0.95 },
+      { text: placeholder, weight: 0.9 },
+      { text: autocomplete, weight: 0.9 },
+      ...ancestry.map((p) => ({ text: p.text, weight: contextWeight(p.depth) })),
+    ]);
+    const occurrenceKey = `${semantic.section}:${semantic.leaf ?? ''}`;
+    const seen = occurrence.get(occurrenceKey) ?? 0;
+    if (semantic.explicitIndex !== null && !explicitBase.has(semantic.section)) {
+      explicitBase.set(semantic.section, semantic.explicitIndex === 0 ? 0 : 1);
+    }
+    const base = explicitBase.get(semantic.section) ?? 0;
+    const groupIndex = semantic.explicitIndex === null
+      ? seen
+      : Math.max(0, semantic.explicitIndex - base);
+    if (semantic.leaf) occurrence.set(occurrenceKey, Math.max(seen + 1, groupIndex + 1));
+
     fields.push({
       id,
       kind,
-      name: clean(el.getAttribute('name')),
+      name,
       label: groupLabel,
-      required: el.required || el.getAttribute('aria-required') === 'true',
+      required:
+        ('required' in el && Boolean(el.required)) || el.getAttribute('aria-required') === 'true',
       options: optionsOf(el, doc),
-      placeholder: clean(el.getAttribute('placeholder')),
-      autocomplete: clean(el.getAttribute('autocomplete')),
+      placeholder,
+      autocomplete,
       existingValue:
-        kind === 'radio' ? radioGroupValue(el.name, doc) : currentValue(el),
+        kind === 'radio' && el instanceof HTMLInputElement
+          ? radioGroupValue(el.name, el.getRootNode() as ParentNode)
+          : currentValue(el),
+      section: semantic.section,
+      sectionLabel: context,
+      groupIndex: semantic.leaf ? groupIndex : undefined,
+      semanticPath: semantic.leaf
+        ? semanticPath(semantic.section, groupIndex, semantic.leaf)
+        : undefined,
+      context,
     });
 
     elements.set(id, el);

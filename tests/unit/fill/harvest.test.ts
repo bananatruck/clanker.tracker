@@ -47,6 +47,21 @@ describe('label resolution', () => {
 });
 
 describe('harvest', () => {
+  it('resolves labels and semantics inside an open shadow root', () => {
+    const host = document.body.appendChild(document.createElement('div'));
+    const root = host.attachShadow({ mode: 'open' });
+    root.innerHTML = `
+      <section aria-label="Education">
+        <label for="opaque">Field of Study</label><input id="opaque" name="q_19" />
+      </section>`;
+
+    const [field] = harvestForm(document).fields;
+    expect(field).toMatchObject({
+      label: 'Field of Study',
+      semanticPath: 'education[0].fieldOfStudy',
+    });
+  });
+
   it('collects answerable fields and skips hidden, submit and disabled ones', () => {
     mount(`
       <form>
@@ -63,6 +78,18 @@ describe('harvest', () => {
     expect(fields[0]!.kind).toBe('email');
     expect(fields[0]!.required).toBe(true);
     expect(fields[1]!.kind).toBe('textarea');
+  });
+
+  it('never harvests Workday and generic honeypot controls', () => {
+    mount(`
+      <form>
+        <label for="e">Email</label><input id="e" name="email" />
+        <input name="website" data-automation-id="beecatcher" />
+        <input name="honey_pot" />
+      </form>
+    `);
+    expect(harvestForm(findApplicationForm(document)).fields.map((field) => field.name))
+      .toEqual(['email']);
   });
 
   it('collapses a radio group into one question with options', () => {
@@ -125,6 +152,80 @@ describe('harvest', () => {
       const el = elements.get(field.id) as FieldElement;
       expect(el.getAttribute('name')).toBe(field.name);
     }
+  });
+
+  it('assigns stable semantic paths to repeated resume sections', () => {
+    mount(`
+      <form>
+        <section aria-label="Work Experience" data-automation-id="workExperience-0">
+          <label for="c0">Company</label><input id="c0" />
+          <label for="t0">Job Title</label><input id="t0" />
+        </section>
+        <section aria-label="Work Experience" data-automation-id="workExperience-1">
+          <label for="c1">Company</label><input id="c1" />
+          <label for="t1">Job Title</label><input id="t1" />
+        </section>
+      </form>
+    `);
+    expect(harvestForm(findApplicationForm(document)).fields.map((field) => field.semanticPath))
+      .toEqual([
+        'experience[0].company',
+        'experience[0].title',
+        'experience[1].company',
+        'experience[1].title',
+      ]);
+  });
+
+  it('normalises one-based repeater ids to zero-based profile records', () => {
+    mount(`
+      <form>
+        <section aria-label="Work Experience" data-automation-id="workExperience-1">
+          <label for="c1">Company</label><input id="c1" />
+        </section>
+        <section aria-label="Work Experience" data-automation-id="workExperience-2">
+          <label for="c2">Company</label><input id="c2" />
+        </section>
+      </form>`);
+    expect(harvestForm(findApplicationForm(document)).fields.map((field) => field.semanticPath))
+      .toEqual(['experience[0].company', 'experience[1].company']);
+  });
+
+  it('harvests ARIA comboboxes and contenteditable fields', () => {
+    mount(`
+      <form>
+        <label id="country-label">Country</label>
+        <button role="combobox" aria-labelledby="country-label" aria-controls="countries"></button>
+        <div id="countries" role="listbox"><div role="option" data-value="gb">United Kingdom</div></div>
+        <label id="summary-label">Project summary</label>
+        <div role="textbox" contenteditable="true" aria-labelledby="summary-label"></div>
+      </form>
+    `);
+    const { fields } = harvestForm(findApplicationForm(document));
+    expect(fields.map((field) => field.kind)).toEqual(['combobox', 'contenteditable']);
+    expect(fields[0]!.options).toEqual([{ value: 'gb', label: 'United Kingdom' }]);
+  });
+
+  it('harvests plaintext editors, custom radio groups, and switches once', () => {
+    mount(`
+      <form>
+        <div role="textbox" contenteditable="plaintext-only" aria-label="Responsibilities"></div>
+        <div role="radiogroup" aria-label="Authorized to work?">
+          <button role="radio" aria-checked="false" data-value="yes">Yes</button>
+          <button role="radio" aria-checked="false" data-value="no">No</button>
+        </div>
+        <button role="switch" aria-checked="false" aria-label="Currently employed"></button>
+      </form>
+    `);
+    const { fields } = harvestForm(findApplicationForm(document));
+    expect(fields.map((field) => field.kind)).toEqual(['contenteditable', 'radiogroup', 'switch']);
+    expect(fields[1]!.options.map((option) => option.value)).toEqual(['yes', 'no']);
+  });
+
+  it('keeps a hidden native resume control available for reviewed attachment', () => {
+    mount(`<form><label for="resume">Resume</label><input id="resume" type="file" style="display:none" /></form>`);
+    const { fields } = harvestForm(findApplicationForm(document));
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ kind: 'file', label: 'Resume' });
   });
 });
 

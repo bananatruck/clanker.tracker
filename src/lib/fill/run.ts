@@ -9,8 +9,8 @@
  * Skip the write-back and the tool never gets cheaper — it just stays clever.
  */
 import { detectAts, knownFieldFor, type KnownField } from './adapters';
-import { applyValue, clearHighlight, highlight } from './apply';
-import { findApplicationForm, harvestForm, type FieldElement } from './harvest';
+import { applyAnswer, clearHighlight, highlight } from './apply';
+import { findApplicationForm, harvestForm, type AnswerElement } from './harvest';
 import { batchModel } from './model';
 import { clearOverlays, showReview, type ReviewRow } from './overlay';
 import { resolveFields, tierBreakdown, type AnswerMemory } from './resolve';
@@ -42,7 +42,7 @@ export interface RunOutcome {
 
 /** Map adapter selectors onto harvested field ids, for tier 1. */
 function adapterHitsFor(
-  elements: Map<string, FieldElement>,
+  elements: Map<string, AnswerElement>,
   doc: Document,
   host: string,
 ): { hits: Map<string, KnownField>; ats: ReturnType<typeof detectAts> } {
@@ -165,7 +165,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
       continue;
     }
 
-    const result = applyValue(el, value, field.options);
+    const result = await applyAnswer(el, value, field.options);
     if (result.ok) {
       filled++;
       progress.set(field.id, { ...row, state: 'filled', value });

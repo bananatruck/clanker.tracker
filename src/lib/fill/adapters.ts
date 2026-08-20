@@ -326,6 +326,7 @@ export function knownFieldFor(
   el: Element,
   doc: Document,
 ): KnownField | null {
+  const root = el.getRootNode() as Document | ShadowRoot;
   for (const [field, selectors] of Object.entries(adapter.selectors)) {
     for (const selector of selectors ?? []) {
       // Query rather than `el.matches` so an invalid selector cannot throw for
@@ -336,7 +337,7 @@ export function knownFieldFor(
       // on the page whose name happens to contain the word.
       let matched: Element | null = null;
       try {
-        matched = doc.querySelector(selector);
+        matched = root.querySelector(selector) ?? (root === doc ? null : doc.querySelector(selector));
       } catch {
         continue;
       }

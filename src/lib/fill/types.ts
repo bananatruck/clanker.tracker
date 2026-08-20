@@ -18,7 +18,22 @@ export type FieldKind =
   | 'select'
   | 'radio'
   | 'checkbox'
-  | 'file';
+  | 'file'
+  | 'combobox'
+  | 'radiogroup'
+  | 'switch'
+  | 'contenteditable';
+
+export type SemanticSection =
+  | 'contact'
+  | 'experience'
+  | 'education'
+  | 'project'
+  | 'skills'
+  | 'eligibility'
+  | 'eeo'
+  | 'question'
+  | 'unknown';
 
 export interface FieldOption {
   value: string;
@@ -40,6 +55,15 @@ export interface HarvestedField {
   autocomplete: string;
   /** Value already on the page — a prefilled field is left alone. */
   existingValue: string;
+  /** Nearby heading/automation context retained instead of flattening the DOM. */
+  section?: SemanticSection;
+  sectionLabel?: string;
+  /** Zero-based record number for repeatable experience/education/project cards. */
+  groupIndex?: number;
+  /** Canonical destination, e.g. `experience[1].start.year`. */
+  semanticPath?: string;
+  /** Stable nearby DOM signature used to scope answer memory. */
+  context?: string;
 }
 
 /**
@@ -50,7 +74,7 @@ export interface HarvestedField {
 export type ResolverTier = 1 | 2 | 3 | 4 | 5;
 
 export const TIER_LABEL: Record<ResolverTier, string> = {
-  1: 'site adapter',
+  1: 'profile / site map',
   2: 'answer memory',
   3: 'label match',
   4: 'fuzzy match',
@@ -63,8 +87,8 @@ export interface Resolution {
   tier: ResolverTier;
   /**
    * Tiers 1-4 are deterministic and count as `certain`; tier 5 is a model
-   * guess and is always `guessed`, which is what keeps it out of a clean run
-   * and therefore out of auto-submit eligibility.
+   * guess and is always `guessed`, so review can distinguish it from local,
+   * deterministic answers.
    */
   confidence: Confidence;
 }
@@ -87,7 +111,7 @@ export interface FillPlan {
 
 /** Answers the user gives once and reuses on every application. */
 export interface Preferences {
-  /** Exact application facts that a resume location line cannot supply safely. */
+  /** Application facts that cannot be recovered safely from a resume line. */
   preferredName: string;
   streetAddress: string;
   city: string;
@@ -126,7 +150,7 @@ export const emptyPreferences = (): Preferences => ({
   pronouns: '',
 });
 
-/** Old installations receive newly added preference fields without migration. */
+/** Old installations receive new preference fields without a DB migration. */
 export const normalizePreferences = (
   value: Partial<Preferences> | null | undefined,
 ): Preferences => ({ ...emptyPreferences(), ...(value ?? {}) });

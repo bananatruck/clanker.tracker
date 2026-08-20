@@ -16,7 +16,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { detectAts, knownFieldFor, type AtsAdapter } from '@/lib/fill/adapters';
 import { findApplicationForm, harvestForm } from '@/lib/fill/harvest';
 import { resolveFields } from '@/lib/fill/resolve';
-import { applyValue } from '@/lib/fill/apply';
+import { applyAnswer } from '@/lib/fill/apply';
 import { emptyPreferences, type Preferences } from '@/lib/fill/types';
 import type { FillContext } from '@/lib/fill/labels';
 import { emptyContact, field, PRIMARY_PROFILE_ID, type ResumeProfile } from '@/types/profile';
@@ -102,8 +102,9 @@ async function fillPage(host: string): Promise<{
     const harvested = byId.get(resolution.fieldId);
     if (!el || !harvested) continue;
 
-    applyValue(el, resolution.value, harvested.options);
-    values[el.getAttribute('name') || el.id] = el.value;
+    await applyAnswer(el, resolution.value, harvested.options);
+    values[el.getAttribute('name') || el.id] =
+      'value' in el ? String(el.value) : (el.textContent ?? '').trim();
   }
 
   return {
