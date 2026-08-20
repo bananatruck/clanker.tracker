@@ -29,13 +29,19 @@ import {
   setCredentials,
   type Credentials,
 } from '@/lib/fill/credentials';
-import { getSetting, setSetting } from '@/lib/db/repo';
+import {
+  forgetRememberedAnswer,
+  getSetting,
+  rememberedAnswers,
+  setSetting,
+  updateRememberedAnswer,
+} from '@/lib/db/repo';
 import {
   emptyPreferences,
   normalizePreferences,
   type Preferences,
 } from '@/lib/fill/types';
-import { Button, Meter, Window } from '@/ui/dq';
+import { Button, Editable, Meter, Window } from '@/ui/dq';
 import WritingSamples from '@/ui/WritingSamples';
 
 type TestState =
@@ -201,6 +207,7 @@ export default function Settings() {
       )}
 
       <ApplicationDefaults />
+      <LearnedAnswers />
       <AccountCredentials />
 
       <Window title="Setup">
@@ -211,6 +218,79 @@ export default function Settings() {
         </Button>
       </Window>
     </div>
+  );
+}
+
+function LearnedAnswers() {
+  const answers = useLiveQuery(() => rememberedAnswers(), [], []) ?? [];
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? answers.filter((item) =>
+        `${item.lastSeenRaw} ${item.answer} ${item.semanticPath ?? ''}`
+          .toLowerCase()
+          .includes(needle),
+      )
+    : answers;
+
+  return (
+    <Window
+      title="Learned answers"
+      right={<span className="font-mono text-[11px] text-faint">{answers.length} saved</span>}
+    >
+      <p className="mb-2 text-[12px] leading-snug text-muted">
+        Answers approved in review are reused locally. Edit a bad answer once or forget it.
+      </p>
+      {answers.length > 0 && (
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search questions or answers"
+          className="dq-input mb-2 w-full px-1.5 py-1 text-[12px]"
+        />
+      )}
+
+      {shown.length === 0 ? (
+        <p className="text-[12px] text-faint">
+          {answers.length === 0 ? 'No approved answers yet.' : 'No answers match this search.'}
+        </p>
+      ) : (
+        <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
+          {shown.map((item) => (
+            <article key={item.hash} className="border-2 border-frame-dim p-1.5">
+              <div className="flex items-start gap-1">
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-[12px] leading-snug text-muted">
+                    {item.lastSeenRaw}
+                  </p>
+                  <div className="mt-0.5 flex">
+                    <Editable
+                      value={item.answer}
+                      onCommit={(answer) => updateRememberedAnswer(item.hash, answer)}
+                      className="text-parchment"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  title="Forget this answer"
+                  aria-label={`Forget answer for ${item.lastSeenRaw}`}
+                  onClick={() => void forgetRememberedAnswer(item.hash)}
+                  className="shrink-0 px-1 font-mono text-[12px] text-faint hover:text-bad"
+                >
+                  ✖
+                </button>
+              </div>
+              <p className="mt-1 font-mono text-[10px] text-faint">
+                used {item.timesUsed}× · {item.seenOn.join(', ') || 'generic'}
+                {item.semanticPath ? ` · ${item.semanticPath}` : ''}
+              </p>
+            </article>
+          ))}
+        </div>
+      )}
+    </Window>
   );
 }
 

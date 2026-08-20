@@ -210,6 +210,22 @@ export async function rememberAnswer(
   });
 }
 
+/** All user-approved answers, newest use first, for review in Settings. */
+export function rememberedAnswers(): Promise<QuestionAnswer[]> {
+  return db.questions.orderBy('lastUsedAt').reverse().toArray();
+}
+
+/** Correct an answer without changing the question/context key that recalls it. */
+export async function updateRememberedAnswer(hash: string, answer: string): Promise<void> {
+  const value = answer.trim();
+  if (!value) return;
+  await db.questions.update(hash, { answer: value, lastUsedAt: Date.now() });
+}
+
+export async function forgetRememberedAnswer(hash: string): Promise<void> {
+  await db.questions.delete(hash);
+}
+
 /* ------------------------------------------------------------------ scans */
 
 export async function saveScan(scan: ScanResult): Promise<void> {
