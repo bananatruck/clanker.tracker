@@ -68,6 +68,39 @@ for (const file of walk(OUT)) {
 
 const manifest = JSON.parse(readFileSync(join(OUT, 'manifest.json'), 'utf8'));
 
+if (manifest.manifest_version !== 3) {
+  problems.push(`manifest_version is ${String(manifest.manifest_version)}, expected MV3`);
+}
+if (!manifest.background?.service_worker) {
+  problems.push('MV3 background service_worker is missing');
+}
+
+// Each named runtime adapter must also be reachable without a manual
+// activeTab injection. This mismatch made three implemented adapters appear
+// functional in unit tests while their production content script never ran.
+const ATS_MATCHES = [
+  'https://*.greenhouse.io/*',
+  'https://*.lever.co/*',
+  'https://*.ashbyhq.com/*',
+  'https://*.workable.com/*',
+  'https://*.myworkdayjobs.com/*',
+  'https://www.linkedin.com/jobs/*',
+  'https://*.smartrecruiters.com/*',
+  'https://*.icims.com/*',
+  'https://*.jobvite.com/*',
+];
+const declaredContentMatches = new Set(
+  (manifest.content_scripts ?? []).flatMap((script) => script.matches ?? []),
+);
+const declaredHosts = new Set(manifest.host_permissions ?? []);
+for (const match of ATS_MATCHES) {
+  if (!declaredContentMatches.has(match)) problems.push(`content script does not match ${match}`);
+  const hostPermission = match === 'https://www.linkedin.com/jobs/*'
+    ? 'https://www.linkedin.com/*'
+    : match;
+  if (!declaredHosts.has(hostPermission)) problems.push(`host permission is missing ${hostPermission}`);
+}
+
 const referenced = [
   manifest.background?.service_worker,
   manifest.side_panel?.default_path,
