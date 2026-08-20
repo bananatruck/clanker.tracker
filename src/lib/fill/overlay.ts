@@ -176,6 +176,9 @@ export function showReview(
 
       const input = document.createElement('input');
       input.value = initial;
+      // The name describes retained bytes, not an editable text answer. The
+      // run only attaches those exact bytes after the user accepts this row.
+      input.readOnly = field.kind === 'file';
       input.addEventListener('input', () => {
         values.set(field.id, input.value);
         corrected.add(field.id);

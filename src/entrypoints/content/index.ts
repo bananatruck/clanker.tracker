@@ -25,6 +25,7 @@ import { normalizePreferences, type Preferences } from '@/lib/fill/types';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
+import type { StoredDocument } from '@/lib/db/schema';
 
 /** Messages the side panel sends us. */
 type Request =
@@ -265,6 +266,9 @@ export default defineContentScript({
               fallback: {},
             });
             const preferences = normalizePreferences(storedPreferences);
+            const resumeDocument = await askBackground<StoredDocument | null>({
+              type: 'db:getResumeDocument',
+            });
 
             const outcome = await runFill(
               { profile, preferences },
@@ -292,6 +296,7 @@ export default defineContentScript({
                   await askBackground({ type: 'db:recordFillRun', run });
                 },
                 bark: () => askBackground<string | null>({ type: 'db:bark' }),
+                resumeDocument,
               },
             );
 

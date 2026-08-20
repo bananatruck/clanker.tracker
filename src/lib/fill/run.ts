@@ -9,7 +9,7 @@
  * Skip the write-back and the tool never gets cheaper — it just stays clever.
  */
 import { detectAts, knownFieldFor, type KnownField } from './adapters';
-import { applyAnswer, clearHighlight, highlight } from './apply';
+import { applyAnswer, applyFile, clearHighlight, highlight } from './apply';
 import { findApplicationForm, harvestForm, type AnswerElement } from './harvest';
 import { batchModel } from './model';
 import { clearOverlays, showReview, type ReviewRow } from './overlay';
@@ -19,6 +19,7 @@ import type { RunRecord } from './autosubmit';
 import { reportProgress, type FieldProgress, type FillPhase } from './progress';
 import type { HarvestedField, Resolution } from './types';
 import { prepareRepeaters } from './repeaters';
+import type { StoredDocument } from '@/lib/db/schema';
 
 export interface RunHooks {
   memory: AnswerMemory;
@@ -31,6 +32,8 @@ export interface RunHooks {
    * Decoration only — a failure to fetch it must never stop a fill.
    */
   bark?(): Promise<string | null>;
+  /** Exact local bytes selected during setup; never reconstructed from text. */
+  resumeDocument?: StoredDocument | null;
 }
 
 export interface RunOutcome {
@@ -90,10 +93,27 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
 
   const byId = new Map<string, Resolution>(plan.resolutions.map((r) => [r.fieldId, r]));
 
+  if (hooks.resumeDocument) {
+    for (const field of fields) {
+      if (field.kind !== 'file') continue;
+      const namedResume = /\b(resume|cv|curriculum vitae)\b/i.test(
+        `${field.label} ${field.name}`,
+      );
+      if (hits.get(field.id) !== 'resume' && !namedResume) continue;
+      byId.set(field.id, {
+        fieldId: field.id,
+        value: hooks.resumeDocument.fileName,
+        tier: 1,
+        confidence: 'certain',
+      });
+    }
+  }
+
   // Only fields the run actually intends to touch reach review; a field the
   // page had already filled is not the user's problem to re-approve.
   const pending: HarvestedField[] = fields.filter(
-    (f) => f.existingValue.trim() === '' && f.kind !== 'file',
+    (field) =>
+      field.existingValue.trim() === '' && (field.kind !== 'file' || byId.has(field.id)),
   );
 
   const rows: ReviewRow[] = pending.map((field) => ({
@@ -137,7 +157,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   const emptyRun: RunRecord = {
     ats: ats.id,
     totalFields: pending.length,
-    certainFields: plan.resolutions.filter((r) => r.confidence === 'certain').length,
+    certainFields: pending.filter((field) => byId.get(field.id)?.confidence === 'certain').length,
     correctedFields: outcome.corrected.size,
     unfilledRequired: 0,
     at: Date.now(),
@@ -167,12 +187,15 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
       continue;
     }
 
-    const result = await applyAnswer(el, value, field.options);
+    const result =
+      field.kind === 'file' && el instanceof HTMLInputElement && hooks.resumeDocument
+        ? applyFile(el, hooks.resumeDocument)
+        : await applyAnswer(el, value, field.options);
     if (result.ok) {
       filled++;
       progress.set(field.id, { ...row, state: 'filled', value });
       // Learn the answer under the question as this site phrased it.
-      if (field.label) await hooks.remember(field, value);
+      if (field.label && field.kind !== 'file') await hooks.remember(field, value);
     } else {
       skipped++;
       progress.set(field.id, { ...row, state: 'needs-you', value: '' });
@@ -181,7 +204,7 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   }
 
   const unfilledRequired = pending.filter(
-    (f) => f.required && (outcome.values.get(f.id) ?? '').trim() === '',
+    (field) => field.required && progress.get(field.id)?.state !== 'filled',
   ).length;
 
   const run: RunRecord = { ...emptyRun, unfilledRequired, at: Date.now() };

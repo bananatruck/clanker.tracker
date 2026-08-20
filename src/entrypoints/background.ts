@@ -6,6 +6,7 @@
  */
 import {
   getProfile,
+  getResumeDocument,
   getSetting,
   logApplication,
   recallAnswer,
@@ -30,6 +31,9 @@ async function handle(request: DbRequest): Promise<unknown> {
   switch (request.type) {
     case 'db:getProfile':
       return (await getProfile()) ?? null;
+
+    case 'db:getResumeDocument':
+      return (await getResumeDocument()) ?? null;
 
     // The skirmish line for the player's tier. Lives here because the content
     // script cannot see the deeds ledger the level is derived from.
