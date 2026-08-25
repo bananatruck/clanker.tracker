@@ -127,6 +127,10 @@ export interface Application {
   contact?: string;
   /** Optional reminder date for the next action. */
   nextActionAt?: number;
+  /** Posting location as published or corrected by the user. */
+  location?: string;
+  /** User-authored labels for organizing a search. */
+  tags?: string[];
 }
 
 export type ApplicationEventKind = 'created' | 'status' | 'submitted' | 'updated' | 'follow-up';

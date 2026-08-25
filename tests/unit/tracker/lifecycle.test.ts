@@ -44,4 +44,19 @@ describe('tracked job lifecycle', () => {
     }, 100);
     expect(withdrawn.appliedAt).toBeNull();
   });
+
+  it('normalizes tracker tags and retains user research on an automated revisit', () => {
+    const saved = createTrackedJob({
+      company: 'Acme', role: 'Engineer', url: 'https://jobs.test/42', ats: 'generic',
+      location: 'Toronto, ON', tags: ['Remote', 'remote', ' TypeScript '],
+    }, 100);
+    expect(saved.tags).toEqual(['Remote', 'TypeScript']);
+    expect(saved.location).toBe('Toronto, ON');
+
+    const revisited = mergeTrackedJob(saved, {
+      company: 'Acme', role: 'Engineer', url: saved.url, ats: 'greenhouse', status: 'saved',
+    }, 200);
+    expect(revisited.tags).toEqual(['Remote', 'TypeScript']);
+    expect(revisited.location).toBe('Toronto, ON');
+  });
 });

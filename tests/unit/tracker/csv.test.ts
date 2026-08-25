@@ -94,6 +94,21 @@ describe('the export', () => {
     expect(applicationsToCsv([app({ salary: '£95,000' })])).toContain('"£95,000"');
   });
 
+  it('exports location, tags, reminder date, and source metadata', () => {
+    const csv = applicationsToCsv([app({
+      location: 'Toronto, ON',
+      tags: ['Remote', 'Platform'],
+      nextActionAt: Date.UTC(2026, 6, 22),
+      source: 'autofill',
+    })]);
+    expect(csv).toContain('Location');
+    expect(csv).toContain('Tags');
+    expect(csv).toContain('Toronto, ON');
+    expect(csv).toContain('Remote; Platform');
+    expect(csv).toContain('2026-07-22');
+    expect(csv).toContain('autofill');
+  });
+
   it('writes an unresearched row as blanks, not as "undefined"', () => {
     const row = applicationsToCsv([app()]).trimEnd().split('\r\n')[1]!;
     expect(row).not.toContain('undefined');

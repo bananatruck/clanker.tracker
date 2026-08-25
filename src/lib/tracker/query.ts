@@ -74,6 +74,8 @@ function matchesText(app: Application, rawQuery: string): boolean {
     app.nextAction ?? '',
     app.website ?? '',
     app.contact ?? '',
+    app.location ?? '',
+    ...(app.tags ?? []),
     app.url,
   ].join(' '));
   return terms.every((term) => haystack.includes(term));

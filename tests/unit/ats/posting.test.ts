@@ -67,6 +67,24 @@ describe('extractPosting', () => {
     expect(posting.description).not.toContain('should lose');
   });
 
+  it('reads a structured posting location for the tracker', () => {
+    const doc = docFrom(`
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'JobPosting',
+        title: 'Senior Engineer',
+        description: LONG,
+        jobLocation: {
+          address: {
+            addressLocality: 'Toronto',
+            addressRegion: 'ON',
+            addressCountry: 'CA',
+          },
+        },
+      })}</script>
+    `);
+    expect(extractPosting(doc)?.location).toBe('Toronto, ON, CA');
+  });
+
   it('finds a JobPosting nested inside an @graph', () => {
     const doc = docFrom(`
       <script type="application/ld+json">${JSON.stringify({

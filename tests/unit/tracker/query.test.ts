@@ -48,6 +48,12 @@ describe('tracker query', () => {
       .toEqual(['two']);
   });
 
+  it('searches location and tags', () => {
+    const rows = [app('one', 'saved', { location: 'Toronto, ON', tags: ['Remote', 'Platform'] })];
+    expect(ids(filterApplications(rows, { query: 'toronto remote', filter: 'all' }, NOW)))
+      .toEqual(['one']);
+  });
+
   it.each<[TrackerFilter, string[]]>([
     ['saved', ['saved']],
     ['active', ['saved', 'started', 'applied', 'offer']],

@@ -20,6 +20,7 @@ export interface ExtractedPosting {
   company: string;
   description: string;
   source: PostingSource;
+  location?: string;
 }
 
 /** Below this there is no posting worth scanning — usually a listing page. */
@@ -70,6 +71,39 @@ const isJobPosting = (obj: Record<string, unknown>): boolean => {
 
 const asText = (v: unknown): string => (typeof v === 'string' ? v : '');
 
+function locationFromPosting(obj: Record<string, unknown>): string {
+  if (asText(obj.jobLocationType).toUpperCase() === 'TELECOMMUTE') return 'Remote';
+  const raw = obj.jobLocation;
+  const locations = Array.isArray(raw) ? raw : [raw];
+  const rendered: string[] = [];
+  for (const item of locations) {
+    if (typeof item === 'string') {
+      if (item.trim()) rendered.push(item.trim());
+      continue;
+    }
+    if (!item || typeof item !== 'object') continue;
+    const location = item as Record<string, unknown>;
+    const address = location.address;
+    const record = address && typeof address === 'object'
+      ? address as Record<string, unknown>
+      : location;
+    const countryValue = record.addressCountry;
+    const country = typeof countryValue === 'string'
+      ? countryValue
+      : countryValue && typeof countryValue === 'object'
+        ? asText((countryValue as Record<string, unknown>).name)
+        : '';
+    const parts = [
+      asText(record.addressLocality),
+      asText(record.addressRegion),
+      country,
+    ].map((part) => normaliseWhitespace(part)).filter(Boolean);
+    const value = parts.join(', ') || normaliseWhitespace(asText(location.name));
+    if (value) rendered.push(value);
+  }
+  return [...new Set(rendered)].join('; ');
+}
+
 const AMBIGUOUS_POSTING = Symbol('ambiguous posting');
 
 function fromJsonLd(doc: Document): ExtractedPosting | typeof AMBIGUOUS_POSTING | null {
@@ -94,12 +128,14 @@ function fromJsonLd(doc: Document): ExtractedPosting | typeof AMBIGUOUS_POSTING 
       // `description` is HTML in practice, whatever the schema says.
       const description = htmlToText(asText(obj['description']));
       if (description.length < MIN_DESCRIPTION_CHARS) continue;
+      const location = locationFromPosting(obj);
 
       const candidate: ExtractedPosting = {
         title: normaliseWhitespace(asText(obj['title'])),
         company: normaliseWhitespace(company),
         description,
         source: 'json-ld',
+        ...(location ? { location } : {}),
       };
       const identity = [candidate.title, candidate.company, candidate.description].join('\u001f');
       candidates.set(identity, candidate);

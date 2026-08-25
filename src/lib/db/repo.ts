@@ -36,6 +36,7 @@ import { checkpointSession } from '@/lib/fill/session';
 import {
   createTrackedJob,
   mergeTrackedJob,
+  normalizeTags,
   type TrackedJobInput,
 } from '@/lib/tracker/lifecycle';
 import { canonicalJobUrl, jobDedupeKey } from '@/lib/tracker/identity';
@@ -409,7 +410,7 @@ export async function updateApplication(
   patch: Partial<
     Pick<
       Application,
-      'company' | 'role' | 'url' | 'notes' | 'salary' | 'nextAction' | 'nextActionAt' | 'website' | 'contact'
+      'company' | 'role' | 'url' | 'notes' | 'salary' | 'nextAction' | 'nextActionAt' | 'website' | 'contact' | 'location' | 'tags'
     >
   >,
 ): Promise<number> {
@@ -420,6 +421,7 @@ export async function updateApplication(
   const next = {
     ...patch,
     ...(patch.url === undefined ? {} : { url: canonicalJobUrl(patch.url) }),
+    ...(patch.tags === undefined ? {} : { tags: normalizeTags(patch.tags) }),
   };
   const merged = { ...before, ...next };
   const changedFollowUp =

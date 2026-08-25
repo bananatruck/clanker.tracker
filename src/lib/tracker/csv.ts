@@ -50,6 +50,11 @@ export const APPLICATION_COLUMNS = [
   'ATS',
   'LLM calls',
   'Notes',
+  'Location',
+  'Tags',
+  'Follow-up Date',
+  'Source',
+  'Tracked Date',
 ] as const;
 
 /** ISO date, no clock — a tracker row is a day, not a moment. */
@@ -74,6 +79,11 @@ export function applicationsToCsv(apps: readonly Application[]): string {
         a.ats,
         a.llmCalls,
         a.notes,
+        a.location ?? '',
+        (a.tags ?? []).join('; '),
+        day(a.nextActionAt),
+        a.source ?? '',
+        day(a.trackedAt),
       ]),
     ),
   ];

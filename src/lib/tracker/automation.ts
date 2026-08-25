@@ -40,6 +40,7 @@ export function trackedJobForPage(
     scanId: null,
     notes: '',
     llmCalls: 0,
+    ...(posting?.location ? { location: posting.location } : {}),
   };
 }
 

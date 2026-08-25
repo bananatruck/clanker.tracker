@@ -391,7 +391,8 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
             {app.company || 'Unknown company'}
           </span>
           <span className="mt-0.5 block truncate font-mono text-[11px] text-faint">
-            {app.role || 'role unrecorded'} · {app.ats}
+            {app.role || 'role unrecorded'}
+            {app.location ? ` · ${app.location}` : ''} · {app.ats}
             {app.llmCalls === 0 ? (
               <span className="text-ok"> · free</span>
             ) : (
@@ -425,11 +426,21 @@ function CardDetail({
   const [nextAction, setNextAction] = useState(app.nextAction ?? '');
   const [nextActionDate, setNextActionDate] = useState(localDateInputValue(app.nextActionAt));
   const [followUpSaved, setFollowUpSaved] = useState(false);
+  const [location, setLocation] = useState(app.location ?? '');
+  const [tags, setTags] = useState((app.tags ?? []).join(', '));
+  const [notes, setNotes] = useState(app.notes);
+  const [detailsSaved, setDetailsSaved] = useState(false);
 
   useEffect(() => {
     setNextAction(app.nextAction ?? '');
     setNextActionDate(localDateInputValue(app.nextActionAt));
   }, [app.nextAction, app.nextActionAt]);
+
+  useEffect(() => {
+    setLocation(app.location ?? '');
+    setTags((app.tags ?? []).join(', '));
+    setNotes(app.notes);
+  }, [app.location, app.tags, app.notes]);
 
   const move = async (status: ApplicationStatus) => {
     onMoved({ dp: await setApplicationStatus(app.id, status), status });
@@ -442,6 +453,16 @@ function CardDetail({
     });
     setFollowUpSaved(true);
     setTimeout(() => setFollowUpSaved(false), 1800);
+  };
+
+  const saveDetails = async () => {
+    await updateApplication(app.id, {
+      location: location.trim(),
+      tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+      notes: notes.trim(),
+    });
+    setDetailsSaved(true);
+    setTimeout(() => setDetailsSaved(false), 1800);
   };
 
   const remove = async () => {
@@ -486,6 +507,39 @@ function CardDetail({
           </>
         )}
       </p>
+
+      <section className="space-y-1 border-t border-frame pt-2">
+        <h4 className="font-mono text-[11px] uppercase tracking-wide text-faint">Job details</h4>
+        <input
+          value={location}
+          onChange={(event) => setLocation(event.target.value)}
+          aria-label={`Location for ${app.company}`}
+          placeholder="Location or Remote"
+          className="w-full border border-frame-dim bg-field px-2 py-1 text-[12px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        />
+        <input
+          value={tags}
+          onChange={(event) => setTags(event.target.value)}
+          aria-label={`Tags for ${app.company}`}
+          placeholder="Tags, comma separated"
+          className="w-full border border-frame-dim bg-field px-2 py-1 text-[12px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        />
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          aria-label={`Notes for ${app.company}`}
+          placeholder="Notes about the role, team, or process"
+          rows={3}
+          className="w-full resize-y border border-frame-dim bg-field px-2 py-1 text-[12px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        />
+        <button
+          type="button"
+          onClick={() => void saveDetails()}
+          className="border border-frame px-2 py-1 font-mono text-[11px] text-gold hover:bg-window-hi"
+        >
+          {detailsSaved ? 'Saved' : 'Save details'}
+        </button>
+      </section>
 
       <section className="space-y-1 border-t border-frame pt-2">
         <h4 className="font-mono text-[11px] uppercase tracking-wide text-faint">Next action</h4>
@@ -596,6 +650,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [url, setUrl] = useState('');
+  const [location, setLocation] = useState('');
   const [status, setStatus] = useState<'saved' | 'applied'>('applied');
 
   const submit = async () => {
@@ -609,6 +664,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
       notes: '',
       llmCalls: 0,
       source: 'manual' as const,
+      ...(location.trim() ? { location: location.trim() } : {}),
     };
     if (status === 'applied') {
       await logApplication(init);
@@ -638,6 +694,12 @@ function AddForm({ onDone }: { onDone: () => void }) {
         value={url}
         onChange={(event) => setUrl(event.target.value)}
         placeholder="Posting URL (optional)"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+      />
+      <input
+        value={location}
+        onChange={(event) => setLocation(event.target.value)}
+        placeholder="Location or Remote (optional)"
         className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
       <select

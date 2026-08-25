@@ -25,6 +25,20 @@ export interface TrackedJobInput {
   nextActionAt?: number;
   website?: string;
   contact?: string;
+  location?: string;
+  tags?: string[];
+}
+
+export function normalizeTags(tags: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return tags
+    .map((tag) => tag.trim())
+    .filter((tag) => {
+      const key = tag.toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 export function createTrackedJob(init: TrackedJobInput, now = Date.now()): Application {
@@ -51,6 +65,8 @@ export function createTrackedJob(init: TrackedJobInput, now = Date.now()): Appli
     ...(init.nextActionAt === undefined ? {} : { nextActionAt: init.nextActionAt }),
     ...(init.website === undefined ? {} : { website: init.website }),
     ...(init.contact === undefined ? {} : { contact: init.contact }),
+    ...(init.location === undefined ? {} : { location: init.location.trim() }),
+    ...(init.tags === undefined ? {} : { tags: normalizeTags(init.tags) }),
   };
 }
 
@@ -91,5 +107,7 @@ export function mergeTrackedJob(
     ...(init.nextActionAt === undefined ? {} : { nextActionAt: init.nextActionAt }),
     ...(init.website === undefined ? {} : { website: init.website }),
     ...(init.contact === undefined ? {} : { contact: init.contact }),
+    ...(init.location === undefined ? {} : { location: init.location.trim() }),
+    ...(init.tags === undefined ? {} : { tags: normalizeTags(init.tags) }),
   };
 }
