@@ -30,9 +30,9 @@ import {
   type AutomaticTrackingStatus,
 } from '@/lib/tracker/automation';
 import { identifyPosting } from '@/lib/tracker/funnel';
-import { watchSubmission } from '@/lib/tracker/watch';
+import { hasSubmissionConfirmation, watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
-import type { ApplicationSession, StoredDocument } from '@/lib/db/schema';
+import type { Application, ApplicationSession, StoredDocument } from '@/lib/db/schema';
 
 /** Messages the side panel sends us. */
 type Request =
@@ -98,12 +98,15 @@ export default defineContentScript({
     let observedPageKey = '';
     const trackingSignals = new TrackingSignalGate();
 
-    async function trackPage(status: AutomaticTrackingStatus): Promise<boolean> {
+    async function trackPage(
+      status: AutomaticTrackingStatus,
+      trackingUrl = location.href,
+    ): Promise<boolean> {
       const init = trackedJobForPage(document, {
         ats: ats.id,
         host: location.hostname,
         title: document.title,
-        url: location.href,
+        url: trackingUrl,
       }, status);
       if (!init) return false;
 
@@ -113,8 +116,8 @@ export default defineContentScript({
       }));
     }
 
-    function queueTracking(status: AutomaticTrackingStatus): void {
-      void trackPage(status).catch((err) => {
+    function queueTracking(status: AutomaticTrackingStatus, trackingUrl?: string): void {
+      void trackPage(status, trackingUrl).catch((err) => {
         console.error(`[clanker] could not mark application ${status}:`, err);
       });
     }
@@ -182,39 +185,52 @@ export default defineContentScript({
       }, nextOfferDelay(firstRelevantMutation, now)) as unknown as number;
     });
 
-    function armTracker(llmCalls: number): void {
+    function armTracker(llmCalls: number, trackingUrl = location.href): void {
       disarm?.();
       const form = findApplicationForm(document);
+      const tracked = trackedJobForPage(document, {
+        ats: ats.id,
+        host: location.hostname,
+        title: document.title,
+        url: trackingUrl,
+      }, 'started');
 
       disarm = watchSubmission(form, () => {
         disarm = null;
-        const tracked = trackedJobForPage(document, {
-          ats: ats.id,
-          host: location.hostname,
-          title: document.title,
-          url: location.href,
-        }, 'started');
         const fallback = identifyPosting({
           host: location.hostname,
           title: document.title,
-          url: location.href,
+          url: trackingUrl,
         });
 
-        void askBackground({
-          type: 'db:logApplication',
-          init: {
-            company: tracked?.company ?? fallback.company,
-            role: tracked?.role ?? fallback.role,
-            url: location.href,
-            ats: ats.id,
-            status: 'applied',
-            source: 'autofill',
-            scanId: null,
-            notes: '',
-            llmCalls,
-          },
-        }).catch((err) => console.error('[clanker] could not log application:', err));
-        void askBackground({ type: 'db:completeApplicationSession' }).catch(() => {});
+        void askBackground<Application | null>({ type: 'db:confirmApplicationSession' })
+          .then(async (confirmed) => {
+            if (confirmed) return;
+            await askBackground({
+              type: 'db:logApplication',
+              init: {
+                company: tracked?.company ?? fallback.company,
+                role: tracked?.role ?? fallback.role,
+                url: trackingUrl,
+                ats: ats.id,
+                status: 'applied',
+                source: 'autofill',
+                scanId: null,
+                notes: '',
+                llmCalls,
+              },
+            });
+            await askBackground({ type: 'db:completeApplicationSession' });
+          })
+          .catch((err) => console.error('[clanker] could not log application:', err));
+      });
+    }
+
+    function confirmVisibleSubmission(): void {
+      if (window.top !== window.self) return;
+      if (!hasSubmissionConfirmation(document, location.href)) return;
+      void askBackground({ type: 'db:confirmApplicationSession' }).catch((err) => {
+        console.error('[clanker] could not confirm redirected application:', err);
       });
     }
 
@@ -231,7 +247,9 @@ export default defineContentScript({
       window.addEventListener('popstate', () => {
         resetLauncher();
         filledHere = false;
+        confirmVisibleSubmission();
       });
+      setTimeout(confirmVisibleSubmission, 300);
       setTimeout(offer, 600);
     }
 
@@ -295,19 +313,36 @@ export default defineContentScript({
       }
 
       if (request.type === 'clanker:fill') {
-        queueTracking('started');
         const entry = applicationEntry(document, ats.id);
         if (entry) {
           // Reply before Workday navigation tears down this message port.
           sendResponse({ ok: true, opening: true, filled: 0, skipped: 0, llmCalls: 0 });
-          void beginApplication(document, ats.id).then((opened) => {
+          void (async () => {
+            const fields = harvestForm(findApplicationForm(document)).fields;
+            const session = await askBackground<ApplicationSession>({
+              type: 'db:touchApplicationSession',
+              init: {
+                ats: ats.id,
+                url: location.href,
+                pageKey: pageKeyFor(fields),
+                completedPaths: [],
+                llmCalls: 0,
+              },
+            }).catch(() => null);
+            await trackPage('started', session?.jobUrl ?? location.href).catch(() => false);
+            const opened = await beginApplication(document, ats.id);
             if (!opened) console.error('[clanker] Workday did not expose Apply Manually.');
-          });
+          })();
           return false;
         }
 
         void (async () => {
           try {
+            const existingSession = await askBackground<ApplicationSession | null>({
+              type: 'db:getApplicationSession',
+              ats: ats.id,
+            }).catch(() => null);
+            await trackPage('started', existingSession?.jobUrl ?? location.href).catch(() => false);
             const gate = readGate(document);
 
             if (gate.gate === 'confirm-email') {
@@ -349,6 +384,7 @@ export default defineContentScript({
                       url: location.href,
                       pageKey: pageKeyFor(fields),
                       completedPaths: [],
+                      llmCalls: 0,
                     },
                   }).catch(() => null)
                 : null;
@@ -415,7 +451,6 @@ export default defineContentScript({
             // actually submits the page. Arm the watcher and let it log — see
             // lib/tracker/watch.ts for why this is not done right here.
             if (!outcome.cancelled && outcome.filled > 0) {
-              armTracker(outcome.llmCalls);
               filledHere = true;
               const currentFields = harvestForm(findApplicationForm(document)).fields;
               filledPageKey = pageKeyFor(currentFields);
@@ -424,11 +459,14 @@ export default defineContentScript({
                 type: 'db:touchApplicationSession',
                 init: {
                   ats: ats.id,
-                  url: location.href,
-                  pageKey: filledPageKey,
-                  completedPaths: outcome.completedPaths,
-                },
-              }).catch(() => null);
+                    url: location.href,
+                    pageKey: filledPageKey,
+                    completedPaths: outcome.completedPaths,
+                    jobUrl: existingSession?.jobUrl,
+                    llmCalls: outcome.llmCalls,
+                  },
+                }).catch(() => null);
+              armTracker(outcome.llmCalls, session?.jobUrl ?? existingSession?.jobUrl);
               sendResponse({ ok: true, ...outcome, sessionStep: session?.step });
               return;
             }

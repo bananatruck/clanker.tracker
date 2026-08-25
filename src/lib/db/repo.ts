@@ -492,6 +492,40 @@ export async function completeApplicationSession(tabId: number): Promise<void> {
   }
 }
 
+/** Advance the posting anchored to this tab only after the ATS confirms it. */
+export async function confirmApplicationSession(
+  tabId: number,
+): Promise<Application | undefined> {
+  const id = sessionId(tabId);
+  const session = await db.applicationSessions.get(id);
+  if (!session || session.status === 'complete') return undefined;
+  if (Date.now() - session.updatedAt > SESSION_MAX_AGE) {
+    await db.applicationSessions.delete(id);
+    return undefined;
+  }
+
+  const anchor = session.jobUrl ?? session.url;
+  const dedupeKey = jobDedupeKey({ url: anchor, company: '', role: '' });
+  const existing = await db.applications.where('dedupeKey').equals(dedupeKey).first();
+  if (!existing) return undefined;
+
+  const confirmed = await logApplication({
+    id: existing.id,
+    company: existing.company,
+    role: existing.role,
+    url: anchor,
+    ats: existing.ats,
+    status: 'applied',
+    appliedAt: existing.appliedAt ?? Date.now(),
+    source: existing.source === 'manual' ? 'manual' : 'autofill',
+    scanId: existing.scanId,
+    notes: existing.notes,
+    llmCalls: existing.appliedAt === null ? (session.llmCalls ?? 0) : 0,
+  });
+  await completeApplicationSession(tabId);
+  return confirmed;
+}
+
 /* ------------------------------------------------------------- game ledger */
 
 /**

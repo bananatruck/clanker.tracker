@@ -6,6 +6,7 @@
  */
 import {
   completeApplicationSession,
+  confirmApplicationSession,
   getApplicationSession,
   getProfile,
   getResumeDocument,
@@ -76,6 +77,9 @@ async function handle(request: DbRequest, tabId?: number): Promise<unknown> {
     case 'db:completeApplicationSession':
       if (tabId !== undefined) await completeApplicationSession(tabId);
       return true;
+
+    case 'db:confirmApplicationSession':
+      return tabId === undefined ? null : (await confirmApplicationSession(tabId)) ?? null;
 
     // Secrets live in chrome.storage.local rather than Dexie. They are handed
     // to the content script only for an explicit Fill action on an account

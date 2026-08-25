@@ -42,9 +42,11 @@ export type DbRequest =
   | { type: 'db:getApplicationSession'; ats: AtsId }
   | {
       type: 'db:touchApplicationSession';
-      init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'>;
+      init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'> &
+        Pick<ApplicationSession, 'jobUrl' | 'llmCalls'>;
     }
   | { type: 'db:completeApplicationSession' }
+  | { type: 'db:confirmApplicationSession' }
   | { type: 'account:getCredentials' }
   | { type: 'db:trackApplication'; init: TrackedJobInput }
   | {

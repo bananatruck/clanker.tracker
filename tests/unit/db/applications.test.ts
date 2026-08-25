@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Application, ApplicationEvent, DeedRecord } from '@/lib/db/schema';
+import type {
+  Application,
+  ApplicationEvent,
+  ApplicationSession,
+  DeedRecord,
+} from '@/lib/db/schema';
 
 const state = vi.hoisted(() => ({
   applications: new Map<string, Application>(),
   events: [] as ApplicationEvent[],
   deeds: [] as DeedRecord[],
+  sessions: new Map<string, ApplicationSession>(),
 }));
 
 vi.mock('@/lib/db/schema', () => {
@@ -32,10 +38,16 @@ vi.mock('@/lib/db/schema', () => {
       }),
     }),
   };
+  const applicationSessions = {
+    get: async (id: string) => state.sessions.get(id),
+    put: async (session: ApplicationSession) => state.sessions.set(session.id, session),
+    delete: async (id: string) => state.sessions.delete(id),
+  };
   return {
     db: {
       applications,
       applicationEvents,
+      applicationSessions,
       deeds,
       transaction: async (...args: unknown[]) => {
         const work = args.at(-1) as () => Promise<unknown>;
@@ -45,12 +57,17 @@ vi.mock('@/lib/db/schema', () => {
   };
 });
 
-import { logApplication, trackApplication } from '@/lib/db/repo';
+import {
+  confirmApplicationSession,
+  logApplication,
+  trackApplication,
+} from '@/lib/db/repo';
 
 beforeEach(() => {
   state.applications.clear();
   state.events.length = 0;
   state.deeds.length = 0;
+  state.sessions.clear();
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-08-20T12:00:00Z'));
 });
@@ -99,5 +116,26 @@ describe('automated tracker upserts', () => {
 
     expect(state.applications.get(applied.id)?.status).toBe('applied');
     expect(state.deeds.map((deed) => deed.deed)).toEqual(['application']);
+  });
+
+  it('confirms the original tracked job after the ATS redirects to another route', async () => {
+    const started = await trackApplication({
+      company: 'Acme', role: 'Engineer',
+      url: 'https://jobs.test/job/42', ats: 'workday', status: 'started',
+    });
+    state.sessions.set('tab-7', {
+      id: 'tab-7', tabId: 7, ats: 'workday',
+      jobUrl: 'https://jobs.test/job/42',
+      url: 'https://jobs.test/apply/confirmation',
+      pageKey: 'confirmation', step: 3, completedPaths: [],
+      llmCalls: 2, status: 'review', updatedAt: Date.now(),
+    });
+
+    const confirmed = await confirmApplicationSession(7);
+
+    expect(confirmed?.id).toBe(started.id);
+    expect(confirmed).toMatchObject({ status: 'applied', llmCalls: 2 });
+    expect(state.applications.size).toBe(1);
+    expect(state.sessions.get('tab-7')?.status).toBe('complete');
   });
 });

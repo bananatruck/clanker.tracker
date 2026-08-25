@@ -55,11 +55,16 @@ export interface ApplicationSession {
   id: string;
   tabId: number;
   ats: AtsId;
+  /** Original posting URL used to anchor tracker identity across ATS routes. */
+  jobUrl?: string;
+  /** Current page URL, retained for flow diagnostics. */
   url: string;
   /** Signature of the fields, so same-URL SPA steps remain distinct. */
   pageKey: string;
   step: number;
   completedPaths: string[];
+  /** Model work accumulated across reviewed pages in this application. */
+  llmCalls?: number;
   status: 'review' | 'complete';
   updatedAt: number;
 }

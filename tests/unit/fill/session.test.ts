@@ -13,6 +13,8 @@ const first: ApplicationSession = {
   completedPaths: [],
   status: 'review',
   updatedAt: 100,
+  jobUrl: 'https://acme.wd5.myworkdayjobs.com/job/engineer',
+  llmCalls: 1,
 };
 
 const field = (id: string, label: string): HarvestedField => ({
@@ -48,6 +50,19 @@ describe('guarded application sessions', () => {
     }, 200);
     expect(next.step).toBe(2);
     expect(continuationStep(next, 'questions')).toBe(3);
+  });
+
+  it('retains the original job anchor and accumulates work across routes', () => {
+    const next = checkpointSession(first, 7, {
+      ats: 'workday',
+      url: 'https://acme.wd5.myworkdayjobs.com/apply/questions',
+      pageKey: 'questions',
+      completedPaths: [],
+      llmCalls: 2,
+    }, 200);
+    expect(next.jobUrl).toBe(first.jobUrl);
+    expect(next.url).toContain('/apply/questions');
+    expect(next.llmCalls).toBe(3);
   });
 
   it('starts over for another ATS and never offers a completed session', () => {
