@@ -6,7 +6,7 @@
  * measurable rather than aspirational.
  *
  * Keys live in chrome.storage.local, never in IndexedDB — that is what lets
- * the `.clankdb` export dump every Dexie table without leaking a credential.
+ * the `.clankdb` export dump every durable Dexie table without leaking a credential.
  */
 import { budgetStatus, canSpend, initialBudget, spend, type BudgetState } from './budget';
 import { callProvider } from './providers';

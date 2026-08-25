@@ -3,8 +3,8 @@
  * their machine — there is no backend to sync to and no account to make.
  *
  * One rule about secrets: **API keys never enter this database.** They live in
- * chrome.storage.local (see lib/llm/keys.ts) precisely so that the `.clankdb`
- * export can dump every table here without leaking a credential.
+ * chrome.storage.local (see lib/llm/keys.ts) precisely so that a `.clankdb`
+ * export can dump every durable table here without leaking a credential.
  *
  * Tables are declared up front even where the feature lands in a later
  * milestone. A schema version bump is cheap now and disruptive once people

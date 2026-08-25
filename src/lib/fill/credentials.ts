@@ -9,7 +9,7 @@
  * ## Where this lives, and why
  *
  * `chrome.storage.local`, next to the API key, and **never** IndexedDB. That
- * split is the whole reason `.clankdb` can dump every table without leaking a
+ * split is the whole reason `.clankdb` can dump every durable table without leaking a
  * credential: the database holds what you would want to move between machines,
  * and this holds what you would not.
  *

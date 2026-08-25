@@ -156,9 +156,9 @@ no storage — and is asserted in tests. It is not yet the content script's runt
 
 ### Where the password lives
 
-`chrome.storage.local`, next to the API key, and **never** IndexedDB. That split is why a
-a future `.clankdb` export can dump every table without leaking a credential. The import/export
-UI itself is not implemented yet.
+`chrome.storage.local`, next to the API key, and **never** IndexedDB.
+That split lets `.clankdb` export every durable database table without leaking a credential.
+Settings provides versioned export and all-or-nothing restore controls.
 
 Said plainly, because a password store that oversells itself is worse than one that doesn't
 exist: **it is not encrypted at rest.** It is a file in your Chrome profile, and anything with
@@ -593,7 +593,6 @@ Named plainly, because a README that describes intentions as features is how a p
 | **Unattended submission** | Intentionally out of scope. Like Simplify Copilot, Clanker proposes reviewed page writes and leaves Next/Submit to the applicant. This avoids sending guesses or creating legally meaningful submissions without a final human action. |
 | **Cover-letter attach** | The `letter` and `ready` stages are modelled and tested in [`lib/fill/stage.ts`](./src/lib/fill/stage.ts), but nothing is wired to the file input yet — same blocker as resume upload. Generating a letter works; attaching it is manual. |
 | **Sync adapters** | No live Sheets, Notion or Airtable connection, and none planned. The CSV uses those trackers' own column names, so importing it maps the fields instead of arriving as thirteen new ones. |
-| **`.clankdb` import/export** | Not implemented. The key/database split that makes it safe is in place. |
 | **Resume upload** | The resolver skips file inputs and nothing stores the original bytes, only the extracted text. Every board asks for an upload, so every application still needs one manual step. |
 | **Account-wall automation** | Classification, saved credentials and `fillGate` exist, but the content-script run never calls the filler or `stage.ts` controller. |
 | **Return/Rally bonuses** | The economy functions are tested, but no runtime interaction produces either bonus. |
@@ -607,7 +606,7 @@ Your resume, answers, letters, and application history live in IndexedDB **on yo
 The only network destination the extension calls is the LLM provider whose key you supplied.
 Cover letters use it, and autofill may use one batched call when its four free resolver tiers leave
 unknown fields; the keyword scan stays local. Your API key lives in `chrome.storage.local` and
-never in the database, so a future database export can omit credentials.
+never in the database, so `.clankdb` exports omit credentials.
 
 ---
 

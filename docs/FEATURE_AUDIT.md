@@ -45,7 +45,7 @@ feature by themselves.
 | Tracker | Board, list/table, nine editable columns, and rollups | **Implemented** | Both narrow and wide tracker views use the same records and inline update repository. |
 | Tracker | RFC 4180/Notion-named CSV export with formula neutralization | **Implemented** | Export is wired in Tracker and covered by unit tests. |
 | Tracker | Quiet-after-30-days signal | **Implemented** | Stale records are derived and surfaced without changing status automatically. |
-| Tracker | `.clankdb` import/export | **Not implemented** | No serialization/import UI or repository code exists. Credentials are already stored separately, which is a prerequisite only. |
+| Tracker | `.clankdb` import/export | **Implemented** | Settings exports and atomically restores a versioned snapshot of every durable Dexie table, including resume bytes. Keys, passwords, and transient tab sessions are excluded. |
 | Game | DP ledger, levels, tiers, march, achievements, and Adoption | **Implemented** | All are derived from applications/deeds; an accepted offer gates the ending. |
 | Game | Story beats and Act V bark silence | **Implemented** | Lore is wired to the Crusade screen and tested against the storyboard; `barkFor` returns no bark in the final act. |
 | Game | Standalone level-up fanfare | **Not implemented** | The README says it is switched off in Act V, but there is no runtime fanfare system to switch on in earlier acts. |
@@ -63,6 +63,5 @@ feature by themselves.
 1. Retain user-selected resume bytes locally and attach them (plus an optional generated cover
    letter) only after explicit review.
 2. Add guarded multi-step continuation while preserving review and manual submission.
-3. Implement `.clankdb` backup/restore and validate schema/version migrations.
-4. Resolve provenance and redistribution rights for `public/Sprites/` before adding those files to
+3. Resolve provenance and redistribution rights for `public/Sprites/` before adding those files to
    a public release or Chrome Web Store submission.

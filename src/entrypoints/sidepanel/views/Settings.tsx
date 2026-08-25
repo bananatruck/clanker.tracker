@@ -2,7 +2,7 @@
  * Settings — the provider, the key, and the voice.
  *
  * The key is written to `chrome.storage.local` and never to IndexedDB. That
- * split is the reason a `.clankdb` export can dump every Dexie table without
+ * split is the reason a `.clankdb` export can dump every durable Dexie table without
  * leaking a credential, so it is worth keeping even though one storage area
  * would obviously be simpler.
  *
@@ -43,6 +43,11 @@ import {
 } from '@/lib/fill/types';
 import { Button, Editable, Meter, Window } from '@/ui/dq';
 import WritingSamples from '@/ui/WritingSamples';
+import {
+  MAX_BACKUP_BYTES,
+  backupFilename,
+} from '@/lib/db/backup';
+import { exportClankDb, restoreClankDb } from '@/lib/db/portable';
 
 type TestState =
   | { kind: 'idle' }
@@ -209,6 +214,7 @@ export default function Settings() {
       <ApplicationDefaults />
       <LearnedAnswers />
       <AccountCredentials />
+      <DatabaseBackup />
 
       <Window title="Setup">
         <Button
@@ -218,6 +224,107 @@ export default function Settings() {
         </Button>
       </Window>
     </div>
+  );
+}
+
+type BackupState =
+  | { kind: 'idle' }
+  | { kind: 'working'; action: 'export' | 'restore' }
+  | { kind: 'ok'; message: string }
+  | { kind: 'fail'; message: string };
+
+function DatabaseBackup() {
+  const [state, setState] = useState<BackupState>({ kind: 'idle' });
+
+  const download = async () => {
+    setState({ kind: 'working', action: 'export' });
+    try {
+      const contents = await exportClankDb();
+      const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = backupFilename();
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      setState({ kind: 'ok', message: 'Backup downloaded.' });
+    } catch (error) {
+      setState({
+        kind: 'fail',
+        message: error instanceof Error ? error.message : 'Backup failed.',
+      });
+    }
+  };
+
+  const restore = async (file: File, input: HTMLInputElement) => {
+    if (file.size > MAX_BACKUP_BYTES) {
+      setState({ kind: 'fail', message: 'This backup is larger than the 64 MB limit.' });
+      input.value = '';
+      return;
+    }
+    const approved = window.confirm(
+      'Restore this backup and replace all local Clanker database data? API keys and saved job-board passwords are not changed.',
+    );
+    if (!approved) {
+      input.value = '';
+      return;
+    }
+
+    setState({ kind: 'working', action: 'restore' });
+    try {
+      const summary = await restoreClankDb(await file.text());
+      setState({
+        kind: 'ok',
+        message: `Restored ${summary.rows} rows across ${summary.tables} tables.`,
+      });
+    } catch (error) {
+      setState({
+        kind: 'fail',
+        message: error instanceof Error ? error.message : 'Restore failed.',
+      });
+    } finally {
+      input.value = '';
+    }
+  };
+
+  return (
+    <Window title="Database backup">
+      <p className="mb-2 text-[12px] leading-snug text-muted">
+        Export profile data, approved answers, scans, letters, resume bytes, applications, and history.
+        Provider keys and saved job-board passwords stay outside the database and are never included.
+      </p>
+      <div className="flex gap-1">
+        <Button
+          primary
+          onClick={() => void download()}
+          disabled={state.kind === 'working'}
+        >
+          {state.kind === 'working' && state.action === 'export' ? 'Exporting...' : 'Export .clankdb'}
+        </Button>
+        <label className="dq-btn cursor-pointer px-2 py-1 font-mono text-[12px]">
+          {state.kind === 'working' && state.action === 'restore' ? 'Restoring...' : 'Restore .clankdb'}
+          <input
+            type="file"
+            accept=".clankdb,application/json"
+            disabled={state.kind === 'working'}
+            className="hidden"
+            onChange={(event) => {
+              const input = event.currentTarget;
+              const file = input.files?.[0];
+              if (file) void restore(file, input);
+            }}
+          />
+        </label>
+      </div>
+      <p className="mt-1.5 text-[11px] leading-snug text-faint">
+        Restore is all-or-nothing and replaces current local database data only after the file validates.
+      </p>
+      {state.kind === 'ok' && (
+        <p className="mt-1.5 font-mono text-[11px] text-ok">{state.message}</p>
+      )}
+      {state.kind === 'fail' && (
+        <p className="mt-1.5 font-mono text-[11px] text-bad">{state.message}</p>
+      )}
+    </Window>
   );
 }
 
