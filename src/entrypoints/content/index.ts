@@ -24,6 +24,11 @@ import { optionSignature } from '@/lib/fill/semantic';
 import { continuationStep, pageKeyFor } from '@/lib/fill/session';
 import { mutationTouchesFillSurface, nextOfferDelay } from '@/lib/fill/mutations';
 import { normalizePreferences, type Preferences } from '@/lib/fill/types';
+import {
+  TrackingSignalGate,
+  trackedJobForPage,
+  type AutomaticTrackingStatus,
+} from '@/lib/tracker/automation';
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
@@ -91,6 +96,28 @@ export default defineContentScript({
     let filledHere = false;
     let filledPageKey = '';
     let observedPageKey = '';
+    const trackingSignals = new TrackingSignalGate();
+
+    async function trackPage(status: AutomaticTrackingStatus): Promise<boolean> {
+      const init = trackedJobForPage(document, {
+        ats: ats.id,
+        host: location.hostname,
+        title: document.title,
+        url: location.href,
+      }, status);
+      if (!init) return false;
+
+      return trackingSignals.emit(init, (job) => askBackground({
+        type: 'db:trackApplication',
+        init: job,
+      }));
+    }
+
+    function queueTracking(status: AutomaticTrackingStatus): void {
+      void trackPage(status).catch((err) => {
+        console.error(`[clanker] could not mark application ${status}:`, err);
+      });
+    }
 
     /**
      * Offer, without being asked.
@@ -104,6 +131,8 @@ export default defineContentScript({
      */
     function offer(): void {
       if (window.top !== window.self) return;
+
+      queueTracking('saved');
 
       const gate = readGate(document).gate;
       const { fields } = harvestForm(findApplicationForm(document));
@@ -159,7 +188,13 @@ export default defineContentScript({
 
       disarm = watchSubmission(form, () => {
         disarm = null;
-        const { company, role } = identifyPosting({
+        const tracked = trackedJobForPage(document, {
+          ats: ats.id,
+          host: location.hostname,
+          title: document.title,
+          url: location.href,
+        }, 'started');
+        const fallback = identifyPosting({
           host: location.hostname,
           title: document.title,
           url: location.href,
@@ -168,10 +203,12 @@ export default defineContentScript({
         void askBackground({
           type: 'db:logApplication',
           init: {
-            company,
-            role,
+            company: tracked?.company ?? fallback.company,
+            role: tracked?.role ?? fallback.role,
             url: location.href,
             ats: ats.id,
+            status: 'applied',
+            source: 'autofill',
             scanId: null,
             notes: '',
             llmCalls,
@@ -258,6 +295,7 @@ export default defineContentScript({
       }
 
       if (request.type === 'clanker:fill') {
+        queueTracking('started');
         const entry = applicationEntry(document, ats.id);
         if (entry) {
           // Reply before Workday navigation tears down this message port.
