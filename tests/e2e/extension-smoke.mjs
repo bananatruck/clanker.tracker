@@ -90,8 +90,18 @@ class Devtools {
 }
 
 function serveFixture() {
+  const posting = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: 'Software Engineer',
+    hiringOrganization: { name: 'Acme Systems' },
+    jobLocationType: 'TELECOMMUTE',
+    description: 'Build reliable software systems with TypeScript and Kubernetes. '.repeat(8),
+  });
   const html = `<!doctype html>
-    <html><head><title>Clanker browser fixture</title></head><body>
+    <html><head><title>Clanker browser fixture</title>
+      <script type="application/ld+json">${posting}</script>
+    </head><body>
       <main>
         <h1>Software Engineer</h1><p>Acme Systems</p>
         <form id="application-form">
@@ -156,12 +166,58 @@ async function backgroundHealth(devtools, extensionId) {
         sessionId,
       );
       const reply = JSON.parse(result.value ?? 'null');
-      if (reply?.ok && reply.data === 'worker-ok') return;
+      if (reply?.ok && reply.data === 'worker-ok') return sessionId;
     } catch {
       // The extension page may still be starting; keep the bounded poll going.
     }
   }
   throw new Error('The extension page could not exchange a message with the service worker.');
+}
+
+async function waitForTrackedPosting(devtools, sessionId) {
+  const expression = `(async () => new Promise((resolve, reject) => {
+    const opened = indexedDB.open('clanker.tracker');
+    opened.onerror = () => reject(opened.error);
+    opened.onsuccess = () => {
+      const database = opened.result;
+      if (!database.objectStoreNames.contains('applications')) {
+        database.close();
+        resolve('[]');
+        return;
+      }
+      const transaction = database.transaction('applications', 'readonly');
+      const request = transaction.objectStore('applications').getAll();
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        database.close();
+        resolve(JSON.stringify(request.result));
+      };
+    };
+  }))()`;
+
+  for (let attempt = 0; attempt < 30; attempt++) {
+    await sleep(200);
+    const { result } = await devtools.send(
+      'Runtime.evaluate',
+      { expression, awaitPromise: true, returnByValue: true },
+      sessionId,
+    );
+    const rows = JSON.parse(result.value ?? '[]');
+    if (rows.length === 0) continue;
+    if (rows.length !== 1) throw new Error(`Automatic tracking created ${rows.length} rows.`);
+    const row = rows[0];
+    if (
+      row.company !== 'Acme Systems' ||
+      row.role !== 'Software Engineer' ||
+      row.location !== 'Remote' ||
+      row.status !== 'saved' ||
+      row.source !== 'detected'
+    ) {
+      throw new Error(`Automatic tracker row was incomplete: ${JSON.stringify(row)}`);
+    }
+    return row;
+  }
+  throw new Error('The production content script did not save the detected posting.');
 }
 
 if (!existsSync(join(EXTENSION, 'manifest.json'))) {
@@ -212,11 +268,13 @@ try {
   const { sessionId } = await devtools.send('Target.attachToTarget', { targetId, flatten: true });
   await devtools.send('Runtime.enable', {}, sessionId);
   const badge = await waitForLauncher(devtools, sessionId);
-  await backgroundHealth(devtools, installed.id);
+  const extensionSessionId = await backgroundHealth(devtools, installed.id);
+  const tracked = await waitForTrackedPosting(devtools, extensionSessionId);
 
   console.log(`✓ Chrome loaded ${installed.id}`);
   console.log(`✓ content launcher rendered: ${JSON.stringify(badge)}`);
   console.log('✓ MV3 service worker replied through runtime messaging');
+  console.log(`✓ detected posting tracked once: ${tracked.company} / ${tracked.status}`);
 } finally {
   devtools.close();
   chrome.kill();

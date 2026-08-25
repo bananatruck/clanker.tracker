@@ -126,3 +126,10 @@ Chrome's current extension model also matters:
   the relevant form state has not changed.
 - Documentation distinguishes verified features, guarded/manual behavior, and
   remaining limitations.
+
+## Verified result (2026-08-24)
+
+The production extension remains Manifest V3; the overhaul repaired runtime integration and product completeness rather than performing a Manifest V2 migration.
+The repository passes 702 unit and integration tests, TypeScript compilation, the WXT Chrome MV3 production build, and the generated-bundle reference audit.
+The real-Chrome smoke installs the unpacked production bundle, renders the content launcher, exchanges a message with the service worker, and verifies that one structured posting becomes exactly one Saved tracker row in extension-owned IndexedDB.
+The remaining deliberate manual boundaries are navigation between reviewed pages, final submission, confirmation correction on unrecognized sites, and generated cover-letter attachment.
