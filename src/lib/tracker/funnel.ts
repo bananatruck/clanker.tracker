@@ -101,7 +101,7 @@ export function deedForStatus(status: ApplicationStatus): Deed | null {
 }
 
 export function hasBeenSubmitted(status: ApplicationStatus): boolean {
-  return !['saved', 'started'].includes(status);
+  return ['applied', 'oa', 'interview', 'offer', 'rejected', 'ghosted'].includes(status);
 }
 
 /** Whether `to` is further down the funnel than `from`. */

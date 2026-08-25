@@ -21,11 +21,14 @@ import Actor from '@/ui/Actor';
 import Backdrop from '@/ui/game/Backdrop';
 
 const FUNNEL_ORDER: ApplicationStatus[] = [
+  'saved',
+  'started',
   'applied',
   'oa',
   'interview',
   'offer',
   'rejected',
+  'withdrawn',
   'ghosted',
 ];
 
@@ -104,11 +107,15 @@ export default function Dashboard({ onNavigate }: { onNavigate: (route: string) 
 
       <Window
         title="Applications"
-        right={<span className="font-mono text-[12px] text-gold">{funnel.total}</span>}
+        right={
+          <span className="font-mono text-[12px] text-gold">
+            {funnel.total} sent / {funnel.tracked} tracked
+          </span>
+        }
       >
-        {funnel.total === 0 ? (
+        {funnel.tracked === 0 ? (
           <p className="text-[13px] leading-snug text-muted">
-            Nothing sent yet. Open a job application and the Fill tab will do the rest.
+            Nothing tracked yet. Open a job posting and it will appear automatically.
           </p>
         ) : (
           <>

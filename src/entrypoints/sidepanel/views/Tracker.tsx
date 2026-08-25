@@ -14,12 +14,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   allApplications,
+  applicationEvents,
   deleteApplication,
   logApplication,
   setApplicationStatus,
+  trackApplication,
   totalDp,
+  updateApplication,
 } from '@/lib/db/repo';
-import type { Application, ApplicationStatus } from '@/lib/db/schema';
+import type {
+  Application,
+  ApplicationEvent,
+  ApplicationStatus,
+} from '@/lib/db/schema';
 import { DEEDS } from '@/lib/game/economy';
 import {
   BOARD_COLUMNS,
@@ -28,10 +35,17 @@ import {
   STATUS_DEED_LABEL,
   STATUS_LABEL,
   deedForStatus,
-  isStale,
 } from '@/lib/tracker/funnel';
 import { applicationsToCsv, csvFilename, downloadCsv } from '@/lib/tracker/csv';
 import { costStats, funnelStats } from '@/lib/tracker/stats';
+import {
+  filterApplications,
+  isFollowUpDue,
+  isReminderDue,
+  localDateInputValue,
+  parseLocalDateInput,
+  type TrackerFilter,
+} from '@/lib/tracker/query';
 import { INTEL_FIELDS } from '@/lib/tracker/table';
 import TrackerTable, { type IntelFlash } from '@/ui/tracker/Table';
 
@@ -64,6 +78,8 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
   const [adding, setAdding] = useState(false);
   const [flash, setFlash] = useState<Flash | null>(null);
   const [intel, setIntel] = useState<IntelFlash | null>(null);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<TrackerFilter>('all');
 
   useEffect(() => {
     if (!flash) return;
@@ -79,6 +95,14 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
 
   const stats = useMemo(() => (apps ? funnelStats(apps) : null), [apps]);
   const cost = useMemo(() => (apps ? costStats(apps) : null), [apps]);
+  const visibleApps = useMemo(
+    () => filterApplications(apps ?? [], { query, filter }),
+    [apps, query, filter],
+  );
+  const attentionCount = useMemo(
+    () => filterApplications(apps ?? [], { query: '', filter: 'attention' }).length,
+    [apps],
+  );
 
   if (apps === undefined) {
     return <p className="font-mono text-[13px] text-faint">Loading…</p>;
@@ -109,7 +133,7 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
           onClick={() => setAdding((a) => !a)}
           className="border-2 border-frame-dim px-2 py-1 font-mono text-[12px] text-muted hover:bg-window hover:text-parchment"
         >
-          {adding ? 'Close' : '+ Log one'}
+          {adding ? 'Close' : '+ Add job'}
         </button>
         <button
           onClick={exportCsv}
@@ -118,6 +142,30 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
         >
           Export CSV
         </button>
+      </div>
+
+      <div className="flex gap-1">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search tracked jobs"
+          placeholder="Search company, role, contact..."
+          className="min-w-0 flex-1 border-2 border-frame-dim bg-field px-2 py-1 font-mono text-[12px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        />
+        <select
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as TrackerFilter)}
+          aria-label="Filter tracked jobs"
+          className="max-w-36 border-2 border-frame-dim bg-field px-1.5 py-1 font-mono text-[12px] text-muted outline-none focus:border-gold-dim"
+        >
+          <option value="all">All ({apps.length})</option>
+          <option value="active">Active</option>
+          <option value="attention">Needs action ({attentionCount})</option>
+          {BOARD_COLUMNS.map((status) => (
+            <option key={status} value={status}>{STATUS_LABEL[status]}</option>
+          ))}
+        </select>
       </div>
 
       {adding && <AddForm onDone={() => setAdding(false)} />}
@@ -129,11 +177,13 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
 
       {apps.length === 0 ? (
         <Empty />
+      ) : visibleApps.length === 0 ? (
+        <NoMatches onClear={() => { setQuery(''); setFilter('all'); }} />
       ) : view === 'board' ? (
-        <Board apps={apps} onMoved={setFlash} />
+        <Board apps={visibleApps} onMoved={setFlash} />
       ) : view === 'table' ? (
         <>
-          <TrackerTable apps={apps} wide={wide} onEarned={setIntel} />
+          <TrackerTable apps={visibleApps} wide={wide} onEarned={setIntel} />
           <p className="font-mono text-[12px] text-faint">
             Click any cell to edit. Fill all {INTEL_FIELDS.length} researched columns on a row —
             salary, next action, website, contact — and it banks{' '}
@@ -141,7 +191,7 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
           </p>
         </>
       ) : (
-        <List apps={apps} />
+        <List apps={visibleApps} />
       )}
     </div>
   );
@@ -150,12 +200,27 @@ export default function Tracker({ wide = false }: { wide?: boolean } = {}) {
 function Empty() {
   return (
     <div className="dq-window p-3">
-      <h2 className="mb-1.5 font-mono text-[13px] text-muted">Nothing sent yet</h2>
+      <h2 className="mb-1.5 font-mono text-[13px] text-muted">Nothing tracked yet</h2>
       <p className="text-[14px] leading-relaxed text-muted">
-        Fill an application and submit it — it logs itself. Anything you sent by hand or over
-        email, log with <span className="font-mono text-[13px] text-parchment">+ Log one</span>.
-        Every row here razed something.
+        Open a supported job posting and it appears here automatically.
+        Starting a fill advances it, and a confirmed submission marks it Applied.
+        You can still use <span className="font-mono text-[13px] text-parchment">+ Add job</span> for postings or applications from elsewhere.
       </p>
+    </div>
+  );
+}
+
+function NoMatches({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="dq-window p-3 text-center">
+      <p className="font-mono text-[13px] text-muted">No tracked jobs match this view.</p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-2 border border-frame px-2 py-1 font-mono text-[12px] text-gold hover:bg-window-hi"
+      >
+        Clear search and filter
+      </button>
     </div>
   );
 }
@@ -177,7 +242,7 @@ function Summary({
   return (
     <section className="space-y-2 dq-window p-2.5">
       <div className="grid grid-cols-4 gap-2">
-        <Stat label="sent" value={stats.total} />
+        <Stat label="sent / tracked" value={`${stats.total}/${stats.tracked}`} />
         <Stat label="replies" value={`${Math.round(stats.responseRate * 100)}%`} />
         <Stat label="interviews" value={stats.interviews} tone="text-ok" />
         <Stat label="dp" value={dp} tone="text-gold" />
@@ -272,7 +337,9 @@ function Board({
   // Empty terminal columns are hidden — a fresh board should not open with two
   // columns of rejection waiting for you.
   const columns = BOARD_COLUMNS.filter(
-    (s) => !['rejected', 'ghosted'].includes(s) || apps.some((a) => a.status === s),
+    (status) =>
+      !['rejected', 'withdrawn', 'ghosted'].includes(status) ||
+      apps.some((app) => app.status === status),
   );
 
   return (
@@ -310,7 +377,8 @@ function Board({
 
 function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => void }) {
   const [open, setOpen] = useState(false);
-  const stale = isStale(app);
+  const due = isFollowUpDue(app);
+  const reminderDue = isReminderDue(app);
 
   return (
     <article className="overflow-hidden dq-window">
@@ -334,8 +402,10 @@ function Card({ app, onMoved }: { app: Application; onMoved: (flash: Flash) => v
             )}
           </span>
         </span>
-        {stale && (
-          <span className="mt-0.5 shrink-0 font-mono text-[11px] text-bad">quiet</span>
+        {due && (
+          <span className="mt-0.5 shrink-0 font-mono text-[11px] text-bad">
+            {reminderDue ? 'due' : 'quiet'}
+          </span>
         )}
       </button>
 
@@ -351,8 +421,32 @@ function CardDetail({
   app: Application;
   onMoved: (flash: Flash) => void;
 }) {
+  const events = useLiveQuery(() => applicationEvents(app.id), [app.id], []);
+  const [nextAction, setNextAction] = useState(app.nextAction ?? '');
+  const [nextActionDate, setNextActionDate] = useState(localDateInputValue(app.nextActionAt));
+  const [followUpSaved, setFollowUpSaved] = useState(false);
+
+  useEffect(() => {
+    setNextAction(app.nextAction ?? '');
+    setNextActionDate(localDateInputValue(app.nextActionAt));
+  }, [app.nextAction, app.nextActionAt]);
+
   const move = async (status: ApplicationStatus) => {
     onMoved({ dp: await setApplicationStatus(app.id, status), status });
+  };
+
+  const saveFollowUp = async () => {
+    await updateApplication(app.id, {
+      nextAction: nextAction.trim(),
+      nextActionAt: parseLocalDateInput(nextActionDate),
+    });
+    setFollowUpSaved(true);
+    setTimeout(() => setFollowUpSaved(false), 1800);
+  };
+
+  const remove = async () => {
+    if (!window.confirm(`Remove ${app.company || 'this job'} from the tracker?`)) return;
+    await deleteApplication(app.id);
   };
 
   return (
@@ -393,14 +487,74 @@ function CardDetail({
         )}
       </p>
 
+      <section className="space-y-1 border-t border-frame pt-2">
+        <h4 className="font-mono text-[11px] uppercase tracking-wide text-faint">Next action</h4>
+        <input
+          value={nextAction}
+          onChange={(event) => setNextAction(event.target.value)}
+          placeholder="Email recruiter, prepare OA..."
+          className="w-full border border-frame-dim bg-field px-2 py-1 text-[12px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+        />
+        <div className="flex gap-1">
+          <input
+            type="date"
+            value={nextActionDate}
+            onChange={(event) => setNextActionDate(event.target.value)}
+            aria-label={`Follow-up date for ${app.company}`}
+            className="min-w-0 flex-1 border border-frame-dim bg-field px-2 py-1 font-mono text-[11px] text-muted outline-none focus:border-gold-dim"
+          />
+          <button
+            type="button"
+            onClick={() => void saveFollowUp()}
+            className="border border-frame px-2 py-1 font-mono text-[11px] text-gold hover:bg-window-hi"
+          >
+            {followUpSaved ? 'Saved' : 'Save'}
+          </button>
+        </div>
+      </section>
+
+      {events.length > 0 && (
+        <section className="space-y-1 border-t border-frame pt-2">
+          <h4 className="font-mono text-[11px] uppercase tracking-wide text-faint">Activity</h4>
+          <ol className="space-y-1">
+            {[...events].reverse().slice(0, 6).map((event, index) => (
+              <li
+                key={event.id ?? `${event.at}-${event.kind}-${index}`}
+                className="flex items-baseline justify-between gap-2 font-mono text-[10.5px]"
+              >
+                <span className="min-w-0 truncate text-muted">{eventSummary(event)}</span>
+                <time className="shrink-0 text-faint" dateTime={new Date(event.at).toISOString()}>
+                  {new Date(event.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </time>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
       <button
-        onClick={() => void deleteApplication(app.id)}
+        onClick={() => void remove()}
         className="font-mono text-[11px] text-faint hover:text-bad"
       >
         remove from board
       </button>
     </div>
   );
+}
+
+function eventSummary(event: ApplicationEvent): string {
+  switch (event.kind) {
+    case 'created':
+      return `Tracked as ${event.toStatus ? STATUS_LABEL[event.toStatus] : 'job'}`;
+    case 'submitted':
+      return 'Submission confirmed';
+    case 'status':
+      return event.toStatus ? `Moved to ${STATUS_LABEL[event.toStatus]}` : 'Status changed';
+    case 'follow-up':
+      return 'Follow-up updated';
+    case 'updated':
+      return 'Details updated';
+  }
 }
 
 function List({ apps }: { apps: readonly Application[] }) {
@@ -422,8 +576,8 @@ function List({ apps }: { apps: readonly Application[] }) {
         <tbody>
           {apps.map((a) => (
             <tr key={a.id} className="border-b border-frame last:border-0 hover:bg-window">
-              <td className="max-w-24 truncate px-2 py-1.5 text-parchment">{a.company || '—'}</td>
-              <td className="max-w-32 truncate px-2 py-1.5 text-muted">{a.role || '—'}</td>
+              <td className="max-w-24 truncate px-2 py-1.5 text-parchment">{a.company || '-'}</td>
+              <td className="max-w-32 truncate px-2 py-1.5 text-muted">{a.role || '-'}</td>
               <td className={`px-2 py-1.5 font-mono text-[12px] ${STATUS_COLOR[a.status]}`}>
                 {STATUS_LABEL[a.status]}
               </td>
@@ -441,20 +595,26 @@ function List({ apps }: { apps: readonly Application[] }) {
 function AddForm({ onDone }: { onDone: () => void }) {
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
+  const [url, setUrl] = useState('');
+  const [status, setStatus] = useState<'saved' | 'applied'>('applied');
 
   const submit = async () => {
     if (!company.trim()) return;
-    await logApplication({
+    const init = {
       company: company.trim(),
       role: role.trim(),
-      url: '',
-      ats: 'generic',
+      url: url.trim(),
+      ats: 'generic' as const,
       scanId: null,
       notes: '',
-      // Sent by hand, so it cost nothing — which is true, and keeps the
-      // median honest rather than flattering.
       llmCalls: 0,
-    });
+      source: 'manual' as const,
+    };
+    if (status === 'applied') {
+      await logApplication(init);
+    } else {
+      await trackApplication({ ...init, status: 'saved' });
+    }
     onDone();
   };
 
@@ -473,12 +633,28 @@ function AddForm({ onDone }: { onDone: () => void }) {
         onKeyDown={(e) => e.key === 'Enter' && void submit()}
         className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
       />
+      <input
+        type="url"
+        value={url}
+        onChange={(event) => setUrl(event.target.value)}
+        placeholder="Posting URL (optional)"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 text-[13px] text-parchment outline-none placeholder:text-faint focus:border-gold-dim"
+      />
+      <select
+        value={status}
+        onChange={(event) => setStatus(event.target.value as 'saved' | 'applied')}
+        aria-label="Initial job status"
+        className="w-full border-2 border-frame-dim bg-field px-2 py-1 font-mono text-[12px] text-muted outline-none focus:border-gold-dim"
+      >
+        <option value="saved">Saved for later</option>
+        <option value="applied">Already applied</option>
+      </select>
       <button
         onClick={() => void submit()}
         disabled={!company.trim()}
         className="w-full bg-gold-dim px-2 py-1 font-mono text-[12px] text-parchment hover:bg-gold disabled:opacity-40"
       >
-        Log it · +{DEEDS.application.dp} DP
+        {status === 'applied' ? `Log application · +${DEEDS.application.dp} DP` : 'Save posting'}
       </button>
     </section>
   );

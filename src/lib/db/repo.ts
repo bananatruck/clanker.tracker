@@ -415,6 +415,9 @@ export async function updateApplication(
     ...(patch.url === undefined ? {} : { url: canonicalJobUrl(patch.url) }),
   };
   const merged = { ...before, ...next };
+  const changedFollowUp =
+    Object.prototype.hasOwnProperty.call(patch, 'nextAction') ||
+    Object.prototype.hasOwnProperty.call(patch, 'nextActionAt');
   await db.transaction('rw', db.applications, db.applicationEvents, async () => {
     await db.applications.update(id, {
       ...next,
@@ -424,7 +427,7 @@ export async function updateApplication(
     });
     await db.applicationEvents.add({
       applicationId: id,
-      kind: patch.nextActionAt === undefined ? 'updated' : 'follow-up',
+      kind: changedFollowUp ? 'follow-up' : 'updated',
       at: now,
       detail: Object.keys(patch).join(', '),
     });

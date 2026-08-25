@@ -61,6 +61,7 @@ import {
   confirmApplicationSession,
   logApplication,
   trackApplication,
+  updateApplication,
 } from '@/lib/db/repo';
 
 beforeEach(() => {
@@ -137,5 +138,21 @@ describe('automated tracker upserts', () => {
     expect(confirmed).toMatchObject({ status: 'applied', llmCalls: 2 });
     expect(state.applications.size).toBe(1);
     expect(state.sessions.get('tab-7')?.status).toBe('complete');
+  });
+
+  it('records a follow-up event when an action or reminder changes', async () => {
+    const tracked = await trackApplication({
+      company: 'Acme', role: 'Engineer', url: 'https://jobs.test/42', ats: 'greenhouse',
+    });
+
+    await updateApplication(tracked.id, {
+      nextAction: 'Email recruiter',
+      nextActionAt: Date.now() + 86_400_000,
+    });
+
+    expect(state.applications.get(tracked.id)).toMatchObject({
+      nextAction: 'Email recruiter',
+    });
+    expect(state.events.at(-1)?.kind).toBe('follow-up');
   });
 });

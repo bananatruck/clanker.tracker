@@ -53,7 +53,7 @@ export function funnelStats(
   // came after a real conversation. Rejections are counted as responses;
   // ghosts, by definition, are not.
   const responses = sent.filter(
-    (a) => a.status !== 'applied' && a.status !== 'ghosted',
+    (app) => ['oa', 'interview', 'offer', 'rejected'].includes(app.status),
   ).length;
 
   return {
@@ -84,9 +84,10 @@ export interface CostStats {
  * typical application, so the statistic has to be about the typical one too.
  */
 export function costStats(apps: readonly Application[]): CostStats {
-  if (apps.length === 0) return { medianLlmCalls: 0, freeShare: 1, totalLlmCalls: 0 };
+  const sent = apps.filter((app) => app.appliedAt !== null);
+  if (sent.length === 0) return { medianLlmCalls: 0, freeShare: 1, totalLlmCalls: 0 };
 
-  const calls = apps.map((a) => a.llmCalls).sort((x, y) => x - y);
+  const calls = sent.map((app) => app.llmCalls).sort((x, y) => x - y);
   const mid = Math.floor(calls.length / 2);
   const median =
     calls.length % 2 === 0

@@ -38,6 +38,12 @@ describe('funnel stats', () => {
     expect(stats.responseRate).toBe(0);
   });
 
+  it('does not count a withdrawal as an employer response', () => {
+    const stats = funnelStats([app('withdrawn')], NOW);
+    expect(stats.responses).toBe(0);
+    expect(stats.responseRate).toBe(0);
+  });
+
   /**
    * A rejection that arrived after an onsite is still a reply. Counting only
    * current status would score a hunt that got four interviews and four
@@ -94,6 +100,15 @@ describe('the cost claim', () => {
     const s = costStats([app('applied', { llmCalls: 3 }), app('applied', { llmCalls: 5 })]);
     expect(s.medianLlmCalls).toBe(4);
     expect(s.freeShare).toBe(0);
+  });
+
+  it('does not let passively saved jobs make completed fills look free', () => {
+    const saved = app('saved', { appliedAt: null, llmCalls: 0 });
+    const paid = app('applied', { llmCalls: 4 });
+    const stats = costStats([saved, paid]);
+    expect(stats.medianLlmCalls).toBe(4);
+    expect(stats.freeShare).toBe(0);
+    expect(stats.totalLlmCalls).toBe(4);
   });
 
   it('handles an empty history', () => {

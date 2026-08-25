@@ -36,4 +36,12 @@ describe('tracked job lifecycle', () => {
     expect(revisited.status).toBe('rejected');
     expect(revisited.notes).toBe('No');
   });
+
+  it('does not invent a submission for a posting withdrawn before applying', () => {
+    const withdrawn = createTrackedJob({
+      company: 'Acme', role: 'Engineer', url: 'https://jobs.test/42',
+      ats: 'generic', status: 'withdrawn',
+    }, 100);
+    expect(withdrawn.appliedAt).toBeNull();
+  });
 });

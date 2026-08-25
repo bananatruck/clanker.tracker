@@ -19,6 +19,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { allApplications, getProfile, totalDp } from '@/lib/db/repo';
 import { costStats, funnelStats } from '@/lib/tracker/stats';
 import { STATUS_COLOR, STATUS_LABEL, isStale } from '@/lib/tracker/funnel';
+import { isReminderDue } from '@/lib/tracker/query';
 import { shortDay } from '@/lib/tracker/table';
 import { levelFromDp, tierForLevel, TIERS, distanceToCitadel } from '@/lib/game/economy';
 import { ACTORS } from '@/lib/game/atlas';
@@ -195,8 +196,9 @@ function Home({
   const tierTitle = TIERS.find((item) => item.tier === tier)?.title ?? 'Squire';
   const name = profile?.contact.fullName.value || profile?.contact.email.value || 'Unnamed applicant';
 
-  const owed = apps.filter((a) => (a.nextAction ?? '').trim() !== '' && !isDone(a.status));
-  const quiet = apps.filter((a) => isStale(a));
+  const owed = apps.filter((app) => isReminderDue(app) && !isDone(app.status));
+  const owedIds = new Set(owed.map((app) => app.id));
+  const quiet = apps.filter((app) => isStale(app) && !owedIds.has(app.id));
   const recent = apps.filter((app) => app.appliedAt !== null).slice(0, 6);
 
   return (
@@ -214,7 +216,7 @@ function Home({
           <p>
             {apps.length === 0
               ? 'Load your profile, open a posting, and start the first run.'
-              : `${funnel.responses} replies from ${funnel.total} applications. ${quiet.length + owed.length || 'Nothing'} waiting on you.`}
+              : `${funnel.responses} replies from ${funnel.total} sent. ${quiet.length + owed.length || 'Nothing'} waiting on you.`}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
@@ -243,21 +245,17 @@ function Home({
         section and what is a number.
       */}
       <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <Stat n={funnel.tracked} k="tracked" />
         <Stat n={funnel.total} k="sent" />
         <Stat n={`${Math.round(funnel.responseRate * 100)}%`} k="replied" />
         <Stat n={funnel.byStatus.interview} k="interviews" tone="ok" />
-        <Stat
-          n={cost.medianLlmCalls}
-          k="median model calls"
-          tone={cost.medianLlmCalls === 0 ? 'ok' : 'warn'}
-        />
       </div>
 
       {apps.length === 0 ? (
-        <Window title="Nothing sent yet">
+        <Window title="Nothing tracked yet">
           <p className="text-[14.5px] leading-relaxed text-muted">
-            Open a job application and a badge appears in the corner of the page. Press it and the
-            form fills itself. Everything you send lands here.
+            Open a job posting and it is saved automatically. Press the page badge to start a fill,
+            and a confirmed submission advances the same row.
           </p>
           <button className="dq-btn mt-2.5 px-3 py-1.5" onClick={() => onGo('profile')}>
             {profile ? 'Review your resume' : 'Upload your resume'}
@@ -284,7 +282,7 @@ function Home({
                   <li key={a.id} className="flex items-baseline justify-between gap-3 py-0.5">
                     <span className="min-w-0 flex-1 truncate text-[14px] text-parchment">
                       {a.company || 'Unknown'}
-                      <span className="text-muted"> — {a.nextAction}</span>
+                      <span className="text-muted"> - {a.nextAction || 'follow up'}</span>
                     </span>
                     <span className={`shrink-0 font-mono text-[11.5px] ${STATUS_COLOR[a.status]}`}>
                       {STATUS_LABEL[a.status]}
@@ -295,7 +293,7 @@ function Home({
                   <li key={a.id} className="flex items-baseline justify-between gap-3 py-0.5">
                     <span className="min-w-0 flex-1 truncate text-[14px] text-parchment">
                       {a.company || 'Unknown'}
-                      <span className="text-muted"> — no reply in a month</span>
+                      <span className="text-muted"> - no reply in a month</span>
                     </span>
                     <span className="shrink-0 font-mono text-[11.5px] text-bad">quiet</span>
                   </li>
@@ -309,19 +307,25 @@ function Home({
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Window title="Recently sent">
-              <ul className="space-y-1">
-                {recent.map((a) => (
-                  <li key={a.id} className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 flex-1 truncate text-[14px] text-parchment">
-                      {a.company || 'Unknown'}
-                      <span className="text-faint"> · {a.role || 'role unrecorded'}</span>
-                    </span>
-                    <span className="shrink-0 font-mono text-[11.5px] text-faint">
-                      {a.appliedAt === null ? '-' : shortDay(a.appliedAt)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {recent.length === 0 ? (
+                <p className="text-[14px] text-muted">
+                  Jobs are tracked, but no submission has been confirmed yet.
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {recent.map((a) => (
+                    <li key={a.id} className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 flex-1 truncate text-[14px] text-parchment">
+                        {a.company || 'Unknown'}
+                        <span className="text-faint"> · {a.role || 'role unrecorded'}</span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[11.5px] text-faint">
+                        {a.appliedAt === null ? '-' : shortDay(a.appliedAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Window>
 
             <Window
