@@ -70,7 +70,10 @@ const isJobPosting = (obj: Record<string, unknown>): boolean => {
 
 const asText = (v: unknown): string => (typeof v === 'string' ? v : '');
 
-function fromJsonLd(doc: Document): ExtractedPosting | null {
+const AMBIGUOUS_POSTING = Symbol('ambiguous posting');
+
+function fromJsonLd(doc: Document): ExtractedPosting | typeof AMBIGUOUS_POSTING | null {
+  const candidates = new Map<string, ExtractedPosting>();
   for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
     let parsed: unknown;
     try {
@@ -92,16 +95,18 @@ function fromJsonLd(doc: Document): ExtractedPosting | null {
       const description = htmlToText(asText(obj['description']));
       if (description.length < MIN_DESCRIPTION_CHARS) continue;
 
-      return {
+      const candidate: ExtractedPosting = {
         title: normaliseWhitespace(asText(obj['title'])),
         company: normaliseWhitespace(company),
         description,
         source: 'json-ld',
       };
+      const identity = [candidate.title, candidate.company, candidate.description].join('\u001f');
+      candidates.set(identity, candidate);
     }
   }
-
-  return null;
+  if (candidates.size > 1) return AMBIGUOUS_POSTING;
+  return candidates.values().next().value ?? null;
 }
 
 /**
@@ -185,7 +190,9 @@ export function titleFromDocument(doc: Document): string {
  * arriving as an anonymous wall of text.
  */
 export function extractPosting(doc: Document): ExtractedPosting | null {
-  const found = fromJsonLd(doc) ?? fromSelectors(doc) ?? fromDensity(doc);
+  const structured = fromJsonLd(doc);
+  if (structured === AMBIGUOUS_POSTING) return null;
+  const found = structured ?? fromSelectors(doc) ?? fromDensity(doc);
   if (!found) return null;
 
   return {

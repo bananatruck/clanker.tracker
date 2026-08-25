@@ -155,4 +155,18 @@ describe('automated tracker upserts', () => {
     });
     expect(state.events.at(-1)?.kind).toBe('follow-up');
   });
+
+  it('merges a text-only saved row when its posting URL becomes known', async () => {
+    const manual = await trackApplication({
+      company: 'Acme', role: 'Engineer', url: '', ats: 'generic', status: 'saved',
+    });
+    const detected = await trackApplication({
+      company: 'Acme', role: 'Engineer',
+      url: 'https://jobs.test/42', ats: 'greenhouse', status: 'saved',
+    });
+
+    expect(detected.id).toBe(manual.id);
+    expect(detected.url).toBe('https://jobs.test/42');
+    expect(state.applications.size).toBe(1);
+  });
 });

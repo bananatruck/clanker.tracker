@@ -25,4 +25,22 @@ describe('job identity', () => {
       jobDedupeKey({ url: '', company: 'acme inc', role: 'staff-engineer' }),
     );
   });
+
+  it('preserves hash routes when the fragment identifies the job', () => {
+    const first = jobDedupeKey({
+      url: 'https://careers.example.com/#/jobs/42', company: '', role: '',
+    });
+    const second = jobDedupeKey({
+      url: 'https://careers.example.com/#/jobs/43', company: '', role: '',
+    });
+    expect(first).not.toBe(second);
+    expect(canonicalJobUrl('https://careers.example.com/#/jobs/42'))
+      .toBe('https://careers.example.com/#/jobs/42');
+  });
+
+  it('drops Workday search context once the path already identifies the posting', () => {
+    expect(canonicalJobUrl(
+      'https://acme.wd5.myworkdayjobs.com/en-US/jobs/job/Engineer_REQ-42?q=engineer',
+    )).toBe('https://acme.wd5.myworkdayjobs.com/en-US/jobs/job/Engineer_REQ-42');
+  });
 });

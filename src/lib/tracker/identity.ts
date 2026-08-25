@@ -7,10 +7,16 @@ export function canonicalJobUrl(raw: string): string {
   if (!value) return '';
   try {
     const url = new URL(value);
-    url.hash = '';
+    const routeHash = /^#!?\//.test(url.hash) ? url.hash : '';
+    url.hash = routeHash;
     url.hostname = url.hostname.toLowerCase();
     for (const key of [...url.searchParams.keys()]) {
       if (TRACKING_PARAM.test(key)) url.searchParams.delete(key);
+    }
+    if (url.hostname.endsWith('myworkdayjobs.com') && /\/job\//i.test(url.pathname)) {
+      for (const key of [...url.searchParams.keys()]) {
+        if (key.toLowerCase() === 'q') url.searchParams.delete(key);
+      }
     }
     url.searchParams.sort();
     url.pathname = url.pathname.replace(/\/+$/, '') || '/';

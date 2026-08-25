@@ -294,9 +294,16 @@ export async function trackApplication(
 ): Promise<Application> {
   const now = Date.now();
   const dedupeKey = jobDedupeKey(init);
-  const existing = dedupeKey === 'text:\u001f'
+  let existing = dedupeKey === 'text:\u001f'
     ? undefined
     : await db.applications.where('dedupeKey').equals(dedupeKey).first();
+  if (!existing && init.url.trim()) {
+    const textKey = jobDedupeKey({ ...init, url: '' });
+    if (textKey !== 'text:\u001f') {
+      const textOnly = await db.applications.where('dedupeKey').equals(textKey).first();
+      if (textOnly && !textOnly.url) existing = textOnly;
+    }
+  }
   const app = existing
     ? mergeTrackedJob(existing, init, now)
     : createTrackedJob(init, now);

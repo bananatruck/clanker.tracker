@@ -137,6 +137,16 @@ describe('extractPosting', () => {
     expect(extractPosting(doc)?.source).toBe('selector');
   });
 
+  it('does not turn a listing with multiple full postings into the first job', () => {
+    const doc = docFrom(`
+      <script type="application/ld+json">${JSON.stringify([
+        { '@type': 'JobPosting', title: 'Engineer', description: LONG },
+        { '@type': 'JobPosting', title: 'Designer', description: `${LONG} Design systems.` },
+      ])}</script>
+    `);
+    expect(extractPosting(doc)).toBeNull();
+  });
+
   it('labels a scraped posting from the document when the source gave no title', () => {
     const doc = docFrom(`<h1>Backend Engineer</h1><div id="content">${LONG}</div>`);
     expect(extractPosting(doc)?.title).toBe('Backend Engineer');
