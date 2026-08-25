@@ -53,7 +53,8 @@ export const APPLICATION_COLUMNS = [
 ] as const;
 
 /** ISO date, no clock — a tracker row is a day, not a moment. */
-const day = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+const day = (ms: number | null | undefined): string =>
+  ms === null || ms === undefined ? '' : new Date(ms).toISOString().slice(0, 10);
 
 export function applicationsToCsv(apps: readonly Application[]): string {
   const rows = [

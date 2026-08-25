@@ -14,6 +14,7 @@ import {
   recallAnswer,
   recordFillRun,
   rememberAnswer,
+  trackApplication,
   totalDp,
   touchApplicationSession,
 } from '@/lib/db/repo';
@@ -84,6 +85,9 @@ async function handle(request: DbRequest, tabId?: number): Promise<unknown> {
 
     case 'db:logApplication':
       return logApplication(request.init);
+
+    case 'db:trackApplication':
+      return trackApplication(request.init);
   }
 }
 

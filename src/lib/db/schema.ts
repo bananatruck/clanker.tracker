@@ -15,6 +15,7 @@ import type { ResumeProfile } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
 import type { AtsId, RunRecord } from '@/lib/fill/records';
 import type { Deed } from '@/lib/game/economy';
+import { jobDedupeKey } from '@/lib/tracker/identity';
 
 /**
  * Tier 2 of the resolver: a normalised question hash mapped to the answer the
@@ -65,12 +66,17 @@ export interface ApplicationSession {
 
 /** Where an application is in the funnel. Drives the M3 board view. */
 export type ApplicationStatus =
+  | 'saved'
+  | 'started'
   | 'applied'
   | 'oa'
   | 'interview'
   | 'offer'
   | 'rejected'
+  | 'withdrawn'
   | 'ghosted';
+
+export type ApplicationSource = 'detected' | 'autofill' | 'manual' | 'imported' | 'legacy';
 
 export interface Application {
   id: string;
@@ -80,8 +86,14 @@ export interface Application {
   url: string;
   ats: AtsId;
   status: ApplicationStatus;
-  appliedAt: number;
+  /** When the posting entered the tracker, even before an application began. */
+  trackedAt?: number;
+  /** Null until the ATS confirms submission. */
+  appliedAt: number | null;
   updatedAt: number;
+  lastActivityAt?: number;
+  source?: ApplicationSource;
+  dedupeKey?: string;
   /** The scan that produced this application, when there was one. */
   scanId: string | null;
   notes: string;
@@ -108,6 +120,20 @@ export interface Application {
   website?: string;
   /** Whoever you are actually talking to. Name, email, or both. */
   contact?: string;
+  /** Optional reminder date for the next action. */
+  nextActionAt?: number;
+}
+
+export type ApplicationEventKind = 'created' | 'status' | 'submitted' | 'updated' | 'follow-up';
+
+export interface ApplicationEvent {
+  id?: number;
+  applicationId: string;
+  kind: ApplicationEventKind;
+  at: number;
+  fromStatus?: ApplicationStatus;
+  toStatus?: ApplicationStatus;
+  detail?: string;
 }
 
 /** The game ledger. DP is only ever derived from rows in here. */
@@ -172,6 +198,7 @@ export class ClankerDB extends Dexie {
   letters!: EntityTable<CoverLetter, 'id'>;
   documents!: EntityTable<StoredDocument, 'id'>;
   applicationSessions!: EntityTable<ApplicationSession, 'id'>;
+  applicationEvents!: EntityTable<ApplicationEvent & { id?: number }, 'id'>;
 
   constructor(name = 'clanker.tracker') {
     super(name);
@@ -239,6 +266,35 @@ export class ClankerDB extends Dexie {
     this.version(7).stores({
       applicationSessions: 'id, tabId, ats, status, updatedAt',
     });
+
+    // v8: the tracker begins before submission, deduplicates postings, and
+    // retains a local activity trail instead of overwriting the only status.
+    this.version(8)
+      .stores({
+        applications: 'id, dedupeKey, company, status, appliedAt, trackedAt, updatedAt, scanId',
+        applicationEvents: '++id, applicationId, kind, at',
+      })
+      .upgrade(async (tx) => {
+        const applications = tx.table('applications');
+        const events = tx.table('applicationEvents');
+        const rows = await applications.toArray();
+        for (const app of rows) {
+          const trackedAt = app.trackedAt ?? app.appliedAt ?? app.updatedAt ?? Date.now();
+          app.trackedAt = trackedAt;
+          app.appliedAt ??= trackedAt;
+          app.lastActivityAt ??= app.updatedAt ?? trackedAt;
+          app.source ??= 'legacy';
+          app.dedupeKey ??= jobDedupeKey(app);
+          await applications.put(app);
+          await events.add({
+            applicationId: app.id,
+            kind: 'created',
+            at: trackedAt,
+            toStatus: app.status,
+            detail: 'Migrated existing tracker row',
+          });
+        }
+      });
   }
 }
 

@@ -135,6 +135,10 @@ describe('rollups', () => {
     expect(rollups([app(), app(), app()]).count).toBe(3);
   });
 
+  it('leaves the applied-date range empty when jobs are only saved', () => {
+    expect(rollups([app({ status: 'saved', appliedAt: null })]).span).toBeNull();
+  });
+
   it('spans oldest to newest regardless of array order', () => {
     const now = Date.UTC(2026, 6, 1);
     const span = rollups([

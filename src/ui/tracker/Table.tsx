@@ -160,7 +160,7 @@ function Cell({
     case 'appliedAt':
       return (
         <span className="block px-2 py-1.5 font-mono text-[12.5px] text-muted">
-          {shortDay(app.appliedAt)}
+          {app.appliedAt === null ? '-' : shortDay(app.appliedAt)}
         </span>
       );
 

@@ -14,6 +14,8 @@ import type { Application, ApplicationStatus } from '@/lib/db/schema';
 import { isStale } from './funnel';
 
 export interface FunnelStats {
+  tracked: number;
+  /** Rows with a confirmed submission timestamp. */
   total: number;
   byStatus: Record<ApplicationStatus, number>;
   /** Reached OA or further — the only "did anyone reply" measure that matters. */
@@ -27,11 +29,14 @@ export interface FunnelStats {
 }
 
 const EMPTY_BY_STATUS = (): Record<ApplicationStatus, number> => ({
+  saved: 0,
+  started: 0,
   applied: 0,
   oa: 0,
   interview: 0,
   offer: 0,
   rejected: 0,
+  withdrawn: 0,
   ghosted: 0,
 });
 
@@ -41,20 +46,22 @@ export function funnelStats(
 ): FunnelStats {
   const byStatus = EMPTY_BY_STATUS();
   for (const a of apps) byStatus[a.status]++;
+  const sent = apps.filter((app) => app.appliedAt !== null);
 
   // An application that reached an OA got a response even if it later died,
   // so counting current status alone would undercount every rejection that
   // came after a real conversation. Rejections are counted as responses;
   // ghosts, by definition, are not.
-  const responses = apps.filter(
+  const responses = sent.filter(
     (a) => a.status !== 'applied' && a.status !== 'ghosted',
   ).length;
 
   return {
-    total: apps.length,
+    tracked: apps.length,
+    total: sent.length,
     byStatus,
     responses,
-    responseRate: apps.length === 0 ? 0 : responses / apps.length,
+    responseRate: sent.length === 0 ? 0 : responses / sent.length,
     interviews: byStatus.interview + byStatus.offer,
     offers: byStatus.offer,
     stale: apps.filter((a) => isStale(a, now)).length,
@@ -108,7 +115,7 @@ export function velocity(
   }
 
   for (const a of apps) {
-    if (a.appliedAt < start) continue;
+    if (a.appliedAt === null || a.appliedAt < start) continue;
     const key = new Date(a.appliedAt).toISOString().slice(0, 10);
     const current = buckets.get(key);
     if (current !== undefined) buckets.set(key, current + 1);

@@ -58,14 +58,19 @@ export function statsFrom(
     offers: count('offer'),
     level,
     companies: new Set(apps.map((a) => a.company.trim().toLowerCase()).filter(Boolean)).size,
-    freeFills: apps.filter((a) => a.llmCalls === 0).length,
+    freeFills: apps.filter((a) => a.appliedAt !== null && a.llmCalls === 0).length,
     streakDays: longestStreak(apps),
   };
 }
 
 /** Longest run of consecutive days with at least one application sent. */
 export function longestStreak(apps: readonly Application[]): number {
-  const days = [...new Set(apps.map((a) => new Date(a.appliedAt).toISOString().slice(0, 10)))]
+  const days = [...new Set(
+    apps
+      .map((app) => app.appliedAt)
+      .filter((at): at is number => at !== null)
+      .map((at) => new Date(at).toISOString().slice(0, 10)),
+  )]
     .sort();
   if (days.length === 0) return 0;
 

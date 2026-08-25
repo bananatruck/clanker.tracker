@@ -28,6 +28,16 @@ describe('funnel stats', () => {
     expect(s.responseRate).toBe(0);
   });
 
+  it('tracks saved jobs without inflating the sent count or response rate', () => {
+    const saved = app('saved', { appliedAt: null });
+    const started = app('started', { appliedAt: null });
+    const sent = app('applied');
+    const stats = funnelStats([saved, started, sent], NOW);
+    expect(stats.tracked).toBe(3);
+    expect(stats.total).toBe(1);
+    expect(stats.responseRate).toBe(0);
+  });
+
   /**
    * A rejection that arrived after an onsite is still a reply. Counting only
    * current status would score a hunt that got four interviews and four
@@ -106,5 +116,10 @@ describe('velocity', () => {
   it('ignores applications older than the window', () => {
     const v = velocity([app('applied', { appliedAt: NOW - 200 * day })], 14, NOW);
     expect(v.reduce((sum, b) => sum + b.count, 0)).toBe(0);
+  });
+
+  it('does not bucket saved jobs that have no submission timestamp', () => {
+    const v = velocity([app('saved', { appliedAt: null })], 14, NOW);
+    expect(v.reduce((sum, bucket) => sum + bucket.count, 0)).toBe(0);
   });
 });

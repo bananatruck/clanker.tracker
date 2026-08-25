@@ -375,7 +375,9 @@ function CardDetail({
       </div>
 
       <p className="font-mono text-[11px] text-faint">
-        sent {new Date(app.appliedAt).toISOString().slice(0, 10)}
+        {app.appliedAt === null
+          ? `tracked ${new Date(app.trackedAt ?? app.updatedAt).toISOString().slice(0, 10)}`
+          : `sent ${new Date(app.appliedAt).toISOString().slice(0, 10)}`}
         {app.url && (
           <>
             {' · '}
@@ -426,7 +428,7 @@ function List({ apps }: { apps: readonly Application[] }) {
                 {STATUS_LABEL[a.status]}
               </td>
               <td className="px-2 py-1.5 font-mono text-[12px] text-faint">
-                {new Date(a.appliedAt).toISOString().slice(5, 10)}
+                {new Date(a.appliedAt ?? a.trackedAt ?? a.updatedAt).toISOString().slice(5, 10)}
               </td>
             </tr>
           ))}

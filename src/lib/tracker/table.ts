@@ -209,9 +209,11 @@ export function rollups(apps: readonly Application[]): Rollups {
     return { count: 0, span: null, topSalary: null, withNextAction: 0, complete: 0 };
   }
 
-  const dates = apps.map((a) => a.appliedAt);
-  const from = Math.min(...dates);
-  const to = Math.max(...dates);
+  const dates = apps
+    .map((app) => app.appliedAt)
+    .filter((date): date is number => date !== null);
+  const from = dates.length > 0 ? Math.min(...dates) : 0;
+  const to = dates.length > 0 ? Math.max(...dates) : 0;
 
   // MAX over salary uses the top of each range, because the question the
   // footer answers is "what is the best thing on this board", and the best
@@ -227,7 +229,7 @@ export function rollups(apps: readonly Application[]): Rollups {
 
   return {
     count: apps.length,
-    span: { from, to, days: Math.round((to - from) / DAY) },
+    span: dates.length > 0 ? { from, to, days: Math.round((to - from) / DAY) } : null,
     topSalary,
     withNextAction: apps.filter((a) => (a.nextAction ?? '').trim() !== '').length,
     complete: apps.filter(isComplete).length,

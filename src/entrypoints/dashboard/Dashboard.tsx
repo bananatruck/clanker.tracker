@@ -197,7 +197,7 @@ function Home({
 
   const owed = apps.filter((a) => (a.nextAction ?? '').trim() !== '' && !isDone(a.status));
   const quiet = apps.filter((a) => isStale(a));
-  const recent = apps.slice(0, 6);
+  const recent = apps.filter((app) => app.appliedAt !== null).slice(0, 6);
 
   return (
     <div className="flex flex-col gap-4">
@@ -317,7 +317,7 @@ function Home({
                       <span className="text-faint"> · {a.role || 'role unrecorded'}</span>
                     </span>
                     <span className="shrink-0 font-mono text-[11.5px] text-faint">
-                      {shortDay(a.appliedAt)}
+                      {a.appliedAt === null ? '-' : shortDay(a.appliedAt)}
                     </span>
                   </li>
                 ))}
@@ -345,7 +345,8 @@ function Home({
   );
 }
 
-const isDone = (status: string) => status === 'rejected' || status === 'ghosted' || status === 'offer';
+const isDone = (status: string) =>
+  status === 'rejected' || status === 'withdrawn' || status === 'ghosted' || status === 'offer';
 
 const TONE = { gold: 'text-gold', ok: 'text-ok', warn: 'text-warn' } as const;
 

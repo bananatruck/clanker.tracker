@@ -6,6 +6,7 @@
 import {
   db,
   type Application,
+  type ApplicationEvent,
   type ApplicationSession,
   type ApplicationStatus,
   type CoverLetter,
@@ -25,13 +26,19 @@ import {
 } from '@/types/profile';
 import type { ScanResult } from '@/types/ats';
 import { normalizeQuestion } from '@/lib/fill/normalize';
-import { deedsToAward } from '@/lib/tracker/funnel';
+import { deedsToAward, hasBeenSubmitted } from '@/lib/tracker/funnel';
 import { intelToAward } from '@/lib/tracker/table';
 import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/records';
 import { resumeDocumentFromFile } from '@/lib/resume/document';
 import { answerKey, type AnswerContext } from '@/lib/fill/memory';
 import { checkpointSession } from '@/lib/fill/session';
+import {
+  createTrackedJob,
+  mergeTrackedJob,
+  type TrackedJobInput,
+} from '@/lib/tracker/lifecycle';
+import { canonicalJobUrl, jobDedupeKey } from '@/lib/tracker/identity';
 
 /* ---------------------------------------------------------------- profile */
 
@@ -245,19 +252,33 @@ export function recentScans(limit = 20): Promise<ScanResult[]> {
 /* ----------------------------------------------------------- applications */
 
 export async function saveApplication(app: Application): Promise<void> {
-  await db.applications.put({ ...app, updatedAt: Date.now() });
+  const now = Date.now();
+  const url = canonicalJobUrl(app.url);
+  await db.applications.put({
+    ...app,
+    url,
+    trackedAt: app.trackedAt ?? app.appliedAt ?? now,
+    lastActivityAt: now,
+    source: app.source ?? 'legacy',
+    dedupeKey: jobDedupeKey({ ...app, url }),
+    updatedAt: now,
+  });
 }
 
 export function recentApplications(limit = 50): Promise<Application[]> {
-  return db.applications.orderBy('appliedAt').reverse().limit(limit).toArray();
+  return db.applications.orderBy('updatedAt').reverse().limit(limit).toArray();
 }
 
 export function allApplications(): Promise<Application[]> {
-  return db.applications.orderBy('appliedAt').reverse().toArray();
+  return db.applications.orderBy('updatedAt').reverse().toArray();
 }
 
 export function getApplication(id: string): Promise<Application | undefined> {
   return db.applications.get(id);
+}
+
+export function applicationEvents(applicationId: string): Promise<ApplicationEvent[]> {
+  return db.applicationEvents.where('applicationId').equals(applicationId).sortBy('at');
 }
 
 /** Deeds this application has already banked. The anti-farming key. */
@@ -266,45 +287,60 @@ export async function bankedDeeds(applicationId: string): Promise<Deed[]> {
   return rows.map((r) => r.deed);
 }
 
-/**
- * Log a new application and bank the deed for it.
- *
- * Called automatically after a submitted fill, and manually from the board for
- * everything filled in by hand — plenty of applications are an email, and a
- * tracker that only counts the ones this tool touched would be lying about
- * the size of the crusade.
- */
-export async function logApplication(
-  init: Omit<Application, 'id' | 'status' | 'appliedAt' | 'updatedAt'> &
-    Partial<Pick<Application, 'id' | 'status' | 'appliedAt'>>,
+/** Upsert one posting by canonical identity and retain its lifecycle event. */
+export async function trackApplication(
+  init: TrackedJobInput,
   opts: { rally?: RallyGrade } = {},
 ): Promise<Application> {
   const now = Date.now();
-  const app: Application = {
-    id: init.id ?? crypto.randomUUID(),
-    company: init.company,
-    role: init.role,
-    url: init.url,
-    ats: init.ats,
-    status: init.status ?? 'applied',
-    appliedAt: init.appliedAt ?? now,
-    updatedAt: now,
-    scanId: init.scanId,
-    notes: init.notes,
-    llmCalls: init.llmCalls,
-    ...(init.salary === undefined ? {} : { salary: init.salary }),
-    ...(init.nextAction === undefined ? {} : { nextAction: init.nextAction }),
-    ...(init.website === undefined ? {} : { website: init.website }),
-    ...(init.contact === undefined ? {} : { contact: init.contact }),
-  };
+  const dedupeKey = jobDedupeKey(init);
+  const existing = dedupeKey === 'text:\u001f'
+    ? undefined
+    : await db.applications.where('dedupeKey').equals(dedupeKey).first();
+  const app = existing
+    ? mergeTrackedJob(existing, init, now)
+    : createTrackedJob(init, now);
+  const changedStatus = existing?.status !== app.status;
 
-  await db.applications.put(app);
+  await db.transaction('rw', db.applications, db.applicationEvents, async () => {
+    await db.applications.put(app);
+    if (!existing) {
+      await db.applicationEvents.add({
+        applicationId: app.id,
+        kind: 'created',
+        at: app.trackedAt ?? now,
+        toStatus: app.status,
+        detail: app.source,
+      });
+    } else if (changedStatus) {
+      await db.applicationEvents.add({
+        applicationId: app.id,
+        kind: app.status === 'applied' ? 'submitted' : 'status',
+        at: now,
+        fromStatus: existing.status,
+        toStatus: app.status,
+      });
+    }
+  });
 
-  for (const deed of deedsToAward(app.status, [])) {
+  for (const deed of deedsToAward(app.status, await bankedDeeds(app.id))) {
     await recordDeed(deed, { rally: opts.rally, applicationId: app.id });
   }
 
   return app;
+}
+
+/** A confirmed or manually entered submission starts at Applied by default. */
+export function logApplication(
+  init: TrackedJobInput,
+  opts: { rally?: RallyGrade } = {},
+): Promise<Application> {
+  return trackApplication({
+    ...init,
+    status: init.status ?? 'applied',
+    appliedAt: init.appliedAt ?? Date.now(),
+    source: init.source ?? 'manual',
+  }, opts);
 }
 
 /**
@@ -324,7 +360,22 @@ export async function setApplicationStatus(
   const app = await db.applications.get(id);
   if (!app || app.status === status) return 0;
 
-  await db.applications.update(id, { status, updatedAt: Date.now() });
+  const now = Date.now();
+  await db.transaction('rw', db.applications, db.applicationEvents, async () => {
+    await db.applications.update(id, {
+      status,
+      appliedAt: app.appliedAt ?? (hasBeenSubmitted(status) ? now : null),
+      updatedAt: now,
+      lastActivityAt: now,
+    });
+    await db.applicationEvents.add({
+      applicationId: id,
+      kind: status === 'applied' ? 'submitted' : 'status',
+      at: now,
+      fromStatus: app.status,
+      toStatus: status,
+    });
+  });
 
   let earned = 0;
   for (const deed of deedsToAward(status, await bankedDeeds(id))) {
@@ -351,17 +402,36 @@ export async function updateApplication(
   patch: Partial<
     Pick<
       Application,
-      'company' | 'role' | 'url' | 'notes' | 'salary' | 'nextAction' | 'website' | 'contact'
+      'company' | 'role' | 'url' | 'notes' | 'salary' | 'nextAction' | 'nextActionAt' | 'website' | 'contact'
     >
   >,
 ): Promise<number> {
   const before = await db.applications.get(id);
   if (!before) return 0;
 
-  await db.applications.update(id, { ...patch, updatedAt: Date.now() });
+  const now = Date.now();
+  const next = {
+    ...patch,
+    ...(patch.url === undefined ? {} : { url: canonicalJobUrl(patch.url) }),
+  };
+  const merged = { ...before, ...next };
+  await db.transaction('rw', db.applications, db.applicationEvents, async () => {
+    await db.applications.update(id, {
+      ...next,
+      dedupeKey: jobDedupeKey(merged),
+      updatedAt: now,
+      lastActivityAt: now,
+    });
+    await db.applicationEvents.add({
+      applicationId: id,
+      kind: patch.nextActionAt === undefined ? 'updated' : 'follow-up',
+      at: now,
+      detail: Object.keys(patch).join(', '),
+    });
+  });
 
   let earned = 0;
-  for (const deed of intelToAward({ ...before, ...patch }, await bankedDeeds(id))) {
+  for (const deed of intelToAward(merged, await bankedDeeds(id))) {
     earned += await recordDeed(deed, { applicationId: id });
   }
   return earned;
@@ -373,7 +443,10 @@ export async function updateApplication(
  * a level back.
  */
 export async function deleteApplication(id: string): Promise<void> {
-  await db.applications.delete(id);
+  await db.transaction('rw', db.applications, db.applicationEvents, async () => {
+    await db.applications.delete(id);
+    await db.applicationEvents.where('applicationId').equals(id).delete();
+  });
 }
 
 /* ------------------------------------------------------------------- runs */

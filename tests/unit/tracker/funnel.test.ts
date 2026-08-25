@@ -37,7 +37,10 @@ describe('deeds are only ever earned once', () => {
   });
 
   it('earns nothing for a rejection, and takes nothing back', () => {
+    expect(deedForStatus('saved')).toBeNull();
+    expect(deedForStatus('started')).toBeNull();
     expect(deedForStatus('rejected')).toBeNull();
+    expect(deedForStatus('withdrawn')).toBeNull();
     expect(deedForStatus('ghosted')).toBeNull();
     expect(deedsToAward('rejected', ['application'])).toEqual([]);
     expect(deedsToAward('ghosted', [])).toEqual([]);
@@ -45,12 +48,16 @@ describe('deeds are only ever earned once', () => {
 });
 
 describe('the funnel', () => {
-  it('orders the board from sent to outcome', () => {
-    expect(BOARD_COLUMNS.slice(0, 4)).toEqual(['applied', 'oa', 'interview', 'offer']);
+  it('orders the board from interest through submission to outcome', () => {
+    expect(BOARD_COLUMNS.slice(0, 6)).toEqual([
+      'saved', 'started', 'applied', 'oa', 'interview', 'offer',
+    ]);
   });
 
   it('knows which way is forward', () => {
     expect(isAdvance('applied', 'interview')).toBe(true);
+    expect(isAdvance('saved', 'started')).toBe(true);
+    expect(isAdvance('started', 'applied')).toBe(true);
     expect(isAdvance('interview', 'applied')).toBe(false);
     expect(isAdvance('applied', 'applied')).toBe(false);
     // A rejection is not progress, however far the application got first.

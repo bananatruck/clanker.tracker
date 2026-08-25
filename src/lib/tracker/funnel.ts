@@ -21,50 +21,65 @@ import type { Deed } from '@/lib/game/economy';
  * they are where cards go to rest, not stages you are working through.
  */
 export const BOARD_COLUMNS: readonly ApplicationStatus[] = [
+  'saved',
+  'started',
   'applied',
   'oa',
   'interview',
   'offer',
   'rejected',
+  'withdrawn',
   'ghosted',
 ];
 
 /** How far through the funnel a status is. Terminal states share the floor. */
 const FUNNEL_DEPTH: Record<ApplicationStatus, number> = {
-  applied: 1,
-  oa: 2,
-  interview: 3,
-  offer: 4,
+  saved: 0,
+  started: 1,
+  applied: 2,
+  oa: 3,
+  interview: 4,
+  offer: 5,
   rejected: 0,
+  withdrawn: 0,
   ghosted: 0,
 };
 
 export const STATUS_LABEL: Record<ApplicationStatus, string> = {
+  saved: 'Saved',
+  started: 'In progress',
   applied: 'Applied',
   oa: 'OA',
   interview: 'Interview',
   offer: 'Offer',
   rejected: 'Rejected',
+  withdrawn: 'Withdrawn',
   ghosted: 'Ghosted',
 };
 
 /** What each status did in Clankerdom. Shown on the card, not just in lore. */
 export const STATUS_DEED_LABEL: Record<ApplicationStatus, string> = {
+  saved: 'posting scouted',
+  started: 'application underway',
   applied: '2 family homes razed',
   oa: '1 village taken',
   interview: '1 river dried',
   offer: 'The Adoption',
   rejected: 'the King is unmoved',
+  withdrawn: 'withdrawn by your hand',
   ghosted: 'no reply from the Tower',
 };
 
 /** Board accent per column, on the shared confidence palette. */
 export const STATUS_COLOR: Record<ApplicationStatus, string> = {
+  saved: 'text-faint',
+  started: 'text-muted',
   applied: 'text-muted',
   oa: 'text-warn',
   interview: 'text-ok',
   offer: 'text-gold',
   rejected: 'text-bad',
+  withdrawn: 'text-faint',
   ghosted: 'text-faint',
 };
 
@@ -83,6 +98,10 @@ export function deedForStatus(status: ApplicationStatus): Deed | null {
       // A rejection is not a deed. It costs nothing and earns nothing.
       return null;
   }
+}
+
+export function hasBeenSubmitted(status: ApplicationStatus): boolean {
+  return !['saved', 'started'].includes(status);
 }
 
 /** Whether `to` is further down the funnel than `from`. */

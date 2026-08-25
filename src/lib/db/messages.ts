@@ -21,7 +21,8 @@
  * ~90kB from every page we inject into.
  */
 import type { AtsId, RunRecord } from '@/lib/fill/records';
-import type { Application, ApplicationSession } from './schema';
+import type { ApplicationSession } from './schema';
+import type { TrackedJobInput } from '@/lib/tracker/lifecycle';
 
 export type DbRequest =
   | { type: 'db:getProfile' }
@@ -45,9 +46,10 @@ export type DbRequest =
     }
   | { type: 'db:completeApplicationSession' }
   | { type: 'account:getCredentials' }
+  | { type: 'db:trackApplication'; init: TrackedJobInput }
   | {
       type: 'db:logApplication';
-      init: Omit<Application, 'id' | 'status' | 'appliedAt' | 'updatedAt'>;
+      init: TrackedJobInput;
     };
 
 export type DbResponse<T = unknown> =
