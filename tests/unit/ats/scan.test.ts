@@ -217,6 +217,21 @@ describe('scan result', () => {
     expect(scan.jdText).toBe(JD);
   });
 
+  it('keeps the posting identity supplied by the page reader', () => {
+    const identified = scanJobDescription(JD, profile, {
+      company: 'Acme Systems',
+      jobTitle: 'Platform Engineer',
+      sourceUrl: 'https://jobs.example.test/roles/42?utm_source=board',
+      now: NOW,
+    });
+
+    expect(identified).toMatchObject({
+      company: 'Acme Systems',
+      jobTitle: 'Platform Engineer',
+      sourceUrl: 'https://jobs.example.test/roles/42?utm_source=board',
+    });
+  });
+
   it('survives an empty job description', () => {
     const empty = scanJobDescription('', profile, { now: NOW });
     expect(empty.rows).toEqual([]);

@@ -73,7 +73,11 @@ export default function Scan() {
 
   const run = async () => {
     if (!jd.trim()) return;
-    const result = scanJobDescription(jd, profile);
+    const result = scanJobDescription(jd, profile, {
+      company: posting?.company,
+      jobTitle: posting?.title,
+      sourceUrl: posting?.url,
+    });
     setScan(result);
     await saveScan(result);
   };

@@ -189,6 +189,8 @@ export interface CoverLetter {
   scanId: string;
   company: string;
   role: string;
+  /** Original posting URL, when the scan was read from a page rather than pasted. */
+  sourceUrl?: string;
   text: string;
   /** Whether the user has since edited it by hand. */
   edited: boolean;

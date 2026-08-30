@@ -56,6 +56,8 @@ export interface ScanResult {
   id: string;
   jobTitle: string;
   company: string;
+  /** Posting URL read with the description, used to bind later artifacts to this job. */
+  sourceUrl?: string;
   /** The JD text as scanned, kept so a re-scan needs no re-paste. */
   jdText: string;
   rows: EvidenceRow[];

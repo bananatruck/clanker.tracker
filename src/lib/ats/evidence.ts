@@ -126,7 +126,7 @@ export function buildEvidenceTable(
 export function scanJobDescription(
   jdText: string,
   profile: ResumeProfile,
-  opts: { company?: string; jobTitle?: string; now?: Date; id?: string } = {},
+  opts: { company?: string; jobTitle?: string; sourceUrl?: string; now?: Date; id?: string } = {},
 ): ScanResult {
   const requirements = extractRequirements(jdText);
   const guessed = guessPosting(jdText);
@@ -136,6 +136,7 @@ export function scanJobDescription(
     id: opts.id ?? `scan-${now.getTime()}`,
     company: opts.company ?? guessed.company,
     jobTitle: opts.jobTitle ?? guessed.jobTitle,
+    sourceUrl: opts.sourceUrl?.trim() || undefined,
     jdText,
     rows: buildEvidenceTable(requirements, profile, now),
     scannedAt: now.getTime(),

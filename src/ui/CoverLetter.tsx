@@ -47,6 +47,7 @@ export default function CoverLetter({ scan }: { scan: ScanResult }) {
         scanId: scan.id,
         company: scan.company,
         role: scan.jobTitle,
+        sourceUrl: scan.sourceUrl,
         text: letter.text,
       });
       setNotes('');
