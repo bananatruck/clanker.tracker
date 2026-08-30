@@ -45,7 +45,7 @@ export type DbRequest =
   | {
       type: 'db:touchApplicationSession';
       init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'> &
-        Pick<ApplicationSession, 'jobUrl' | 'llmCalls'>;
+        Pick<ApplicationSession, 'jobUrl' | 'scanId' | 'llmCalls'>;
     }
   | { type: 'db:completeApplicationSession' }
   | { type: 'db:confirmApplicationSession' }

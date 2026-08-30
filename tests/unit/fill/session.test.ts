@@ -65,6 +65,24 @@ describe('guarded application sessions', () => {
     expect(next.llmCalls).toBe(3);
   });
 
+  it('retains the matched scan across later application pages', () => {
+    const matched = checkpointSession(first, 7, {
+      ats: 'workday',
+      url: first.url,
+      pageKey: 'identity',
+      completedPaths: [],
+      scanId: 'scan-42',
+    }, 200);
+    const later = checkpointSession(matched, 7, {
+      ats: 'workday',
+      url: `${first.url}/questions`,
+      pageKey: 'questions',
+      completedPaths: [],
+    }, 300);
+
+    expect(later.scanId).toBe('scan-42');
+  });
+
   it('starts over for another ATS and never offers a completed session', () => {
     const next = checkpointSession(first, 7, {
       ats: 'greenhouse',

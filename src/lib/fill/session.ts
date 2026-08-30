@@ -5,7 +5,7 @@ import type { HarvestedField } from './types';
 export type SessionPage = Pick<
   ApplicationSession,
   'ats' | 'url' | 'pageKey' | 'completedPaths'
-> & Pick<ApplicationSession, 'jobUrl' | 'llmCalls'>;
+> & Pick<ApplicationSession, 'jobUrl' | 'scanId' | 'llmCalls'>;
 
 /** Stable across field ordering, but different when an SPA reveals a new step. */
 export function pageKeyFor(fields: readonly HarvestedField[]): string {
@@ -52,6 +52,7 @@ export function checkpointSession(
     tabId,
     ats: page.ats,
     jobUrl: previous?.jobUrl ?? page.jobUrl ?? page.url,
+    scanId: previous?.scanId ?? page.scanId,
     url: page.url,
     pageKey: page.pageKey,
     step: previous ? previous.step + (previous.pageKey === page.pageKey ? 0 : 1) : 1,

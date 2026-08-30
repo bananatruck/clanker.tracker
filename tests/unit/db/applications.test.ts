@@ -127,6 +127,7 @@ describe('automated tracker upserts', () => {
     state.sessions.set('tab-7', {
       id: 'tab-7', tabId: 7, ats: 'workday',
       jobUrl: 'https://jobs.test/job/42',
+      scanId: 'scan-42',
       url: 'https://jobs.test/apply/confirmation',
       pageKey: 'confirmation', step: 3, completedPaths: [],
       llmCalls: 2, status: 'review', updatedAt: Date.now(),
@@ -135,7 +136,7 @@ describe('automated tracker upserts', () => {
     const confirmed = await confirmApplicationSession(7);
 
     expect(confirmed?.id).toBe(started.id);
-    expect(confirmed).toMatchObject({ status: 'applied', llmCalls: 2 });
+    expect(confirmed).toMatchObject({ status: 'applied', llmCalls: 2, scanId: 'scan-42' });
     expect(state.applications.size).toBe(1);
     expect(state.sessions.get('tab-7')?.status).toBe('complete');
   });

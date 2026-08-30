@@ -191,7 +191,11 @@ export default defineContentScript({
       }, nextOfferDelay(firstRelevantMutation, now)) as unknown as number;
     });
 
-    function armTracker(llmCalls: number, trackingUrl = location.href): void {
+    function armTracker(
+      llmCalls: number,
+      trackingUrl = location.href,
+      scanId: string | null = null,
+    ): void {
       disarm?.();
       const form = findApplicationForm(document);
       const tracked = trackedJobForPage(document, {
@@ -221,7 +225,7 @@ export default defineContentScript({
                 ats: ats.id,
                 status: 'applied',
                 source: 'autofill',
-                scanId: null,
+                scanId,
                 notes: '',
                 llmCalls,
               },
@@ -490,10 +494,15 @@ export default defineContentScript({
                     pageKey: filledPageKey,
                     completedPaths: outcome.completedPaths,
                     jobUrl: existingSession?.jobUrl,
+                    scanId: matchedLetter?.scanId,
                     llmCalls: outcome.llmCalls,
                   },
                 }).catch(() => null);
-              armTracker(outcome.llmCalls, session?.jobUrl ?? existingSession?.jobUrl);
+              armTracker(
+                outcome.llmCalls,
+                session?.jobUrl ?? existingSession?.jobUrl,
+                matchedLetter?.scanId ?? null,
+              );
               sendResponse({ ok: true, ...outcome, sessionStep: session?.step });
               return;
             }

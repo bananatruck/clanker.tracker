@@ -32,7 +32,7 @@ import { dpForDeed, type Deed, type RallyGrade } from '@/lib/game/economy';
 import type { AtsId, RunRecord } from '@/lib/fill/records';
 import { resumeDocumentFromFile } from '@/lib/resume/document';
 import { answerKey, type AnswerContext } from '@/lib/fill/memory';
-import { checkpointSession } from '@/lib/fill/session';
+import { checkpointSession, type SessionPage } from '@/lib/fill/session';
 import {
   createTrackedJob,
   mergeTrackedJob,
@@ -492,7 +492,7 @@ export async function getApplicationSession(
 
 export async function touchApplicationSession(
   tabId: number,
-  init: Pick<ApplicationSession, 'ats' | 'url' | 'pageKey' | 'completedPaths'>,
+  init: SessionPage,
 ): Promise<ApplicationSession> {
   const existing = await getApplicationSession(tabId, init.ats);
   const session = checkpointSession(existing, tabId, init);
@@ -534,7 +534,7 @@ export async function confirmApplicationSession(
     status: 'applied',
     appliedAt: existing.appliedAt ?? Date.now(),
     source: existing.source === 'manual' ? 'manual' : 'autofill',
-    scanId: existing.scanId,
+    scanId: session.scanId ?? existing.scanId,
     notes: existing.notes,
     llmCalls: existing.appliedAt === null ? (session.llmCalls ?? 0) : 0,
   });
