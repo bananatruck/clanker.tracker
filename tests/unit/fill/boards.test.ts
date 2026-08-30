@@ -380,6 +380,19 @@ describe('other hosted boards', () => {
     expect(llmCalls).toBe(0);
   });
 
+  it('does not mistake a SmartRecruiters cover-letter upload for a resume', () => {
+    document.body.innerHTML = `
+      <form data-test="application-form">
+        <label for="letter">Cover letter</label>
+        <input id="letter" name="attachment" type="file" />
+      </form>`;
+
+    const adapter = detectAts('jobs.smartrecruiters.com', document);
+    const letter = document.querySelector<HTMLInputElement>('#letter')!;
+
+    expect(knownFieldFor(adapter, letter, document)).toBeNull();
+  });
+
   it('fills a Lever form, which asks for one name field rather than two', async () => {
     document.body.innerHTML = `
       <form>

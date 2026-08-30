@@ -149,7 +149,12 @@ const WORKABLE: AtsAdapter = {
     lastName: ['input[name="lastname"]', '#lastname'],
     email: ['input[name="email"]', '#email'],
     phone: ['input[name="phone"]', '#phone'],
-    resume: ['input[name="resume"]', 'input[type="file"]'],
+    resume: [
+      'input[name="resume"]',
+      'input[type="file"][name*="resume" i]',
+      'input[type="file"][id*="resume" i]',
+      'input[type="file"][aria-label*="resume" i]',
+    ],
   },
 };
 
@@ -194,7 +199,12 @@ const SMARTRECRUITERS: AtsAdapter = {
     email: ['input[name="email"]', '#email'],
     phone: ['input[name="phoneNumber"]', '#phoneNumber'],
     location: ['input[name="location"]'],
-    resume: ['input[type="file"]'],
+    resume: [
+      'input[type="file"][name*="resume" i]',
+      'input[type="file"][id*="resume" i]',
+      'input[type="file"][data-test*="resume" i]',
+      'input[type="file"][aria-label*="resume" i]',
+    ],
     linkedin: ['input[name*="linkedin" i]'],
   },
 };
@@ -209,7 +219,12 @@ const ICIMS: AtsAdapter = {
     lastName: ['input[id*="lastname" i]', 'input[name*="lastname" i]'],
     email: ['input[id*="email" i]', 'input[type="email"]'],
     phone: ['input[id*="phone" i]', 'input[type="tel"]'],
-    resume: ['input[type="file"]'],
+    resume: [
+      'input[type="file"][name*="resume" i]',
+      'input[type="file"][id*="resume" i]',
+      'input[type="file"][aria-label*="resume" i]',
+      'input[type="file"][name*="cv" i]',
+    ],
   },
 };
 
@@ -222,7 +237,12 @@ const JOBVITE: AtsAdapter = {
     lastName: ['input[name="lastName"]', '#jv-last-name'],
     email: ['input[name="email"]', '#jv-email'],
     phone: ['input[name="phone"]', '#jv-phone'],
-    resume: ['input[type="file"]'],
+    resume: [
+      'input[type="file"][name*="resume" i]',
+      'input[type="file"][id*="resume" i]',
+      'input[type="file"][aria-label*="resume" i]',
+      'input[type="file"][name*="cv" i]',
+    ],
   },
 };
 
