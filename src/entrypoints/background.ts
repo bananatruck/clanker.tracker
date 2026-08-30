@@ -7,6 +7,7 @@
 import {
   completeApplicationSession,
   confirmApplicationSession,
+  coverLetterForPosting,
   getApplicationSession,
   getProfile,
   getResumeDocument,
@@ -39,6 +40,9 @@ async function handle(request: DbRequest, tabId?: number): Promise<unknown> {
 
     case 'db:getResumeDocument':
       return (await getResumeDocument()) ?? null;
+
+    case 'db:getCoverLetterForPosting':
+      return (await coverLetterForPosting(request.posting)) ?? null;
 
     // The skirmish line for the player's tier. Lives here because the content
     // script cannot see the deeds ledger the level is derived from.

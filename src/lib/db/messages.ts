@@ -23,10 +23,12 @@
 import type { AtsId, RunRecord } from '@/lib/fill/records';
 import type { ApplicationSession } from './schema';
 import type { TrackedJobInput } from '@/lib/tracker/lifecycle';
+import type { LetterPostingIdentity } from '@/lib/letter/attachment';
 
 export type DbRequest =
   | { type: 'db:getProfile' }
   | { type: 'db:getResumeDocument' }
+  | { type: 'db:getCoverLetterForPosting'; posting: LetterPostingIdentity }
   | { type: 'db:bark' }
   | { type: 'db:getSetting'; key: string; fallback: unknown }
   | { type: 'db:recallAnswer'; question: string; semanticPath?: string; optionSignature?: string }

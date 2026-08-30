@@ -40,6 +40,10 @@ import {
   type TrackedJobInput,
 } from '@/lib/tracker/lifecycle';
 import { canonicalJobUrl, jobDedupeKey } from '@/lib/tracker/identity';
+import {
+  selectCoverLetter,
+  type LetterPostingIdentity,
+} from '@/lib/letter/attachment';
 
 /* ---------------------------------------------------------------- profile */
 
@@ -608,6 +612,14 @@ export function lettersForScan(scanId: string): Promise<CoverLetter[]> {
 
 export function recentLetters(limit = 20): Promise<CoverLetter[]> {
   return db.letters.orderBy('createdAt').reverse().limit(limit).toArray();
+}
+
+/** Find the newest reviewed letter that belongs to this exact posting. */
+export async function coverLetterForPosting(
+  posting: LetterPostingIdentity,
+): Promise<CoverLetter | undefined> {
+  const letters = await db.letters.orderBy('createdAt').reverse().toArray();
+  return selectCoverLetter(letters, posting) ?? undefined;
 }
 
 export async function saveLetter(
