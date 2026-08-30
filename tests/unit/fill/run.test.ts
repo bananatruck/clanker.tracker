@@ -90,3 +90,91 @@ describe('reviewed file attachment', () => {
     expect(document.querySelector<HTMLInputElement>('input[type="file"]')!.files).toHaveLength(0);
   });
 });
+
+describe('reviewed cover-letter application', () => {
+  const coverLetter = {
+    text: 'Dear Acme,\n\nI build dependable systems.',
+    attachment: {
+      fileName: 'acme-platform-engineer-cover-letter.txt',
+      mimeType: 'text/plain;charset=utf-8',
+      bytes: new TextEncoder().encode('Dear Acme,\n\nI build dependable systems.\n').buffer,
+    },
+  };
+
+  it('offers a posting-matched letter in a text control and never learns it globally', async () => {
+    document.body.innerHTML = `
+      <form aria-label="Application">
+        <label for="letter">Cover letter</label>
+        <textarea id="letter" name="cover_letter" required></textarea>
+      </form>`;
+    const remember = vi.fn(async () => {});
+
+    const running = runFill(
+      { profile: profile(), preferences: emptyPreferences() },
+      {
+        memory: { recall: async () => null },
+        remember,
+        record: async () => {},
+        coverLetter,
+      },
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-clanker-overlay]')).not.toBeNull();
+    });
+    const overlay = document.querySelector<HTMLElement>('[data-clanker-overlay]')!;
+    const reviewInput = overlay.shadowRoot!.querySelector<HTMLTextAreaElement>('textarea')!;
+    expect(reviewInput.value).toBe(coverLetter.text);
+    overlay.shadowRoot!.querySelector<HTMLButtonElement>('[data-act="apply"]')!.click();
+
+    await expect(running).resolves.toMatchObject({ filled: 1, skipped: 0 });
+    expect(document.querySelector<HTMLTextAreaElement>('#letter')!.value).toBe(coverLetter.text);
+    expect(remember).not.toHaveBeenCalled();
+  });
+
+  it('keeps resume and cover-letter files separate after one review', async () => {
+    document.body.innerHTML = `
+      <form aria-label="Application">
+        <label for="resume">Resume</label>
+        <input id="resume" name="resume" type="file" accept=".pdf" required />
+        <label for="letter">Cover letter</label>
+        <input id="letter" name="cover_letter" type="file" accept=".pdf,.txt" />
+      </form>`;
+
+    const running = runFill(
+      { profile: profile(), preferences: emptyPreferences() },
+      {
+        memory: { recall: async () => null },
+        remember: async () => {},
+        record: async () => {},
+        resumeDocument: {
+          id: 'primary-resume',
+          kind: 'resume',
+          fileName: 'ada-resume.pdf',
+          mimeType: 'application/pdf',
+          size: 3,
+          bytes: new Uint8Array([1, 2, 3]).buffer,
+          updatedAt: 1,
+        },
+        coverLetter,
+      },
+    );
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-clanker-overlay]')).not.toBeNull();
+    });
+    const overlay = document.querySelector<HTMLElement>('[data-clanker-overlay]')!;
+    expect(overlay.shadowRoot!.querySelectorAll('.row')).toHaveLength(2);
+    overlay.shadowRoot!.querySelector<HTMLButtonElement>('[data-act="apply"]')!.click();
+
+    await expect(running).resolves.toMatchObject({ filled: 2, skipped: 0 });
+    expect(document.querySelector<HTMLInputElement>('#resume')!.files?.[0]?.name).toBe(
+      'ada-resume.pdf',
+    );
+    const attachedLetter = document.querySelector<HTMLInputElement>('#letter')!.files?.[0];
+    expect(attachedLetter?.name).toBe('acme-platform-engineer-cover-letter.txt');
+    await expect(attachedLetter?.text()).resolves.toBe(
+      'Dear Acme,\n\nI build dependable systems.\n',
+    );
+  });
+});

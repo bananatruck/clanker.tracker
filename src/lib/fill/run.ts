@@ -9,7 +9,14 @@
  * Skip the write-back and the tool never gets cheaper — it just stays clever.
  */
 import { detectAts, knownFieldFor, type KnownField } from './adapters';
-import { applyAnswer, applyFile, clearHighlight, highlight } from './apply';
+import {
+  applyAnswer,
+  applyFile,
+  clearHighlight,
+  highlight,
+  type FileAttachment,
+} from './apply';
+import { acceptsTextAttachment, documentFieldKind } from './documents';
 import { findApplicationForm, harvestForm, type AnswerElement } from './harvest';
 import { batchModel } from './model';
 import { clearOverlays, showReview, type ReviewRow } from './overlay';
@@ -34,6 +41,11 @@ export interface RunHooks {
   bark?(): Promise<string | null>;
   /** Exact local bytes selected during setup; never reconstructed from text. */
   resumeDocument?: StoredDocument | null;
+  /** A generated letter already matched to this posting by the background worker. */
+  coverLetter?: {
+    text: string;
+    attachment: FileAttachment;
+  } | null;
 }
 
 export interface RunOutcome {
@@ -71,6 +83,9 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
   const form = findApplicationForm(doc);
   const { fields, elements } = harvestForm(form);
   const { hits, ats } = adapterHitsFor(elements, doc, location.hostname);
+  const documentKinds = new Map(
+    fields.map((field) => [field.id, documentFieldKind(field, hits.get(field.id))] as const),
+  );
 
   /**
    * The live checklist the side panel draws while this runs.
@@ -86,25 +101,49 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
 
   say('reading');
 
-  const plan = await resolveFields(fields, {
-    ctx,
-    adapterHits: hits,
-    memory: hooks.memory,
-    model: batchModel,
-  });
+  // A cover letter is job-specific grounded writing. It must never fall into
+  // the generic answer model or global answer memory when no matching letter
+  // exists, because either path could reuse prose written for another job.
+  const plan = await resolveFields(
+    fields.filter((field) => documentKinds.get(field.id) !== 'cover-letter'),
+    {
+      ctx,
+      adapterHits: hits,
+      memory: hooks.memory,
+      model: batchModel,
+    },
+  );
 
   const byId = new Map<string, Resolution>(plan.resolutions.map((r) => [r.fieldId, r]));
 
   if (hooks.resumeDocument) {
     for (const field of fields) {
       if (field.kind !== 'file') continue;
-      const namedResume = /\b(resume|cv|curriculum vitae)\b/i.test(
-        `${field.label} ${field.name}`,
-      );
-      if (hits.get(field.id) !== 'resume' && !namedResume) continue;
+      if (documentKinds.get(field.id) !== 'resume') continue;
       byId.set(field.id, {
         fieldId: field.id,
         value: hooks.resumeDocument.fileName,
+        tier: 1,
+        confidence: 'certain',
+      });
+    }
+  }
+
+  if (hooks.coverLetter) {
+    for (const field of fields) {
+      if (documentKinds.get(field.id) !== 'cover-letter') continue;
+      const el = elements.get(field.id);
+      const isCompatibleFile =
+        field.kind === 'file' &&
+        el instanceof HTMLInputElement &&
+        acceptsTextAttachment(el.accept);
+      if (field.kind === 'file' && !isCompatibleFile) continue;
+
+      byId.set(field.id, {
+        fieldId: field.id,
+        value: isCompatibleFile
+          ? hooks.coverLetter.attachment.fileName
+          : hooks.coverLetter.text,
         tier: 1,
         confidence: 'certain',
       });
@@ -196,15 +235,26 @@ export async function runFill(ctx: FillContext, hooks: RunHooks): Promise<RunOut
       continue;
     }
 
+    const documentKind = documentKinds.get(field.id);
+    const attachment =
+      documentKind === 'resume'
+        ? hooks.resumeDocument
+        : documentKind === 'cover-letter'
+          ? hooks.coverLetter?.attachment
+          : null;
     const result =
-      field.kind === 'file' && el instanceof HTMLInputElement && hooks.resumeDocument
-        ? applyFile(el, hooks.resumeDocument)
+      field.kind === 'file' && el instanceof HTMLInputElement && attachment
+        ? applyFile(el, attachment)
         : await applyAnswer(el, value, field.options);
     if (result.ok) {
       filled++;
       progress.set(field.id, { ...row, state: 'filled', value });
       // Learn the answer under the question as this site phrased it.
-      if (field.label && field.kind !== 'file') await hooks.remember(field, value);
+      if (
+        field.label &&
+        field.kind !== 'file' &&
+        documentKind !== 'cover-letter'
+      ) await hooks.remember(field, value);
     } else {
       skipped++;
       progress.set(field.id, { ...row, state: 'needs-you', value: '' });

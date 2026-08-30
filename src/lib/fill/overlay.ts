@@ -55,10 +55,11 @@ label { display: block; font-size: 10px; line-height: 1.3; color: #66543b;
 /* Form controls do not inherit typography, and the \`font\` shorthand rejects
    \`inherit\` as a family — which silently left every value in the overlay in the
    browser's default sans-serif, in the middle of a monospace design. */
-input { width: 100%; box-sizing: border-box; background: #ffffff; color: #2a1e10;
+input, textarea { width: 100%; box-sizing: border-box; background: #ffffff; color: #2a1e10;
   border: 1px solid #d7c59f; border-radius: 6px; padding: 5px 7px;
   font-family: inherit; font-size: 11px; line-height: 1.4; }
-input:focus { outline: 2px solid rgba(32,95,59,.18); border-color: #2e7a4d; }
+textarea { min-height: 96px; resize: vertical; }
+input:focus, textarea:focus { outline: 2px solid rgba(32,95,59,.18); border-color: #2e7a4d; }
 .tier { font-size: 9px; color: #8b7858; margin-top: 3px; }
 footer { display: flex; gap: 7px; padding: 9px 10px; border-top: 1px solid #d7c59f;
   background: #f5ead1; }
@@ -173,7 +174,9 @@ export function showReview(
       const labelEl = document.createElement('label');
       labelEl.textContent = field.label || field.name || field.id;
 
-      const input = document.createElement('input');
+      const input = document.createElement(
+        field.kind === 'textarea' || field.kind === 'contenteditable' ? 'textarea' : 'input',
+      );
       input.value = initial;
       // The name describes retained bytes, not an editable text answer. The
       // run only attaches those exact bytes after the user accepts this row.

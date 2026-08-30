@@ -24,6 +24,7 @@ import { optionSignature } from '@/lib/fill/semantic';
 import { continuationStep, pageKeyFor } from '@/lib/fill/session';
 import { mutationTouchesFillSurface, nextOfferDelay } from '@/lib/fill/mutations';
 import { normalizePreferences, type Preferences } from '@/lib/fill/types';
+import { coverLetterAttachment } from '@/lib/letter/attachment';
 import {
   TrackingSignalGate,
   trackedJobForPage,
@@ -32,7 +33,12 @@ import {
 import { identifyPosting } from '@/lib/tracker/funnel';
 import { hasSubmissionConfirmation, watchSubmission } from '@/lib/tracker/watch';
 import type { ResumeProfile } from '@/types/profile';
-import type { Application, ApplicationSession, StoredDocument } from '@/lib/db/schema';
+import type {
+  Application,
+  ApplicationSession,
+  CoverLetter,
+  StoredDocument,
+} from '@/lib/db/schema';
 
 /** Messages the side panel sends us. */
 type Request =
@@ -416,6 +422,21 @@ export default defineContentScript({
             const resumeDocument = await askBackground<StoredDocument | null>({
               type: 'db:getResumeDocument',
             });
+            const jobUrl = existingSession?.jobUrl ?? location.href;
+            const posting = extractPosting(document);
+            const fallback = identifyPosting({
+              host: location.hostname,
+              title: document.title,
+              url: jobUrl,
+            });
+            const matchedLetter = await askBackground<CoverLetter | null>({
+              type: 'db:getCoverLetterForPosting',
+              posting: {
+                url: jobUrl,
+                company: posting?.company || fallback.company,
+                role: posting?.title || fallback.role,
+              },
+            });
 
             const outcome = await runFill(
               { profile, preferences },
@@ -444,6 +465,12 @@ export default defineContentScript({
                 },
                 bark: () => askBackground<string | null>({ type: 'db:bark' }),
                 resumeDocument,
+                coverLetter: matchedLetter
+                  ? {
+                      text: matchedLetter.text,
+                      attachment: coverLetterAttachment(matchedLetter),
+                    }
+                  : null,
               },
             );
 
